@@ -22,10 +22,10 @@ const memberRegistrationSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email format").or(z.literal("")),
   phone: z.string().optional(),
-  planId: z.string().min(1, "Membership plan is required"),
+  planId: z.string().optional(),
   trainerId: z.string().optional(),
-  startDate: z.string().min(1, "Start date is required"),
-  amountPaid: z.string().min(1, "Amount is required"),
+  startDate: z.string().optional(),
+  amountPaid: z.string().optional(),
 });
 
 type MemberRegistrationFormData = z.infer<typeof memberRegistrationSchema>;
@@ -62,8 +62,8 @@ export function MemberRegistrationForm({
         phone: data.phone,
         planId: data.planId,
         trainerId: data.trainerId,
-        startDate: new Date(data.startDate),
-        amountPaid: parseFloat(data.amountPaid),
+        startDate: data.startDate ? new Date(data.startDate) : undefined,
+        amountPaid: data.amountPaid ? parseFloat(data.amountPaid) : undefined,
       },
       {
         onSuccess: () => {
@@ -77,16 +77,6 @@ export function MemberRegistrationForm({
     return (
       <div className="flex items-center justify-center p-12">
         <LoadingSpinner />
-      </div>
-    );
-  }
-
-  if (!plans || plans.length === 0) {
-    return (
-      <div className="p-12 text-center">
-        <p className="text-muted-foreground">
-          No active membership plans available. Please create plans first.
-        </p>
       </div>
     );
   }
@@ -183,27 +173,34 @@ export function MemberRegistrationForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="planId">Membership Plan</Label>
+        <Label htmlFor="planId">Membership Plan (Optional)</Label>
         <Select
           value={selectedPlanId}
           onValueChange={(value) => {
             setSelectedPlanId(value);
             form.setValue("planId", value);
-            const plan = plans.find((p) => p.id === value);
+            const plan = plans?.find((p) => p.id === value);
             if (plan) {
               form.setValue("amountPaid", plan.price.toString());
+              if (!form.getValues("startDate")) {
+                form.setValue("startDate", new Date().toISOString().split("T")[0]);
+              }
             }
           }}
         >
           <SelectTrigger id="planId">
-            <SelectValue placeholder="Select a plan" />
+            <SelectValue placeholder="Select a plan (optional)" />
           </SelectTrigger>
           <SelectContent>
-            {plans.map((plan) => (
+            {plans?.map((plan) => (
               <SelectItem key={plan.id} value={plan.id}>
                 {plan.name} - ${plan.price} ({plan.durationDays} days)
               </SelectItem>
-            ))}
+            )) || (
+              <SelectItem value="no-plans" disabled>
+                No membership plans available
+              </SelectItem>
+            )}
           </SelectContent>
         </Select>
         {form.formState.errors.planId && (
@@ -213,33 +210,35 @@ export function MemberRegistrationForm({
         )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="startDate">Start Date</Label>
-          <Input id="startDate" type="date" {...form.register("startDate")} />
-          {form.formState.errors.startDate && (
-            <p className="text-sm text-destructive">
-              {form.formState.errors.startDate.message}
-            </p>
-          )}
-        </div>
+      {selectedPlanId && (
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="startDate">Start Date</Label>
+            <Input id="startDate" type="date" {...form.register("startDate")} />
+            {form.formState.errors.startDate && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.startDate.message}
+              </p>
+            )}
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="amountPaid">Amount Paid</Label>
-          <Input
-            id="amountPaid"
-            type="number"
-            step="0.01"
-            {...form.register("amountPaid")}
-            placeholder="0.00"
-          />
-          {form.formState.errors.amountPaid && (
-            <p className="text-sm text-destructive">
-              {form.formState.errors.amountPaid.message}
-            </p>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="amountPaid">Amount Paid</Label>
+            <Input
+              id="amountPaid"
+              type="number"
+              step="0.01"
+              {...form.register("amountPaid")}
+              placeholder="0.00"
+            />
+            {form.formState.errors.amountPaid && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.amountPaid.message}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex gap-3 pt-4">
         <Button type="submit" disabled={registerMember.isPending}>

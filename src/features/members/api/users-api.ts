@@ -15,7 +15,9 @@ export interface GetAllUsersResponse extends ApiResponse<User[]> {
     page: number;
     limit: number;
     total: number;
-    totalPages: number;
+    pages: number; // Updated to match backend
+    hasNext: boolean; // NEW
+    hasPrev: boolean; // NEW
   };
 }
 
@@ -30,9 +32,27 @@ export const usersApi = {
 
   /**
    * Get current user information
+   * Response includes embedded membershipPlans[] and trainingPlans[] arrays
    */
   getCurrentUser: async (): Promise<ApiResponse<User>> => {
     const response = await apiClient.get('/users/me');
+    return response.data;
+  },
+
+  /**
+   * Create a new user (manual registration without Clerk)
+   * POST /api/v1/users
+   * Admin only
+   */
+  createUser: async (userData: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    role?: 'member' | 'trainer' | 'admin';
+    imageUrl?: string;
+  }): Promise<ApiResponse<User>> => {
+    const response = await apiClient.post('/users', userData);
     return response.data;
   },
 
@@ -43,6 +63,17 @@ export const usersApi = {
     const response = await apiClient.get('/users', {
       params: { page, limit },
     });
+    return response.data;
+  },
+
+  /**
+   * Get user by ID
+   * Response includes embedded membershipPlans[] and trainingPlans[] arrays
+   * GET /api/v1/users/:id
+   * Admin or user themselves
+   */
+  getUserById: async (userId: string): Promise<ApiResponse<User>> => {
+    const response = await apiClient.get(`/users/${userId}`);
     return response.data;
   },
 

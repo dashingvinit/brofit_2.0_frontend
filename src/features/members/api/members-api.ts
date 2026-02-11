@@ -1,90 +1,47 @@
-import { apiClient } from '@/shared/lib/api-client';
-import type { User, ApiResponse } from '@/shared/types/common.types';
+/**
+ * @deprecated This file is maintained for backward compatibility only.
+ * Please use usersApi from './users-api' instead.
+ *
+ * This module re-exports usersApi with method aliases for existing code.
+ */
+import { usersApi } from './users-api';
+import type { ApiResponse } from '@/shared/types/common.types';
 
 export const membersApi = {
   /**
-   * Sync current authenticated user to database
-   * POST /api/v1/users/sync
+   * @deprecated Use usersApi.syncCurrentUser instead
    */
-  syncCurrentUser: async (): Promise<ApiResponse<User>> => {
-    const response = await apiClient.post('/users/sync');
-    return response.data;
-  },
+  syncCurrentUser: usersApi.syncCurrentUser,
 
   /**
-   * Get current authenticated user in organization
-   * GET /api/v1/users/me
+   * @deprecated Use usersApi.getCurrentUser instead
    */
-  getCurrentUser: async (): Promise<ApiResponse<User>> => {
-    const response = await apiClient.get('/users/me');
-    return response.data;
-  },
+  getCurrentUser: usersApi.getCurrentUser,
 
   /**
-   * Create a new user (member) in the organization
-   * POST /api/v1/users
+   * @deprecated Use usersApi.createUser instead
    */
-  createUser: async (userData: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone?: string;
-    role?: string;
-    clerkUserId?: string;
-    imageUrl?: string;
-  }): Promise<ApiResponse<User>> => {
-    const response = await apiClient.post('/users', {
-      ...userData,
-      role: userData.role || 'member',
-    });
-    return response.data;
-  },
+  createUser: usersApi.createUser,
 
   /**
-   * Get all users in organization with pagination (admin only)
-   * GET /api/v1/users
+   * @deprecated Use usersApi.getAllUsers instead
+   * Alias: getMembers → getAllUsers
    */
-  getMembers: async (page = 1, limit = 10): Promise<ApiResponse<User[]>> => {
-    const response = await apiClient.get('/users', {
-      params: { page, limit },
-    });
-    return response.data;
-  },
+  getMembers: usersApi.getAllUsers,
 
   /**
-   * Get a user by ID (admin or owner)
-   * GET /api/v1/users/:id
+   * @deprecated Use usersApi.getUserById instead
+   * Alias: getMemberById → getUserById
    */
-  getMemberById: async (id: string): Promise<ApiResponse<User>> => {
-    const response = await apiClient.get(`/users/${id}`);
-    return response.data;
-  },
+  getMemberById: usersApi.getUserById,
 
   /**
-   * Update user (admin or owner)
-   * PATCH /api/v1/users/:id
+   * @deprecated Use usersApi.updateUser instead
    */
-  updateUser: async (
-    id: string,
-    updateData: {
-      email?: string;
-      firstName?: string;
-      lastName?: string;
-      phone?: string;
-      role?: string;
-      imageUrl?: string;
-    }
-  ): Promise<ApiResponse<User>> => {
-    const response = await apiClient.patch(`/users/${id}`, updateData);
-    return response.data;
-  },
+  updateUser: usersApi.updateUser,
 
   /**
-   * Delete user (admin only)
-   * DELETE /api/v1/users/:id
+   * @deprecated Use usersApi.deleteUser instead
    */
-  deleteUser: async (id: string): Promise<ApiResponse<void>> => {
-    const response = await apiClient.delete(`/users/${id}`);
-    return response.data;
-  },
+  deleteUser: usersApi.deleteUser,
 };

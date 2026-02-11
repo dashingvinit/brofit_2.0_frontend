@@ -1,15 +1,15 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Pencil, Trash2 } from 'lucide-react';
+import { Users, Pencil, Trash2, Plus } from 'lucide-react';
 import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { LoadingSpinner } from '@/shared/components/loading-spinner';
-import type { User, UserMembership, MembershipPlan } from '@/shared/types/common.types';
+import type { User, MembershipPlanInstance } from '@/shared/types/common.types';
 import { ROUTES } from '@/shared/lib/constants';
 import { EditUserDialog } from './edit-user-dialog';
+import { AssignMembershipDialog } from './assign-membership-dialog';
 import { useUserManagement } from '../hooks/use-user-management';
-import { membershipsApi } from '../api/memberships-api';
 import { membersApi } from '../api/members-api';
 import {
   AlertDialog,
@@ -36,59 +36,39 @@ interface MembersListProps {
 }
 
 interface MemberWithMembership extends User {
-  activeMembership?: UserMembership;
-  membershipPlan?: MembershipPlan;
+  activeMembership?: MembershipPlanInstance;
 }
 
 export function MembersList({ members, isLoading }: MembersListProps) {
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [assigningMembershipUser, setAssigningMembershipUser] = useState<User | null>(null);
   const [deletingUser, setDeletingUser] = useState<MemberWithMembership | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { updateUser, isUpdating } = useUserManagement();
-  const [memberships, setMemberships] = useState<UserMembership[]>([]);
-  const [plans, setPlans] = useState<MembershipPlan[]>([]);
-  const [loadingMemberships, setLoadingMemberships] = useState(true);
 
-  useEffect(() => {
-    const fetchMembershipsAndPlans = async () => {
-      try {
-        setLoadingMemberships(true);
-        const [membershipsResponse, plansResponse] = await Promise.all([
-          membershipsApi.getOrganizationMemberships({ limit: 1000 }),
-          membershipsApi.getAllPlans(),
-        ]);
-        setMemberships(membershipsResponse.data);
-        setPlans(plansResponse.data);
-      } catch (error) {
-        console.error('Failed to fetch memberships:', error);
-      } finally {
-        setLoadingMemberships(false);
-      }
-    };
+  // Get active membership from user's embedded membershipPlans array
+  const getActiveMembership = (user: User): MembershipPlanInstance | undefined => {
+    if (!user.membershipPlans || user.membershipPlans.length === 0) return undefined;
 
-    fetchMembershipsAndPlans();
-  }, []);
+    const now = new Date();
+    return user.membershipPlans.find(
+      (plan) =>
+        plan.status === 'active' &&
+        new Date(plan.startDate) <= now &&
+        new Date(plan.endDate) >= now
+    );
+  };
 
   const membersWithMemberships = useMemo(() => {
     if (!members) return [];
 
     return members
       .filter((member) => member.role === 'member')
-      .map((member) => {
-        const activeMembership = memberships.find(
-          (m) => m.userId === member.id && m.status === 'active'
-        );
-        const membershipPlan = activeMembership
-          ? plans.find((p) => p.id === activeMembership.membershipPlanId)
-          : undefined;
-
-        return {
-          ...member,
-          activeMembership,
-          membershipPlan,
-        } as MemberWithMembership;
-      });
-  }, [members, memberships, plans]);
+      .map((member) => ({
+        ...member,
+        activeMembership: getActiveMembership(member),
+      }));
+  }, [members]);
 
   const getStatusBadgeVariant = (status?: string) => {
     if (!status) return 'secondary';
@@ -131,7 +111,7 @@ export function MembersList({ members, isLoading }: MembersListProps) {
     }
   };
 
-  if (isLoading || loadingMemberships) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center p-12">
         <LoadingSpinner />
@@ -179,7 +159,7 @@ export function MembersList({ members, isLoading }: MembersListProps) {
                 </TableCell>
                 <TableCell>{member.email}</TableCell>
                 <TableCell>
-                  {member.membershipPlan?.name || '-'}
+                  {member.activeMembership?.planName || '-'}
                 </TableCell>
                 <TableCell>
                   {member.activeMembership?.startDate
@@ -201,7 +181,16 @@ export function MembersList({ members, isLoading }: MembersListProps) {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => setAssigningMembershipUser(member)}
+                      title="Assign Membership"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setEditingUser(member)}
+                      title="Edit Member"
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -210,6 +199,7 @@ export function MembersList({ members, isLoading }: MembersListProps) {
                       size="sm"
                       onClick={() => setDeletingUser(member)}
                       className="text-destructive hover:text-destructive"
+                      title="Delete Member"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -228,6 +218,15 @@ export function MembersList({ members, isLoading }: MembersListProps) {
           onOpenChange={(open) => !open && setEditingUser(null)}
           onSave={updateUser}
           isLoading={isUpdating}
+        />
+      )}
+
+      {assigningMembershipUser && (
+        <AssignMembershipDialog
+          user={assigningMembershipUser}
+          open={!!assigningMembershipUser}
+          onOpenChange={(open) => !open && setAssigningMembershipUser(null)}
+          onSuccess={() => window.location.reload()}
         />
       )}
 

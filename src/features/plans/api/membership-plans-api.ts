@@ -1,9 +1,16 @@
 import { apiClient } from '@/shared/lib/api-client';
-import type { MembershipPlan, UserMembership, ApiResponse } from '@/shared/types/common.types';
+import type { MembershipPlan, MembershipPlanInstance, ApiResponse } from '@/shared/types/common.types';
 
-export const membershipsApi = {
+/**
+ * Membership Plans API
+ * Handles both plan catalog management and user membership assignments
+ */
+export const membershipPlansApi = {
+  // ==================== Plan Catalog Management ====================
+
   /**
    * Get active membership plans
+   * GET /api/v1/plans/memberships
    */
   getActivePlans: async (): Promise<ApiResponse<MembershipPlan[]>> => {
     const response = await apiClient.get('/plans/memberships');
@@ -12,6 +19,8 @@ export const membershipsApi = {
 
   /**
    * Get all membership plans (including inactive)
+   * GET /api/v1/plans/memberships/all
+   * Admin only
    */
   getAllPlans: async (): Promise<ApiResponse<MembershipPlan[]>> => {
     const response = await apiClient.get('/plans/memberships/all');
@@ -19,15 +28,8 @@ export const membershipsApi = {
   },
 
   /**
-   * Get plan statistics
-   */
-  getPlanStats: async (): Promise<ApiResponse<any>> => {
-    const response = await apiClient.get('/plans/memberships/stats');
-    return response.data;
-  },
-
-  /**
-   * Get plan by ID
+   * Get membership plan by ID
+   * GET /api/v1/plans/memberships/:id
    */
   getPlanById: async (planId: string): Promise<ApiResponse<MembershipPlan>> => {
     const response = await apiClient.get(`/plans/memberships/${planId}`);
@@ -36,6 +38,8 @@ export const membershipsApi = {
 
   /**
    * Create a new membership plan
+   * POST /api/v1/plans/memberships
+   * Admin only
    */
   createPlan: async (planData: {
     name: string;
@@ -50,6 +54,8 @@ export const membershipsApi = {
 
   /**
    * Update a membership plan
+   * PATCH /api/v1/plans/memberships/:id
+   * Admin only
    */
   updatePlan: async (
     planId: string,
@@ -59,7 +65,6 @@ export const membershipsApi = {
       durationDays: number;
       price: number;
       features: string[];
-      isActive: boolean;
     }>
   ): Promise<ApiResponse<MembershipPlan>> => {
     const response = await apiClient.patch(`/plans/memberships/${planId}`, planData);
@@ -67,80 +72,79 @@ export const membershipsApi = {
   },
 
   /**
-   * Deactivate a membership plan
+   * Deactivate a membership plan (soft delete)
+   * DELETE /api/v1/plans/memberships/:id
+   * Admin only
    */
-  deactivatePlan: async (planId: string): Promise<ApiResponse<void>> => {
+  deactivatePlan: async (planId: string): Promise<ApiResponse<MembershipPlan>> => {
     const response = await apiClient.delete(`/plans/memberships/${planId}`);
     return response.data;
   },
 
+  // ==================== User Membership Management ====================
+  // These operate on the embedded membershipPlans array within User documents
+
   /**
-   * Assign membership to a user
+   * Add membership plan to user
+   * POST /api/v1/users/:id/memberships
+   * Admin only
    */
-  assignMembership: async (
+  addMembershipToUser: async (
     userId: string,
     membershipData: {
       planId: string;
-      startDate?: string;
-      autoRenew?: boolean;
+      planName: string;
+      startDate: string;
+      endDate: string;
+      status: "active" | "expired" | "cancelled";
       amountPaid?: number;
       paymentReference?: string;
-      notes?: string;
     }
-  ): Promise<ApiResponse<UserMembership>> => {
-    const response = await apiClient.post(`/memberships/users/${userId}`, membershipData);
+  ): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post(`/users/${userId}/memberships`, membershipData);
     return response.data;
   },
 
   /**
-   * Get user's membership history
+   * Update user's membership plan
+   * PATCH /api/v1/users/:id/memberships/:membershipId
+   * Admin only
    */
-  getUserMemberships: async (userId: string): Promise<ApiResponse<UserMembership[]>> => {
-    const response = await apiClient.get(`/memberships/users/${userId}`);
+  updateUserMembership: async (
+    userId: string,
+    membershipId: string,
+    updateData: Partial<{
+      startDate: string;
+      endDate: string;
+      status: "active" | "expired" | "cancelled";
+      amountPaid: number;
+      paymentReference: string;
+    }>
+  ): Promise<ApiResponse<any>> => {
+    const response = await apiClient.patch(
+      `/users/${userId}/memberships/${membershipId}`,
+      updateData
+    );
     return response.data;
   },
 
   /**
-   * Get user's active membership
+   * Remove membership plan from user
+   * DELETE /api/v1/users/:id/memberships/:membershipId
+   * Admin only
    */
-  getUserActiveMembership: async (userId: string): Promise<ApiResponse<UserMembership>> => {
-    const response = await apiClient.get(`/memberships/users/${userId}/active`);
+  removeUserMembership: async (
+    userId: string,
+    membershipId: string
+  ): Promise<ApiResponse<any>> => {
+    const response = await apiClient.delete(`/users/${userId}/memberships/${membershipId}`);
     return response.data;
   },
 
-  /**
-   * Get all memberships in organization
-   */
-  getOrganizationMemberships: async (params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-  }): Promise<ApiResponse<UserMembership[]>> => {
-    const response = await apiClient.get('/memberships', { params });
-    return response.data;
-  },
+  // ==================== Future Features (Backend Not Yet Implemented) ====================
+  // TODO: Uncomment when backend implements these endpoints
 
-  /**
-   * Get membership statistics
-   */
-  getMembershipStats: async (): Promise<ApiResponse<any>> => {
-    const response = await apiClient.get('/memberships/stats');
-    return response.data;
-  },
-
-  /**
-   * Get expiring memberships
-   */
-  getExpiringSoon: async (days?: number): Promise<ApiResponse<UserMembership[]>> => {
-    const response = await apiClient.get('/memberships/expiring', {
-      params: { days },
-    });
-    return response.data;
-  },
-
-  /**
-   * Renew membership
-   */
+  /*
   renewMembership: async (
     membershipId: string,
     renewalData?: {
@@ -149,44 +153,36 @@ export const membershipsApi = {
       paymentReference?: string;
       notes?: string;
     }
-  ): Promise<ApiResponse<UserMembership>> => {
+  ): Promise<ApiResponse<any>> => {
     const response = await apiClient.post(`/memberships/${membershipId}/renew`, renewalData);
     return response.data;
   },
 
-  /**
-   * Cancel membership
-   */
   cancelMembership: async (
     membershipId: string,
     reason?: string
-  ): Promise<ApiResponse<UserMembership>> => {
+  ): Promise<ApiResponse<any>> => {
     const response = await apiClient.post(`/memberships/${membershipId}/cancel`, { reason });
     return response.data;
   },
 
-  /**
-   * Suspend membership
-   */
   suspendMembership: async (
     membershipId: string,
     suspensionData: {
       reason?: string;
       suspendUntil?: string;
     }
-  ): Promise<ApiResponse<UserMembership>> => {
+  ): Promise<ApiResponse<any>> => {
     const response = await apiClient.post(`/memberships/${membershipId}/suspend`, suspensionData);
     return response.data;
   },
 
-  /**
-   * Reactivate membership
-   */
   reactivateMembership: async (
     membershipId: string,
     notes?: string
-  ): Promise<ApiResponse<UserMembership>> => {
+  ): Promise<ApiResponse<any>> => {
     const response = await apiClient.post(`/memberships/${membershipId}/reactivate`, { notes });
     return response.data;
   },
+  */
 };
