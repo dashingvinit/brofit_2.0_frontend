@@ -1,12 +1,16 @@
-import { apiClient } from '@/shared/lib/api-client';
-import type { MembershipPlan, UserMembership, ApiResponse } from '@/shared/types/common.types';
+import { apiClient } from "@/shared/lib/api-client";
+import type {
+  MembershipPlan,
+  UserMembership,
+  ApiResponse,
+} from "@/shared/types/common.types";
 
 export const membershipsApi = {
   /**
    * Get active membership plans
    */
   getActivePlans: async (): Promise<ApiResponse<MembershipPlan[]>> => {
-    const response = await apiClient.get('/plans/memberships');
+    const response = await apiClient.get("/plans/memberships");
     return response.data;
   },
 
@@ -14,7 +18,7 @@ export const membershipsApi = {
    * Get all membership plans (including inactive)
    */
   getAllPlans: async (): Promise<ApiResponse<MembershipPlan[]>> => {
-    const response = await apiClient.get('/plans/memberships/all');
+    const response = await apiClient.get("/plans/memberships/all");
     return response.data;
   },
 
@@ -22,7 +26,7 @@ export const membershipsApi = {
    * Get plan statistics
    */
   getPlanStats: async (): Promise<ApiResponse<any>> => {
-    const response = await apiClient.get('/plans/memberships/stats');
+    const response = await apiClient.get("/plans/memberships/stats");
     return response.data;
   },
 
@@ -44,7 +48,7 @@ export const membershipsApi = {
     price: number;
     features: string[];
   }): Promise<ApiResponse<MembershipPlan>> => {
-    const response = await apiClient.post('/plans/memberships', planData);
+    const response = await apiClient.post("/plans/memberships", planData);
     return response.data;
   },
 
@@ -60,9 +64,12 @@ export const membershipsApi = {
       price: number;
       features: string[];
       isActive: boolean;
-    }>
+    }>,
   ): Promise<ApiResponse<MembershipPlan>> => {
-    const response = await apiClient.patch(`/plans/memberships/${planId}`, planData);
+    const response = await apiClient.patch(
+      `/plans/memberships/${planId}`,
+      planData,
+    );
     return response.data;
   },
 
@@ -86,16 +93,21 @@ export const membershipsApi = {
       amountPaid?: number;
       paymentReference?: string;
       notes?: string;
-    }
+    },
   ): Promise<ApiResponse<UserMembership>> => {
-    const response = await apiClient.post(`/memberships/users/${userId}`, membershipData);
+    const response = await apiClient.post(
+      `/memberships/users/${userId}`,
+      membershipData,
+    );
     return response.data;
   },
 
   /**
    * Get user's membership history
    */
-  getUserMemberships: async (userId: string): Promise<ApiResponse<UserMembership[]>> => {
+  getUserMemberships: async (
+    userId: string,
+  ): Promise<ApiResponse<UserMembership[]>> => {
     const response = await apiClient.get(`/memberships/users/${userId}`);
     return response.data;
   },
@@ -103,7 +115,9 @@ export const membershipsApi = {
   /**
    * Get user's active membership
    */
-  getUserActiveMembership: async (userId: string): Promise<ApiResponse<UserMembership>> => {
+  getUserActiveMembership: async (
+    userId: string,
+  ): Promise<ApiResponse<UserMembership>> => {
     const response = await apiClient.get(`/memberships/users/${userId}/active`);
     return response.data;
   },
@@ -116,7 +130,7 @@ export const membershipsApi = {
     limit?: number;
     status?: string;
   }): Promise<ApiResponse<UserMembership[]>> => {
-    const response = await apiClient.get('/memberships', { params });
+    const response = await apiClient.get("/memberships", { params });
     return response.data;
   },
 
@@ -124,15 +138,17 @@ export const membershipsApi = {
    * Get membership statistics
    */
   getMembershipStats: async (): Promise<ApiResponse<any>> => {
-    const response = await apiClient.get('/memberships/stats');
+    const response = await apiClient.get("/memberships/stats");
     return response.data;
   },
 
   /**
    * Get expiring memberships
    */
-  getExpiringSoon: async (days?: number): Promise<ApiResponse<UserMembership[]>> => {
-    const response = await apiClient.get('/memberships/expiring', {
+  getExpiringSoon: async (
+    days?: number,
+  ): Promise<ApiResponse<UserMembership[]>> => {
+    const response = await apiClient.get("/memberships/expiring", {
       params: { days },
     });
     return response.data;
@@ -148,9 +164,12 @@ export const membershipsApi = {
       amountPaid?: number;
       paymentReference?: string;
       notes?: string;
-    }
+    },
   ): Promise<ApiResponse<UserMembership>> => {
-    const response = await apiClient.post(`/memberships/${membershipId}/renew`, renewalData);
+    const response = await apiClient.post(
+      `/memberships/${membershipId}/renew`,
+      renewalData,
+    );
     return response.data;
   },
 
@@ -159,9 +178,12 @@ export const membershipsApi = {
    */
   cancelMembership: async (
     membershipId: string,
-    reason?: string
+    reason?: string,
   ): Promise<ApiResponse<UserMembership>> => {
-    const response = await apiClient.post(`/memberships/${membershipId}/cancel`, { reason });
+    const response = await apiClient.post(
+      `/memberships/${membershipId}/cancel`,
+      { reason },
+    );
     return response.data;
   },
 
@@ -173,9 +195,12 @@ export const membershipsApi = {
     suspensionData: {
       reason?: string;
       suspendUntil?: string;
-    }
+    },
   ): Promise<ApiResponse<UserMembership>> => {
-    const response = await apiClient.post(`/memberships/${membershipId}/suspend`, suspensionData);
+    const response = await apiClient.post(
+      `/memberships/${membershipId}/suspend`,
+      suspensionData,
+    );
     return response.data;
   },
 
@@ -184,9 +209,12 @@ export const membershipsApi = {
    */
   reactivateMembership: async (
     membershipId: string,
-    notes?: string
+    notes?: string,
   ): Promise<ApiResponse<UserMembership>> => {
-    const response = await apiClient.post(`/memberships/${membershipId}/reactivate`, { notes });
+    const response = await apiClient.post(
+      `/memberships/${membershipId}/reactivate`,
+      { notes },
+    );
     return response.data;
   },
 };

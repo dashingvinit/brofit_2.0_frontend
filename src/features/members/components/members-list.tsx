@@ -1,14 +1,15 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Pencil, Trash2, Plus } from 'lucide-react';
+import { Users, Pencil, Trash2, Plus, Dumbbell } from 'lucide-react';
 import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { LoadingSpinner } from '@/shared/components/loading-spinner';
-import type { User, MembershipPlanInstance } from '@/shared/types/common.types';
+import type { User, MembershipPlanInstance, TrainingPlanInstance } from '@/shared/types/common.types';
 import { ROUTES } from '@/shared/lib/constants';
 import { EditUserDialog } from './edit-user-dialog';
 import { AssignMembershipDialog } from './assign-membership-dialog';
+import { AssignTrainingDialog } from './assign-training-dialog';
 import { useUserManagement } from '../hooks/use-user-management';
 import { membersApi } from '../api/members-api';
 import {
@@ -35,14 +36,16 @@ interface MembersListProps {
   isLoading?: boolean;
 }
 
-interface MemberWithMembership extends User {
+interface MemberWithPlans extends User {
   activeMembership?: MembershipPlanInstance;
+  activeTraining?: TrainingPlanInstance;
 }
 
 export function MembersList({ members, isLoading }: MembersListProps) {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [assigningMembershipUser, setAssigningMembershipUser] = useState<User | null>(null);
-  const [deletingUser, setDeletingUser] = useState<MemberWithMembership | null>(null);
+  const [assigningTrainingUser, setAssigningTrainingUser] = useState<User | null>(null);
+  const [deletingUser, setDeletingUser] = useState<MemberWithPlans | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { updateUser, isUpdating } = useUserManagement();
 
@@ -59,7 +62,20 @@ export function MembersList({ members, isLoading }: MembersListProps) {
     );
   };
 
-  const membersWithMemberships = useMemo(() => {
+  // Get active training from user's embedded trainingPlans array
+  const getActiveTraining = (user: User): TrainingPlanInstance | undefined => {
+    if (!user.trainingPlans || user.trainingPlans.length === 0) return undefined;
+
+    const now = new Date();
+    return user.trainingPlans.find(
+      (plan) =>
+        plan.status === 'active' &&
+        new Date(plan.startDate) <= now &&
+        (!plan.endDate || new Date(plan.endDate) >= now)
+    );
+  };
+
+  const membersWithPlans = useMemo(() => {
     if (!members) return [];
 
     return members
@@ -67,6 +83,7 @@ export function MembersList({ members, isLoading }: MembersListProps) {
       .map((member) => ({
         ...member,
         activeMembership: getActiveMembership(member),
+        activeTraining: getActiveTraining(member),
       }));
   }, [members]);
 
@@ -119,7 +136,7 @@ export function MembersList({ members, isLoading }: MembersListProps) {
     );
   }
 
-  if (!membersWithMemberships || membersWithMemberships.length === 0) {
+  if (!membersWithPlans || membersWithPlans.length === 0) {
     return (
       <Card className="p-12 text-center">
         <Users className="h-12 w-12 mx-auto text-muted-foreground" />
@@ -148,11 +165,12 @@ export function MembersList({ members, isLoading }: MembersListProps) {
               <TableHead>Start Date</TableHead>
               <TableHead>End Date</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Training</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {membersWithMemberships.map((member) => (
+            {membersWithPlans.map((member) => (
               <TableRow key={member.id}>
                 <TableCell className="font-medium">
                   {member.firstName} {member.lastName}
@@ -176,6 +194,9 @@ export function MembersList({ members, isLoading }: MembersListProps) {
                     {member.activeMembership?.status || 'No membership'}
                   </Badge>
                 </TableCell>
+                <TableCell>
+                  {member.activeTraining?.planName || '-'}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
@@ -185,6 +206,14 @@ export function MembersList({ members, isLoading }: MembersListProps) {
                       title="Assign Membership"
                     >
                       <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAssigningTrainingUser(member)}
+                      title="Assign Training"
+                    >
+                      <Dumbbell className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -226,6 +255,15 @@ export function MembersList({ members, isLoading }: MembersListProps) {
           user={assigningMembershipUser}
           open={!!assigningMembershipUser}
           onOpenChange={(open) => !open && setAssigningMembershipUser(null)}
+          onSuccess={() => window.location.reload()}
+        />
+      )}
+
+      {assigningTrainingUser && (
+        <AssignTrainingDialog
+          user={assigningTrainingUser}
+          open={!!assigningTrainingUser}
+          onOpenChange={(open) => !open && setAssigningTrainingUser(null)}
           onSuccess={() => window.location.reload()}
         />
       )}

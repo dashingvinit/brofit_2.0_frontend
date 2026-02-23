@@ -1,6 +1,10 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useClerk, useUser, OrganizationSwitcher } from '@clerk/clerk-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
+import { Outlet, Link, useLocation } from "react-router-dom";
+import { useClerk, useUser, OrganizationSwitcher } from "@clerk/clerk-react";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/shared/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,7 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/shared/components/ui/dropdown-menu';
+} from "@/shared/components/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -23,11 +27,18 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
-} from '@/shared/components/ui/sidebar';
-import { Separator } from '@/shared/components/ui/separator';
-import { ThemeToggle } from '@/shared/components/theme-toggle';
-import { ROUTES } from '@/shared/lib/constants';
-import { LayoutDashboard, Users, User, LogOut, ChevronUp, CreditCard } from 'lucide-react';
+} from "@/shared/components/ui/sidebar";
+import { Separator } from "@/shared/components/ui/separator";
+import { ThemeToggle } from "@/shared/components/theme-toggle";
+import { ROUTES } from "@/shared/lib/constants";
+import {
+  LayoutDashboard,
+  Users,
+  User,
+  LogOut,
+  ChevronUp,
+  CreditCard,
+} from "lucide-react";
 
 export function DashboardLayout() {
   const { signOut } = useClerk();
@@ -35,25 +46,27 @@ export function DashboardLayout() {
   const location = useLocation();
 
   const navigation = [
-    { name: 'Dashboard', href: ROUTES.DASHBOARD, icon: LayoutDashboard },
-    { name: 'Members', href: ROUTES.MEMBERS, icon: Users },
-    { name: 'Membership Plans', href: ROUTES.MEMBERSHIPS, icon: CreditCard },
-    { name: 'Profile', href: ROUTES.PROFILE, icon: User },
+    { name: "Dashboard", href: ROUTES.DASHBOARD, icon: LayoutDashboard },
+    { name: "Members", href: ROUTES.MEMBERS, icon: Users },
+    { name: "Membership Plans", href: ROUTES.MEMBERSHIPS, icon: CreditCard },
+    { name: "Profile", href: ROUTES.PROFILE, icon: User },
   ];
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
     <SidebarProvider>
-      <Sidebar>
+      <Sidebar collapsible="icon">
         <SidebarHeader>
           <div className="flex items-center gap-2 px-2 py-2">
             <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
               <LayoutDashboard className="size-4" />
             </div>
-            <div className="flex flex-col gap-0.5 leading-none">
+            <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
               <span className="font-semibold">Brofit 2.0</span>
-              <span className="text-xs text-muted-foreground">Fitness Management</span>
+              <span className="text-xs text-muted-foreground">
+                Fitness Management
+              </span>
             </div>
           </div>
         </SidebarHeader>
@@ -67,7 +80,11 @@ export function DashboardLayout() {
                   const Icon = item.icon;
                   return (
                     <SidebarMenuItem key={item.name}>
-                      <SidebarMenuButton asChild isActive={isActive(item.href)}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive(item.href)}
+                        tooltip={item.name}
+                      >
                         <Link to={item.href}>
                           <Icon />
                           <span>{item.name}</span>
@@ -91,14 +108,19 @@ export function DashboardLayout() {
                     className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                   >
                     <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src={user?.imageUrl} alt={user?.fullName || ''} />
+                      <AvatarImage
+                        src={user?.imageUrl}
+                        alt={user?.fullName || ""}
+                      />
                       <AvatarFallback className="rounded-lg">
                         {user?.firstName?.[0]}
                         {user?.lastName?.[0]}
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">{user?.fullName}</span>
+                      <span className="truncate font-semibold">
+                        {user?.fullName}
+                      </span>
                       <span className="truncate text-xs">
                         {user?.primaryEmailAddress?.emailAddress}
                       </span>
@@ -115,14 +137,19 @@ export function DashboardLayout() {
                   <DropdownMenuLabel className="p-0 font-normal">
                     <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                       <Avatar className="h-8 w-8 rounded-lg">
-                        <AvatarImage src={user?.imageUrl} alt={user?.fullName || ''} />
+                        <AvatarImage
+                          src={user?.imageUrl}
+                          alt={user?.fullName || ""}
+                        />
                         <AvatarFallback className="rounded-lg">
                           {user?.firstName?.[0]}
                           {user?.lastName?.[0]}
                         </AvatarFallback>
                       </Avatar>
                       <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-semibold">{user?.fullName}</span>
+                        <span className="truncate font-semibold">
+                          {user?.fullName}
+                        </span>
                         <span className="truncate text-xs">
                           {user?.primaryEmailAddress?.emailAddress}
                         </span>
@@ -157,7 +184,8 @@ export function DashboardLayout() {
           <Separator orientation="vertical" className="mr-2 h-4" />
           <div className="flex flex-1 items-center justify-between">
             <h1 className="text-lg font-semibold">
-              {navigation.find((item) => isActive(item.href))?.name || 'Brofit 2.0'}
+              {navigation.find((item) => isActive(item.href))?.name ||
+                "Brofit 2.0"}
             </h1>
             <div className="flex items-center gap-4">
               <OrganizationSwitcher
@@ -166,9 +194,9 @@ export function DashboardLayout() {
                 afterSelectOrganizationUrl={ROUTES.DASHBOARD}
                 appearance={{
                   elements: {
-                    rootBox: 'flex items-center',
+                    rootBox: "flex items-center",
                     organizationSwitcherTrigger:
-                      'px-3 py-2 rounded-md hover:bg-accent',
+                      "px-3 py-2 rounded-md hover:bg-accent text-foreground",
                   },
                 }}
               />
