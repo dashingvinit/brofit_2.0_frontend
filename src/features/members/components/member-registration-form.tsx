@@ -1,31 +1,30 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { Textarea } from '@/shared/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/shared/components/ui/select";
-import { useMemberRegistration } from "../hooks/use-member-registration";
-import { useMembershipPlans } from "../hooks/use-membership-plans";
-import { useTrainers } from "../hooks/use-trainers";
-import { LoadingSpinner } from "@/shared/components/loading-spinner";
+} from '@/shared/components/ui/select';
+import { useMemberRegistration } from '../hooks/use-member-registration';
+import type { CreateMemberData } from '@/shared/types/common.types';
 
 const memberRegistrationSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email format").or(z.literal("")),
-  phone: z.string().optional(),
-  planId: z.string().optional(),
-  trainerId: z.string().optional(),
-  startDate: z.string().optional(),
-  amountPaid: z.string().optional(),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Invalid email format'),
+  phone: z.string().min(1, 'Phone number is required'),
+  dateOfBirth: z.string().min(1, 'Date of birth is required'),
+  gender: z.string().min(1, 'Gender is required'),
+  joinDate: z.string().min(1, 'Join date is required'),
+  notes: z.string().optional(),
 });
 
 type MemberRegistrationFormData = z.infer<typeof memberRegistrationSchema>;
@@ -39,56 +38,44 @@ export function MemberRegistrationForm({
   onSuccess,
   onCancel,
 }: MemberRegistrationFormProps) {
-  const { data: plans, isLoading: plansLoading } = useMembershipPlans();
-  const { data: trainers, isLoading: trainersLoading } = useTrainers();
-  const registerMember = useMemberRegistration();
-
-  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
-  const [selectedTrainerId, setSelectedTrainerId] = useState<string>("");
+  const { createMember, isLoading } = useMemberRegistration();
+  const [gender, setGender] = useState<string>('');
 
   const form = useForm<MemberRegistrationFormData>({
     resolver: zodResolver(memberRegistrationSchema),
     defaultValues: {
-      startDate: new Date().toISOString().split("T")[0],
+      joinDate: new Date().toISOString().split('T')[0],
     },
   });
 
   const onSubmit = (data: MemberRegistrationFormData) => {
-    registerMember.mutate(
-      {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phone: data.phone,
-        planId: data.planId,
-        trainerId: data.trainerId,
-        startDate: data.startDate ? new Date(data.startDate) : undefined,
-        amountPaid: data.amountPaid ? parseFloat(data.amountPaid) : undefined,
-      },
-      {
-        onSuccess: () => {
-          onSuccess?.();
-        },
-      },
-    );
-  };
+    const memberData: CreateMemberData = {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      phone: data.phone,
+      dateOfBirth: data.dateOfBirth,
+      gender: data.gender,
+      joinDate: data.joinDate,
+      notes: data.notes,
+    };
 
-  if (plansLoading || trainersLoading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <LoadingSpinner />
-      </div>
-    );
-  }
+    createMember(memberData, {
+      onSuccess: () => {
+        form.reset();
+        onSuccess?.();
+      },
+    });
+  };
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-6">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="firstName">First Name</Label>
+          <Label htmlFor="firstName">First Name *</Label>
           <Input
             id="firstName"
-            {...form.register("firstName")}
+            {...form.register('firstName')}
             placeholder="John"
           />
           {form.formState.errors.firstName && (
@@ -99,10 +86,10 @@ export function MemberRegistrationForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="lastName">Last Name</Label>
+          <Label htmlFor="lastName">Last Name *</Label>
           <Input
             id="lastName"
-            {...form.register("lastName")}
+            {...form.register('lastName')}
             placeholder="Doe"
           />
           {form.formState.errors.lastName && (
@@ -114,11 +101,11 @@ export function MemberRegistrationForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email">Email (Optional)</Label>
+        <Label htmlFor="email">Email *</Label>
         <Input
           id="email"
           type="email"
-          {...form.register("email")}
+          {...form.register('email')}
           placeholder="john.doe@example.com"
         />
         {form.formState.errors.email && (
@@ -129,127 +116,92 @@ export function MemberRegistrationForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="phone">Phone (Optional)</Label>
+        <Label htmlFor="phone">Phone Number *</Label>
         <Input
           id="phone"
           type="tel"
-          {...form.register("phone")}
+          {...form.register('phone')}
           placeholder="+1 (555) 123-4567"
+        />
+        {form.formState.errors.phone && (
+          <p className="text-sm text-destructive">
+            {form.formState.errors.phone.message}
+          </p>
+        )}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+          <Input
+            id="dateOfBirth"
+            type="date"
+            {...form.register('dateOfBirth')}
+            max={new Date().toISOString().split('T')[0]}
+          />
+          {form.formState.errors.dateOfBirth && (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.dateOfBirth.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="gender">Gender *</Label>
+          <Select
+            value={gender}
+            onValueChange={(value) => {
+              setGender(value);
+              form.setValue('gender', value);
+            }}
+          >
+            <SelectTrigger id="gender">
+              <SelectValue placeholder="Select gender" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Male">Male</SelectItem>
+              <SelectItem value="Female">Female</SelectItem>
+              <SelectItem value="Other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+          {form.formState.errors.gender && (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.gender.message}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="joinDate">Join Date *</Label>
+        <Input id="joinDate" type="date" {...form.register('joinDate')} />
+        {form.formState.errors.joinDate && (
+          <p className="text-sm text-destructive">
+            {form.formState.errors.joinDate.message}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="notes">Notes</Label>
+        <Textarea
+          id="notes"
+          {...form.register('notes')}
+          placeholder="Any additional information about this member..."
+          rows={4}
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="trainerId">Assign Trainer (Optional)</Label>
-        <Select
-          value={selectedTrainerId}
-          onValueChange={(value) => {
-            setSelectedTrainerId(value);
-            form.setValue("trainerId", value);
-          }}
-        >
-          <SelectTrigger id="trainerId">
-            <SelectValue placeholder="Select a trainer (optional)" />
-          </SelectTrigger>
-          <SelectContent>
-            {trainers && trainers.length > 0 ? (
-              trainers.map((trainer) => (
-                <SelectItem key={trainer.id} value={trainer.id}>
-                  {trainer.firstName} {trainer.lastName}
-                  {trainer.email && ` (${trainer.email})`}
-                </SelectItem>
-              ))
-            ) : (
-              <SelectItem value="no-trainers" disabled>
-                No trainers available
-              </SelectItem>
-            )}
-          </SelectContent>
-        </Select>
-        {form.formState.errors.trainerId && (
-          <p className="text-sm text-destructive">
-            {form.formState.errors.trainerId.message}
-          </p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="planId">Membership Plan (Optional)</Label>
-        <Select
-          value={selectedPlanId}
-          onValueChange={(value) => {
-            setSelectedPlanId(value);
-            form.setValue("planId", value);
-            const plan = plans?.find((p) => p.id === value);
-            if (plan) {
-              form.setValue("amountPaid", plan.price.toString());
-              if (!form.getValues("startDate")) {
-                form.setValue("startDate", new Date().toISOString().split("T")[0]);
-              }
-            }
-          }}
-        >
-          <SelectTrigger id="planId">
-            <SelectValue placeholder="Select a plan (optional)" />
-          </SelectTrigger>
-          <SelectContent>
-            {plans?.map((plan) => (
-              <SelectItem key={plan.id} value={plan.id}>
-                {plan.name} - ${plan.price} ({plan.durationDays} days)
-              </SelectItem>
-            )) || (
-              <SelectItem value="no-plans" disabled>
-                No membership plans available
-              </SelectItem>
-            )}
-          </SelectContent>
-        </Select>
-        {form.formState.errors.planId && (
-          <p className="text-sm text-destructive">
-            {form.formState.errors.planId.message}
-          </p>
-        )}
-      </div>
-
-      {selectedPlanId && (
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="startDate">Start Date</Label>
-            <Input id="startDate" type="date" {...form.register("startDate")} />
-            {form.formState.errors.startDate && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.startDate.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="amountPaid">Amount Paid</Label>
-            <Input
-              id="amountPaid"
-              type="number"
-              step="0.01"
-              {...form.register("amountPaid")}
-              placeholder="0.00"
-            />
-            {form.formState.errors.amountPaid && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.amountPaid.message}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
       <div className="flex gap-3 pt-4">
-        <Button type="submit" disabled={registerMember.isPending}>
-          {registerMember.isPending ? "Registering..." : "Register Member"}
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? 'Registering...' : 'Register Member'}
         </Button>
         {onCancel && (
           <Button
             type="button"
             variant="outline"
             onClick={onCancel}
-            disabled={registerMember.isPending}
+            disabled={isLoading}
           >
             Cancel
           </Button>

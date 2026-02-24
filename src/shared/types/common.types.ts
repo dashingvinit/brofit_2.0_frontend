@@ -2,10 +2,52 @@ import { ROLES } from '../lib/constants';
 
 export type Role = typeof ROLES[keyof typeof ROLES];
 
-// Embedded membership instance (in User)
+/**
+ * Member - Matches Prisma schema
+ * Represents a gym member in the system
+ */
+export interface Member {
+  id: string;
+  orgId: string;
+  clerkUserId?: string | null;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  dateOfBirth: string; // ISO date string
+  gender: string;
+  joinDate: string; // ISO date string
+  notes?: string | null;
+  isActive: boolean;
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
+}
+
+/**
+ * @deprecated - Use Member type instead
+ * Legacy User type kept for backward compatibility
+ */
+export interface User {
+  id: string;
+  clerkUserId?: string;
+  clerkOrganizationId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  role: Role;
+  imageUrl?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * @deprecated - Memberships are now separate entities, not embedded in Member
+ */
 export interface MembershipPlanInstance {
-  _id: string; // Instance ID in subdocument array
-  planId: string; // Reference to catalog
+  _id: string;
+  planId: string;
   planName: string;
   startDate: string;
   endDate: string;
@@ -16,9 +58,11 @@ export interface MembershipPlanInstance {
   updatedAt: string;
 }
 
-// Embedded training instance (in User)
+/**
+ * @deprecated - Training plans are now separate entities, not embedded in Member
+ */
 export interface TrainingPlanInstance {
-  _id: string; // Instance ID in subdocument array
+  _id: string;
   planId?: string;
   planName: string;
   trainerId?: string;
@@ -28,24 +72,6 @@ export interface TrainingPlanInstance {
   status: "active" | "completed" | "cancelled";
   sessionsPerWeek?: number;
   notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// User with embedded arrays (matching backend structure)
-export interface User {
-  id: string;
-  clerkUserId?: string;
-  clerkOrganizationId: string;
-  email: string;
-  firstName: string; // REQUIRED in backend
-  lastName: string; // REQUIRED in backend
-  phone?: string;
-  role: Role;
-  imageUrl?: string;
-  isActive: boolean;
-  membershipPlans: MembershipPlanInstance[]; // NEW - embedded array
-  trainingPlans: TrainingPlanInstance[]; // NEW - embedded array
   createdAt: string;
   updatedAt: string;
 }
@@ -120,18 +146,61 @@ export interface TrainingPlan {
   updatedAt: string;
 }
 
+/**
+ * Data required to create a new member
+ */
+export interface CreateMemberData {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  dateOfBirth: string; // ISO date string (YYYY-MM-DD)
+  gender: string;
+  joinDate?: string; // ISO date string, defaults to today
+  notes?: string;
+  clerkUserId?: string;
+}
+
+/**
+ * Data for updating an existing member
+ */
+export interface UpdateMemberData {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  email?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  joinDate?: string;
+  notes?: string;
+  isActive?: boolean;
+}
+
+/**
+ * Member statistics response
+ */
+export interface MemberStats {
+  total: number;
+  active: number;
+  inactive: number;
+  newThisMonth: number;
+}
+
+/**
+ * @deprecated - Use CreateMemberData instead
+ */
 export interface MemberRegistrationData {
   firstName: string;
   lastName: string;
   email: string;
   phone?: string;
   planId: string;
-  planName?: string; // NEW - plan name for embedded array
+  planName?: string;
   startDate?: Date;
   amountPaid?: number;
   paymentReference?: string;
   autoRenew?: boolean;
   notes?: string;
-  trainerId?: string; // NEW - for training plan assignment
-  trainerName?: string; // NEW - for training plan assignment
+  trainerId?: string;
+  trainerName?: string;
 }

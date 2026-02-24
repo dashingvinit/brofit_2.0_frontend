@@ -19,7 +19,7 @@ export function RegisterMemberPage() {
     <div className="space-y-6">
       <PageHeader
         title="Register New Member"
-        description="Add a new member to your gym"
+        description="Add a new member to your gym. Membership and training plans can be assigned separately."
       />
 
       <Card className="max-w-3xl">

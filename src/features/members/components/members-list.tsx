@@ -1,17 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Pencil, Trash2, Plus, Dumbbell } from 'lucide-react';
+import { Users, Pencil, Trash2 } from 'lucide-react';
 import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { LoadingSpinner } from '@/shared/components/loading-spinner';
-import type { User, MembershipPlanInstance, TrainingPlanInstance } from '@/shared/types/common.types';
+import type { Member } from '@/shared/types/common.types';
 import { ROUTES } from '@/shared/lib/constants';
-import { EditUserDialog } from './edit-user-dialog';
-import { AssignMembershipDialog } from './assign-membership-dialog';
-import { AssignTrainingDialog } from './assign-training-dialog';
-import { useUserManagement } from '../hooks/use-user-management';
-import { membersApi } from '../api/members-api';
+import { EditMemberDialog } from './edit-member-dialog';
+import { useDeleteMember } from '../hooks/use-members';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,100 +29,38 @@ import {
 } from '@/shared/components/ui/table';
 
 interface MembersListProps {
-  members?: User[];
+  members?: Member[];
   isLoading?: boolean;
 }
 
-interface MemberWithPlans extends User {
-  activeMembership?: MembershipPlanInstance;
-  activeTraining?: TrainingPlanInstance;
-}
-
 export function MembersList({ members, isLoading }: MembersListProps) {
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [assigningMembershipUser, setAssigningMembershipUser] = useState<User | null>(null);
-  const [assigningTrainingUser, setAssigningTrainingUser] = useState<User | null>(null);
-  const [deletingUser, setDeletingUser] = useState<MemberWithPlans | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const { updateUser, isUpdating } = useUserManagement();
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [deletingMember, setDeletingMember] = useState<Member | null>(null);
+  const deleteMember = useDeleteMember();
 
-  // Get active membership from user's embedded membershipPlans array
-  const getActiveMembership = (user: User): MembershipPlanInstance | undefined => {
-    if (!user.membershipPlans || user.membershipPlans.length === 0) return undefined;
+  const handleDeleteMember = () => {
+    if (!deletingMember) return;
 
-    const now = new Date();
-    return user.membershipPlans.find(
-      (plan) =>
-        plan.status === 'active' &&
-        new Date(plan.startDate) <= now &&
-        new Date(plan.endDate) >= now
-    );
+    deleteMember.mutate(deletingMember.id, {
+      onSuccess: () => {
+        setDeletingMember(null);
+      },
+    });
   };
 
-  // Get active training from user's embedded trainingPlans array
-  const getActiveTraining = (user: User): TrainingPlanInstance | undefined => {
-    if (!user.trainingPlans || user.trainingPlans.length === 0) return undefined;
-
-    const now = new Date();
-    return user.trainingPlans.find(
-      (plan) =>
-        plan.status === 'active' &&
-        new Date(plan.startDate) <= now &&
-        (!plan.endDate || new Date(plan.endDate) >= now)
-    );
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
   };
 
-  const membersWithPlans = useMemo(() => {
-    if (!members) return [];
-
-    return members
-      .filter((member) => member.role === 'member')
-      .map((member) => ({
-        ...member,
-        activeMembership: getActiveMembership(member),
-        activeTraining: getActiveTraining(member),
-      }));
-  }, [members]);
-
-  const getStatusBadgeVariant = (status?: string) => {
-    if (!status) return 'secondary';
-    switch (status) {
-      case 'active':
-        return 'default';
-      case 'expired':
-        return 'destructive';
-      case 'suspended':
-        return 'secondary';
-      default:
-        return 'secondary';
+  const calculateAge = (dateOfBirth: string) => {
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
     }
-  };
-
-  const handleDeleteMember = async () => {
-    if (!deletingUser) return;
-
-    console.log('Deleting user:', deletingUser);
-    console.log('User ID:', deletingUser.id);
-
-    if (!deletingUser.id) {
-      console.error('User ID is missing!', deletingUser);
-      alert('Cannot delete member: ID is missing');
-      setDeletingUser(null);
-      return;
-    }
-
-    try {
-      setIsDeleting(true);
-      await membersApi.deleteUser(deletingUser.id);
-      // Refresh the members list by reloading
-      window.location.reload();
-    } catch (error) {
-      console.error('Failed to delete member:', error);
-      alert('Failed to delete member. Please try again.');
-    } finally {
-      setIsDeleting(false);
-      setDeletingUser(null);
-    }
+    return age;
   };
 
   if (isLoading) {
@@ -136,7 +71,7 @@ export function MembersList({ members, isLoading }: MembersListProps) {
     );
   }
 
-  if (!membersWithPlans || membersWithPlans.length === 0) {
+  if (!members || members.length === 0) {
     return (
       <Card className="p-12 text-center">
         <Users className="h-12 w-12 mx-auto text-muted-foreground" />
@@ -159,66 +94,38 @@ export function MembersList({ members, isLoading }: MembersListProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Member Name</TableHead>
+              <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Plan</TableHead>
-              <TableHead>Start Date</TableHead>
-              <TableHead>End Date</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Age/Gender</TableHead>
+              <TableHead>Join Date</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Training</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {membersWithPlans.map((member) => (
+            {members.map((member) => (
               <TableRow key={member.id}>
                 <TableCell className="font-medium">
                   {member.firstName} {member.lastName}
                 </TableCell>
                 <TableCell>{member.email}</TableCell>
+                <TableCell>{member.phone}</TableCell>
                 <TableCell>
-                  {member.activeMembership?.planName || '-'}
+                  {calculateAge(member.dateOfBirth)} / {member.gender}
                 </TableCell>
+                <TableCell>{formatDate(member.joinDate)}</TableCell>
                 <TableCell>
-                  {member.activeMembership?.startDate
-                    ? new Date(member.activeMembership.startDate).toLocaleDateString()
-                    : '-'}
-                </TableCell>
-                <TableCell>
-                  {member.activeMembership?.endDate
-                    ? new Date(member.activeMembership.endDate).toLocaleDateString()
-                    : '-'}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={getStatusBadgeVariant(member.activeMembership?.status)}>
-                    {member.activeMembership?.status || 'No membership'}
+                  <Badge variant={member.isActive ? 'default' : 'secondary'}>
+                    {member.isActive ? 'Active' : 'Inactive'}
                   </Badge>
-                </TableCell>
-                <TableCell>
-                  {member.activeTraining?.planName || '-'}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setAssigningMembershipUser(member)}
-                      title="Assign Membership"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setAssigningTrainingUser(member)}
-                      title="Assign Training"
-                    >
-                      <Dumbbell className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setEditingUser(member)}
+                      onClick={() => setEditingMember(member)}
                       title="Edit Member"
                     >
                       <Pencil className="h-4 w-4" />
@@ -226,7 +133,7 @@ export function MembersList({ members, isLoading }: MembersListProps) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setDeletingUser(member)}
+                      onClick={() => setDeletingMember(member)}
                       className="text-destructive hover:text-destructive"
                       title="Delete Member"
                     >
@@ -240,51 +147,36 @@ export function MembersList({ members, isLoading }: MembersListProps) {
         </Table>
       </Card>
 
-      {editingUser && (
-        <EditUserDialog
-          user={editingUser}
-          open={!!editingUser}
-          onOpenChange={(open) => !open && setEditingUser(null)}
-          onSave={updateUser}
-          isLoading={isUpdating}
+      {editingMember && (
+        <EditMemberDialog
+          member={editingMember}
+          open={!!editingMember}
+          onOpenChange={(open) => !open && setEditingMember(null)}
         />
       )}
 
-      {assigningMembershipUser && (
-        <AssignMembershipDialog
-          user={assigningMembershipUser}
-          open={!!assigningMembershipUser}
-          onOpenChange={(open) => !open && setAssigningMembershipUser(null)}
-          onSuccess={() => window.location.reload()}
-        />
-      )}
-
-      {assigningTrainingUser && (
-        <AssignTrainingDialog
-          user={assigningTrainingUser}
-          open={!!assigningTrainingUser}
-          onOpenChange={(open) => !open && setAssigningTrainingUser(null)}
-          onSuccess={() => window.location.reload()}
-        />
-      )}
-
-      <AlertDialog open={!!deletingUser} onOpenChange={(open: boolean) => !open && setDeletingUser(null)}>
+      <AlertDialog
+        open={!!deletingMember}
+        onOpenChange={(open: boolean) => !open && setDeletingMember(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Member</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {deletingUser?.firstName} {deletingUser?.lastName}?
-              This action cannot be undone and will permanently remove the member and all associated data.
+              Are you sure you want to delete {deletingMember?.firstName} {deletingMember?.lastName}?
+              This action will soft delete the member. They can be reactivated later if needed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteMember.isPending}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteMember}
-              disabled={isDeleting}
+              disabled={deleteMember.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeleting ? 'Deleting...' : 'Delete'}
+              {deleteMember.isPending ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
