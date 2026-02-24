@@ -12,15 +12,6 @@ const Axios = axios.create({
   },
 });
 
-// Axios instance for API v2 (future use)
-export const AxiosV2 = axios.create({
-  baseURL: BASE_URL.replace('/v1', '/v2'),
-  timeout: 120000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
 // Helper function to configure auth interceptor
 const configureAuthInterceptor = (instance: AxiosInstance) => {
   instance.interceptors.request.use(
@@ -62,8 +53,8 @@ const configureResponseInterceptor = (instance: AxiosInstance) => {
 
       // Handle 401 unauthorized
       if (error.response?.status === 401) {
-        // Redirect to sign-in page
-        window.location.href = '/sign-in';
+        // Redirect to admin login page
+        window.location.href = '/admin';
         return Promise.reject(error);
       }
 
@@ -128,13 +119,10 @@ const configureRetry = (instance: AxiosInstance) => {
   });
 };
 
-// Apply interceptors and retry logic to both instances
+// Apply interceptors and retry logic
 configureAuthInterceptor(Axios);
-configureAuthInterceptor(AxiosV2);
 configureResponseInterceptor(Axios);
-configureResponseInterceptor(AxiosV2);
 configureRetry(Axios);
-configureRetry(AxiosV2);
 
 // Log configuration in development
 if (import.meta.env.DEV) {

@@ -6,7 +6,7 @@ export function SignInPage() {
     <div className="flex min-h-screen items-center justify-center">
       <SignIn
         routing="path"
-        path={ROUTES.SIGN_IN}
+        path="/admin"
         signUpUrl={ROUTES.SIGN_UP}
         afterSignInUrl={ROUTES.DASHBOARD}
       />

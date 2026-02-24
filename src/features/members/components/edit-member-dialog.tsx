@@ -1,4 +1,6 @@
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -19,9 +21,23 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 import { Checkbox } from '@/shared/components/ui/checkbox';
-import type { Member, UpdateMemberData } from '@/shared/types/common.types';
+import type { Member } from '@/shared/types/common.types';
 import { useUpdateMember } from '../hooks/use-members';
 import { useState } from 'react';
+
+const updateMemberSchema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().min(1, 'Phone number is required'),
+  dateOfBirth: z.string().min(1, 'Date of birth is required'),
+  gender: z.string().min(1, 'Gender is required'),
+  joinDate: z.string().min(1, 'Join date is required'),
+  notes: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
+
+type UpdateMemberFormData = z.infer<typeof updateMemberSchema>;
 
 interface EditMemberDialogProps {
   member: Member;
@@ -42,7 +58,8 @@ export function EditMemberDialog({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<UpdateMemberData>({
+  } = useForm<UpdateMemberFormData>({
+    resolver: zodResolver(updateMemberSchema),
     defaultValues: {
       firstName: member.firstName,
       lastName: member.lastName,
@@ -56,7 +73,7 @@ export function EditMemberDialog({
     },
   });
 
-  const onSubmit = async (data: UpdateMemberData) => {
+  const onSubmit = async (data: UpdateMemberFormData) => {
     updateMember.mutate(
       {
         memberId: member.id,
@@ -90,7 +107,7 @@ export function EditMemberDialog({
               <Label htmlFor="firstName">First Name *</Label>
               <Input
                 id="firstName"
-                {...register('firstName', { required: 'First name is required' })}
+                {...register('firstName')}
                 placeholder="John"
               />
               {errors.firstName && (
@@ -102,7 +119,7 @@ export function EditMemberDialog({
               <Label htmlFor="lastName">Last Name *</Label>
               <Input
                 id="lastName"
-                {...register('lastName', { required: 'Last name is required' })}
+                {...register('lastName')}
                 placeholder="Doe"
               />
               {errors.lastName && (
@@ -116,13 +133,7 @@ export function EditMemberDialog({
             <Input
               id="email"
               type="email"
-              {...register('email', {
-                required: 'Email is required',
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Invalid email address',
-                },
-              })}
+              {...register('email')}
               placeholder="john.doe@example.com"
             />
             {errors.email && (
@@ -135,7 +146,7 @@ export function EditMemberDialog({
             <Input
               id="phone"
               type="tel"
-              {...register('phone', { required: 'Phone number is required' })}
+              {...register('phone')}
               placeholder="+1 (555) 000-0000"
             />
             {errors.phone && (
@@ -149,7 +160,7 @@ export function EditMemberDialog({
               <Input
                 id="dateOfBirth"
                 type="date"
-                {...register('dateOfBirth', { required: 'Date of birth is required' })}
+                {...register('dateOfBirth')}
               />
               {errors.dateOfBirth && (
                 <p className="text-sm text-destructive">{errors.dateOfBirth.message}</p>
@@ -176,7 +187,7 @@ export function EditMemberDialog({
             <Input
               id="joinDate"
               type="date"
-              {...register('joinDate', { required: 'Join date is required' })}
+              {...register('joinDate')}
             />
             {errors.joinDate && (
               <p className="text-sm text-destructive">{errors.joinDate.message}</p>

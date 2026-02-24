@@ -23,59 +23,6 @@ export interface Member {
   updatedAt: string; // ISO date string
 }
 
-/**
- * @deprecated - Use Member type instead
- * Legacy User type kept for backward compatibility
- */
-export interface User {
-  id: string;
-  clerkUserId?: string;
-  clerkOrganizationId: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-  role: Role;
-  imageUrl?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-/**
- * @deprecated - Memberships are now separate entities, not embedded in Member
- */
-export interface MembershipPlanInstance {
-  _id: string;
-  planId: string;
-  planName: string;
-  startDate: string;
-  endDate: string;
-  status: "active" | "expired" | "cancelled";
-  amountPaid?: number;
-  paymentReference?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-/**
- * @deprecated - Training plans are now separate entities, not embedded in Member
- */
-export interface TrainingPlanInstance {
-  _id: string;
-  planId?: string;
-  planName: string;
-  trainerId?: string;
-  trainerName?: string;
-  startDate: string;
-  endDate?: string;
-  status: "active" | "completed" | "cancelled";
-  sessionsPerWeek?: number;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -107,24 +54,6 @@ export interface MembershipPlan {
   price: number;
   features: string[];
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// @deprecated - No longer used. Backend embeds memberships in User.membershipPlans array
-// Kept temporarily for backward compatibility during migration
-export interface UserMembership {
-  id: string;
-  userId: string;
-  membershipPlanId: string;
-  organizationId: string;
-  startDate: string;
-  endDate: string;
-  status: 'active' | 'expired' | 'cancelled' | 'suspended';
-  autoRenew: boolean;
-  amountPaid?: number;
-  paymentReference?: string;
-  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -184,23 +113,4 @@ export interface MemberStats {
   active: number;
   inactive: number;
   newThisMonth: number;
-}
-
-/**
- * @deprecated - Use CreateMemberData instead
- */
-export interface MemberRegistrationData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  planId: string;
-  planName?: string;
-  startDate?: Date;
-  amountPaid?: number;
-  paymentReference?: string;
-  autoRenew?: boolean;
-  notes?: string;
-  trainerId?: string;
-  trainerName?: string;
 }

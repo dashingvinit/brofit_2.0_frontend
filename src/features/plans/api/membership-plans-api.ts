@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/lib/api-client';
-import type { MembershipPlan, MembershipPlanInstance, ApiResponse } from '@/shared/types/common.types';
+import type { MembershipPlan, ApiResponse } from '@/shared/types/common.types';
 
 /**
  * Membership Plans API
@@ -140,49 +140,4 @@ export const membershipPlansApi = {
     const response = await apiClient.delete(`/users/${userId}/memberships/${membershipId}`);
     return response.data;
   },
-
-  // ==================== Future Features (Backend Not Yet Implemented) ====================
-  // TODO: Uncomment when backend implements these endpoints
-
-  /*
-  renewMembership: async (
-    membershipId: string,
-    renewalData?: {
-      planId?: string;
-      amountPaid?: number;
-      paymentReference?: string;
-      notes?: string;
-    }
-  ): Promise<ApiResponse<any>> => {
-    const response = await apiClient.post(`/memberships/${membershipId}/renew`, renewalData);
-    return response.data;
-  },
-
-  cancelMembership: async (
-    membershipId: string,
-    reason?: string
-  ): Promise<ApiResponse<any>> => {
-    const response = await apiClient.post(`/memberships/${membershipId}/cancel`, { reason });
-    return response.data;
-  },
-
-  suspendMembership: async (
-    membershipId: string,
-    suspensionData: {
-      reason?: string;
-      suspendUntil?: string;
-    }
-  ): Promise<ApiResponse<any>> => {
-    const response = await apiClient.post(`/memberships/${membershipId}/suspend`, suspensionData);
-    return response.data;
-  },
-
-  reactivateMembership: async (
-    membershipId: string,
-    notes?: string
-  ): Promise<ApiResponse<any>> => {
-    const response = await apiClient.post(`/memberships/${membershipId}/reactivate`, { notes });
-    return response.data;
-  },
-  */
 };

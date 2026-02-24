@@ -16,7 +16,7 @@ export const publicRoutes: RouteObject[] = [
     ],
   },
   {
-    path: '/sign-in/*',
+    path: '/admin/*',
     element: <SignInPage />,
   },
   {

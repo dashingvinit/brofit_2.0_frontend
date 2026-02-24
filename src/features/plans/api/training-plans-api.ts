@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/lib/api-client';
-import type { TrainingPlan, TrainingPlanInstance, ApiResponse } from '@/shared/types/common.types';
+import type { TrainingPlan, ApiResponse } from '@/shared/types/common.types';
 
 /**
  * Training Plans API
