@@ -1,36 +1,24 @@
-// Membership Plan Hooks
+// Plan Type Hooks
 export {
-  useMembershipPlans,
-  useAllMembershipPlans,
-  useMembershipPlan,
-  useCreateMembershipPlan,
-  useUpdateMembershipPlan,
-  useDeactivateMembershipPlan,
-} from './hooks/use-membership-plans';
+  usePlanTypes,
+  useAllPlanTypes,
+  usePlanTypeById,
+  useCreatePlanType,
+  useUpdatePlanType,
+  useDeletePlanType,
+  useDeactivatePlanType,
+} from './hooks/use-plan-types';
 
-// Training Plan Hooks
+// Plan Variant Hooks
 export {
-  useTrainingPlans,
-  useAllTrainingPlans,
-  useTrainingPlan,
-  useCreateTrainingPlan,
-  useUpdateTrainingPlan,
-  useDeactivateTrainingPlan,
-} from './hooks/use-training-plans';
-
-// User Assignment Hooks
-export {
-  useAddUserMembership,
-  useUpdateUserMembership,
-  useRemoveUserMembership,
-} from './hooks/use-user-memberships';
-
-export {
-  useAddUserTraining,
-  useUpdateUserTraining,
-  useRemoveUserTraining,
-} from './hooks/use-user-trainings';
+  usePlanVariantsByType,
+  usePlanVariantById,
+  useCreatePlanVariant,
+  useUpdatePlanVariant,
+  useDeletePlanVariant,
+  useDeactivatePlanVariant,
+} from './hooks/use-plan-variants';
 
 // APIs
-export { membershipPlansApi } from './api/membership-plans-api';
-export { trainingPlansApi } from './api/training-plans-api';
+export { planTypesApi } from './api/plan-types-api';
+export { planVariantsApi } from './api/plan-variants-api';

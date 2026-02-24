@@ -45,34 +45,71 @@ export interface ApiError {
   message: string;
 }
 
-export interface MembershipPlan {
+/**
+ * PlanType - Matches Prisma schema
+ * Represents a plan category (e.g., Cardio, Strength, Yoga)
+ */
+export interface PlanType {
   id: string;
-  organizationId: string;
+  orgId: string;
   name: string;
-  description?: string;
-  durationDays: number;
-  price: number;
-  features: string[];
+  description?: string | null;
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string; // ISO date string
+  variants?: PlanVariant[]; // Optional variants when fetched with relations
 }
 
-// Training Plan Catalog
-export interface TrainingPlan {
+/**
+ * PlanVariant - Matches Prisma schema
+ * Represents a pricing/duration tier for a plan type
+ */
+export interface PlanVariant {
   id: string;
-  organizationId: string;
+  planTypeId: string;
+  durationDays: number;
+  durationLabel: string; // e.g., "1 Month", "3 Months", "1 Year"
+  price: number;
+  isActive: boolean;
+  createdAt: string; // ISO date string
+  planType?: PlanType; // Optional plan type when fetched with relations
+}
+
+/**
+ * Data required to create a new plan type
+ */
+export interface CreatePlanTypeData {
   name: string;
   description?: string;
-  category: "weight-training" | "cardio" | "yoga" | "crossfit" | "personal-training" | "group-class" | "other";
-  durationDays?: number;
-  sessionsPerWeek?: number;
+  isActive?: boolean;
+}
+
+/**
+ * Data for updating an existing plan type
+ */
+export interface UpdatePlanTypeData {
+  name?: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+/**
+ * Data required to create a new plan variant
+ */
+export interface CreatePlanVariantData {
+  durationDays: number;
+  durationLabel: string;
   price: number;
-  features: string[];
-  requiresTrainer: boolean;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  isActive?: boolean;
+}
+
+/**
+ * Data for updating an existing plan variant
+ */
+export interface UpdatePlanVariantData {
+  durationDays?: number;
+  durationLabel?: string;
+  price?: number;
+  isActive?: boolean;
 }
 
 /**
