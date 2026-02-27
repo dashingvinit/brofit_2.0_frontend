@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,7 +19,7 @@ import type { CreateMemberData } from '@/shared/types/common.types';
 const memberRegistrationSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email format'),
+  email: z.string().email('Invalid email format').optional().or(z.literal('')).transform(val => val || ''),
   phone: z.string().min(1, 'Phone number is required'),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
   gender: z.string().min(1, 'Gender is required'),
@@ -44,9 +44,21 @@ export function MemberRegistrationForm({
   const form = useForm<MemberRegistrationFormData>({
     resolver: zodResolver(memberRegistrationSchema),
     defaultValues: {
+      dateOfBirth: '2008-01-01',
       joinDate: new Date().toISOString().split('T')[0],
+      email: '',
     },
   });
+
+  const firstName = form.watch('firstName');
+  const lastName = form.watch('lastName');
+
+  useEffect(() => {
+    if (firstName && lastName) {
+      const generatedEmail = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@dummy.com`;
+      form.setValue('email', generatedEmail);
+    }
+  }, [firstName, lastName, form]);
 
   const onSubmit = (data: MemberRegistrationFormData) => {
     const memberData: CreateMemberData = {
@@ -101,12 +113,13 @@ export function MemberRegistrationForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email">Email *</Label>
+        <Label htmlFor="email">Email (Auto-generated)</Label>
         <Input
           id="email"
           type="email"
           {...form.register('email')}
-          placeholder="john.doe@example.com"
+          placeholder="john.doe@dummy.com"
+          disabled
         />
         {form.formState.errors.email && (
           <p className="text-sm text-destructive">

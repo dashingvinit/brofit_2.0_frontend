@@ -95,9 +95,14 @@ export function PlansPage() {
                     </div>
                     <div>
                       <CardTitle className="text-xl">{planType.name}</CardTitle>
-                      <Badge variant={planType.isActive ? 'default' : 'secondary'} className="mt-1">
-                        {planType.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
+                      <div className="flex gap-1 mt-1">
+                        <Badge variant={planType.isActive ? 'default' : 'secondary'}>
+                          {planType.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                        <Badge variant="outline" className="capitalize">
+                          {planType.category}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
                   <DropdownMenu>

@@ -38,6 +38,7 @@ import {
   LogOut,
   ChevronUp,
   CreditCard,
+  Dumbbell,
 } from "lucide-react";
 
 export function DashboardLayout() {
@@ -50,6 +51,7 @@ export function DashboardLayout() {
     { name: "Members", href: ROUTES.MEMBERS, icon: Users },
     { name: "Plans", href: ROUTES.PLANS, icon: CreditCard },
     { name: "Memberships", href: ROUTES.MEMBERSHIPS, icon: CreditCard },
+    { name: "Trainings", href: ROUTES.TRAININGS, icon: Dumbbell },
     { name: "Profile", href: ROUTES.PROFILE, icon: User },
   ];
 

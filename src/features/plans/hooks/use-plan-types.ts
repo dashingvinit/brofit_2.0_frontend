@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { planTypesApi } from '../api/plan-types-api';
 import type {
   PlanType,
+  PlanCategory,
   CreatePlanTypeData,
   UpdatePlanTypeData
 } from '@/shared/types/common.types';
@@ -15,6 +16,19 @@ export function usePlanTypes() {
     queryKey: ['plan-types'],
     queryFn: async () => {
       const response = await planTypesApi.getActivePlanTypes();
+      return response.data;
+    },
+  });
+}
+
+/**
+ * Hook to fetch active plan types filtered by category
+ */
+export function usePlanTypesByCategory(category: PlanCategory) {
+  return useQuery({
+    queryKey: ['plan-types', 'category', category],
+    queryFn: async () => {
+      const response = await planTypesApi.getActivePlanTypes(category);
       return response.data;
     },
   });

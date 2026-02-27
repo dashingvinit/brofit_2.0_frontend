@@ -1,6 +1,7 @@
 import { apiClient } from '@/shared/lib/api-client';
 import type {
   PlanType,
+  PlanCategory,
   CreatePlanTypeData,
   UpdatePlanTypeData,
   ApiResponse
@@ -15,8 +16,10 @@ export const planTypesApi = {
    * Get active plan types
    * GET /api/v1/plans/types
    */
-  getActivePlanTypes: async (): Promise<ApiResponse<PlanType[]>> => {
-    const response = await apiClient.get('/plans/types');
+  getActivePlanTypes: async (category?: PlanCategory): Promise<ApiResponse<PlanType[]>> => {
+    const response = await apiClient.get('/plans/types', {
+      params: category ? { category } : undefined,
+    });
     return response.data;
   },
 
@@ -45,6 +48,10 @@ export const planTypesApi = {
    * Admin only
    */
   createPlanType: async (data: CreatePlanTypeData): Promise<ApiResponse<PlanType>> => {
+    // `data` now contains a `category` property (membership|training).
+    // the backend uses this field to set the plan's category, defaulting
+    // to "membership" if it's missing.  Having it in the interface
+    // guarantees we can't accidentally omit it in the future.
     const response = await apiClient.post('/plans/types', data);
     return response.data;
   },

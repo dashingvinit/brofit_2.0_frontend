@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
   Dialog,
   DialogContent,
@@ -9,18 +9,26 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/components/ui/dialog';
-import { Button } from '@/shared/components/ui/button';
-import { Input } from '@/shared/components/ui/input';
-import { Label } from '@/shared/components/ui/label';
-import { Textarea } from '@/shared/components/ui/textarea';
-import { Checkbox } from '@/shared/components/ui/checkbox';
-import { useCreatePlanType, useUpdatePlanType } from '../hooks/use-plan-types';
-import type { PlanType } from '@/shared/types/common.types';
+} from "@/shared/components/ui/dialog";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Textarea } from "@/shared/components/ui/textarea";
+import { Checkbox } from "@/shared/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
+import { useCreatePlanType, useUpdatePlanType } from "../hooks/use-plan-types";
+import type { PlanType, PlanCategory } from "@/shared/types/common.types";
 
 const planTypeSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100, 'Name is too long'),
+  name: z.string().min(1, "Name is required").max(100, "Name is too long"),
   description: z.string().optional(),
+  category: z.enum(["membership", "training"]),
   isActive: z.boolean().default(true),
 });
 
@@ -32,7 +40,11 @@ interface PlanTypeDialogProps {
   planType?: PlanType | null;
 }
 
-export function PlanTypeDialog({ open, onOpenChange, planType }: PlanTypeDialogProps) {
+export function PlanTypeDialog({
+  open,
+  onOpenChange,
+  planType,
+}: PlanTypeDialogProps) {
   const isEditing = !!planType;
   const createMutation = useCreatePlanType();
   const updateMutation = useUpdatePlanType();
@@ -47,13 +59,15 @@ export function PlanTypeDialog({ open, onOpenChange, planType }: PlanTypeDialogP
   } = useForm<PlanTypeFormData>({
     resolver: zodResolver(planTypeSchema),
     defaultValues: {
-      name: '',
-      description: '',
+      name: "",
+      description: "",
+      category: "membership",
       isActive: true,
     },
   });
 
-  const isActive = watch('isActive');
+  const isActive = watch("isActive");
+  const category = watch("category");
 
   // Reset form when dialog opens/closes or planType changes
   useEffect(() => {
@@ -61,13 +75,15 @@ export function PlanTypeDialog({ open, onOpenChange, planType }: PlanTypeDialogP
       if (planType) {
         reset({
           name: planType.name,
-          description: planType.description || '',
+          description: planType.description || "",
+          category: planType.category,
           isActive: planType.isActive,
         });
       } else {
         reset({
-          name: '',
-          description: '',
+          name: "",
+          description: "",
+          category: "membership",
           isActive: true,
         });
       }
@@ -82,6 +98,7 @@ export function PlanTypeDialog({ open, onOpenChange, planType }: PlanTypeDialogP
           data: {
             name: data.name,
             description: data.description || undefined,
+            category: data.category,
             isActive: data.isActive,
           },
         });
@@ -89,6 +106,7 @@ export function PlanTypeDialog({ open, onOpenChange, planType }: PlanTypeDialogP
         await createMutation.mutateAsync({
           name: data.name,
           description: data.description || undefined,
+          category: data.category,
           isActive: data.isActive,
         });
       }
@@ -102,11 +120,13 @@ export function PlanTypeDialog({ open, onOpenChange, planType }: PlanTypeDialogP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Plan Type' : 'Create Plan Type'}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Edit Plan Type" : "Create Plan Type"}
+          </DialogTitle>
           <DialogDescription>
             {isEditing
-              ? 'Update the plan type details below.'
-              : 'Add a new plan type category (e.g., Cardio, Strength, Yoga).'}
+              ? "Update the plan type details below."
+              : `Add a new ${category === "training" ? "training" : "membership"} plan type.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -118,11 +138,29 @@ export function PlanTypeDialog({ open, onOpenChange, planType }: PlanTypeDialogP
             <Input
               id="name"
               placeholder="e.g., Cardio, Strength Training, Yoga"
-              {...register('name')}
-              className={errors.name ? 'border-destructive' : ''}
+              {...register("name")}
+              className={errors.name ? "border-destructive" : ""}
             />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category">
+              Category <span className="text-destructive">*</span>
+            </Label>
+            <Select value={category} onValueChange={(value) => setValue("category", value as PlanCategory)}>
+              <SelectTrigger id="category" className={errors.category ? "border-destructive" : ""}>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="membership">Membership</SelectItem>
+                <SelectItem value="training">Training</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.category && (
+              <p className="text-sm text-destructive">{errors.category.message}</p>
             )}
           </div>
 
@@ -132,11 +170,13 @@ export function PlanTypeDialog({ open, onOpenChange, planType }: PlanTypeDialogP
               id="description"
               placeholder="Describe this plan type..."
               rows={3}
-              {...register('description')}
-              className={errors.description ? 'border-destructive' : ''}
+              {...register("description")}
+              className={errors.description ? "border-destructive" : ""}
             />
             {errors.description && (
-              <p className="text-sm text-destructive">{errors.description.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.description.message}
+              </p>
             )}
           </div>
 
@@ -144,7 +184,9 @@ export function PlanTypeDialog({ open, onOpenChange, planType }: PlanTypeDialogP
             <Checkbox
               id="isActive"
               checked={isActive}
-              onCheckedChange={(checked) => setValue('isActive', checked as boolean)}
+              onCheckedChange={(checked) =>
+                setValue("isActive", checked as boolean)
+              }
             />
             <Label
               htmlFor="isActive"
@@ -164,7 +206,7 @@ export function PlanTypeDialog({ open, onOpenChange, planType }: PlanTypeDialogP
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : isEditing ? 'Update' : 'Create'}
+              {isSubmitting ? "Saving..." : isEditing ? "Update" : "Create"}
             </Button>
           </DialogFooter>
         </form>

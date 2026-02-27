@@ -11,7 +11,10 @@ export const ROUTES = {
   MEMBERS: "/members",
   REGISTER_MEMBER: "/members/register",
   MEMBERSHIPS: "/memberships",
+  CREATE_MEMBERSHIP: "/memberships/create",
   PLANS: "/plans",
+  TRAININGS: "/trainings",
+  CREATE_TRAINING: "/trainings/create",
   TRAINER_ASSIGNMENTS: "/trainer-assignments",
 } as const;
 
