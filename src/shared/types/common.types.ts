@@ -1,6 +1,6 @@
-import { ROLES } from '../lib/constants';
+import { ROLES } from "../lib/constants";
 
-export type Role = typeof ROLES[keyof typeof ROLES];
+export type Role = (typeof ROLES)[keyof typeof ROLES];
 
 /**
  * Member - Matches Prisma schema
@@ -49,7 +49,7 @@ export interface ApiError {
  * PlanType - Matches Prisma schema
  * Represents a plan category (e.g., Cardio, Strength, Yoga)
  */
-export type PlanCategory = 'membership' | 'training';
+export type PlanCategory = "membership" | "training";
 
 export interface PlanType {
   id: string;
@@ -170,17 +170,17 @@ export interface MemberStats {
 /**
  * Membership status enum
  */
-export type MembershipStatus = 'active' | 'expired' | 'cancelled' | 'frozen';
+export type MembershipStatus = "active" | "expired" | "cancelled" | "frozen";
 
 /**
  * Payment method enum
  */
-export type PaymentMethod = 'cash' | 'card' | 'upi' | 'bank_transfer' | 'other';
+export type PaymentMethod = "cash" | "card" | "upi" | "bank_transfer" | "other";
 
 /**
  * Payment status enum
  */
-export type PaymentStatus = 'paid' | 'pending' | 'failed' | 'refunded';
+export type PaymentStatus = "paid" | "pending" | "failed" | "refunded";
 
 /**
  * Payment - Matches Prisma schema
@@ -281,7 +281,7 @@ export interface MembershipStats {
 /**
  * Training status enum
  */
-export type TrainingStatus = 'active' | 'expired' | 'cancelled' | 'frozen';
+export type TrainingStatus = "active" | "expired" | "cancelled" | "frozen";
 
 /**
  * Training - Matches Prisma schema

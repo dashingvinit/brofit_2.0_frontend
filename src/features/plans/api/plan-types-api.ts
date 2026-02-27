@@ -1,11 +1,11 @@
-import { apiClient } from '@/shared/lib/api-client';
+import { apiClient } from "@/shared/lib/api-client";
 import type {
   PlanType,
   PlanCategory,
   CreatePlanTypeData,
   UpdatePlanTypeData,
-  ApiResponse
-} from '@/shared/types/common.types';
+  ApiResponse,
+} from "@/shared/types/common.types";
 
 /**
  * Plan Types API
@@ -16,8 +16,10 @@ export const planTypesApi = {
    * Get active plan types
    * GET /api/v1/plans/types
    */
-  getActivePlanTypes: async (category?: PlanCategory): Promise<ApiResponse<PlanType[]>> => {
-    const response = await apiClient.get('/plans/types', {
+  getActivePlanTypes: async (
+    category?: PlanCategory,
+  ): Promise<ApiResponse<PlanType[]>> => {
+    const response = await apiClient.get("/plans/types", {
       params: category ? { category } : undefined,
     });
     return response.data;
@@ -29,7 +31,7 @@ export const planTypesApi = {
    * Admin only
    */
   getAllPlanTypes: async (): Promise<ApiResponse<PlanType[]>> => {
-    const response = await apiClient.get('/plans/types/all');
+    const response = await apiClient.get("/plans/types/all");
     return response.data;
   },
 
@@ -47,12 +49,14 @@ export const planTypesApi = {
    * POST /api/v1/plans/types
    * Admin only
    */
-  createPlanType: async (data: CreatePlanTypeData): Promise<ApiResponse<PlanType>> => {
+  createPlanType: async (
+    data: CreatePlanTypeData,
+  ): Promise<ApiResponse<PlanType>> => {
     // `data` now contains a `category` property (membership|training).
     // the backend uses this field to set the plan's category, defaulting
     // to "membership" if it's missing.  Having it in the interface
     // guarantees we can't accidentally omit it in the future.
-    const response = await apiClient.post('/plans/types', data);
+    const response = await apiClient.post("/plans/types", data);
     return response.data;
   },
 
@@ -63,7 +67,7 @@ export const planTypesApi = {
    */
   updatePlanType: async (
     id: string,
-    data: UpdatePlanTypeData
+    data: UpdatePlanTypeData,
   ): Promise<ApiResponse<PlanType>> => {
     const response = await apiClient.patch(`/plans/types/${id}`, data);
     return response.data;
