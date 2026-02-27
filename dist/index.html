@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brofit 2.0</title>
+    <script>
+      // Prevent dark mode flash
+      (function() {
+        const stored = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (stored === 'dark' || (!stored && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-kf2uh1Kt.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-EtxRvF86.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-D5M18IAm.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

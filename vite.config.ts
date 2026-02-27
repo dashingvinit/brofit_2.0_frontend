@@ -10,4 +10,18 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    // bump up the chunk size warning to reduce false positives
+    chunkSizeWarningLimit: 1000, // 1MB
+    rollupOptions: {
+      output: {
+        // example manual chunking, grouping vendor code
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            return 'vendor'
+          }
+        },
+      },
+    },
+  },
 })
