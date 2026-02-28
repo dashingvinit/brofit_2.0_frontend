@@ -1,14 +1,21 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus,
   Dumbbell,
   CheckCircle2,
+  XCircle,
   Clock,
   TrendingUp,
+  Snowflake,
   IndianRupee,
   CalendarDays,
+  SlidersHorizontal,
+  Search,
+  X,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
 import {
   Card,
   CardContent,
@@ -17,6 +24,15 @@ import {
 } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Skeleton } from '@/shared/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -30,6 +46,8 @@ import { useTrainings, useTrainingStats } from '../hooks/use-training';
 import { ROUTES } from '@/shared/lib/constants';
 import type { Training, TrainingStatus } from '@/shared/types/common.types';
 
+type StatusFilter = 'all' | TrainingStatus;
+
 const statusConfig: Record<
   TrainingStatus,
   { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
@@ -39,6 +57,18 @@ const statusConfig: Record<
   cancelled: { label: 'Cancelled', variant: 'destructive' },
   frozen: { label: 'Frozen', variant: 'outline' },
 };
+
+const statusOptions: {
+  value: StatusFilter;
+  label: string;
+  icon: typeof Dumbbell;
+}[] = [
+  { value: 'all', label: 'All Trainings', icon: Dumbbell },
+  { value: 'active', label: 'Active', icon: CheckCircle2 },
+  { value: 'expired', label: 'Expired', icon: Clock },
+  { value: 'cancelled', label: 'Cancelled', icon: XCircle },
+  { value: 'frozen', label: 'Frozen', icon: Snowflake },
+];
 
 const statCards = [
   {
@@ -174,11 +204,34 @@ function TrainingCard({
 
 export function TrainingsPage() {
   const navigate = useNavigate();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const { data: trainingsResponse, isLoading } = useTrainings();
   const { data: statsResponse, isLoading: isLoadingStats } = useTrainingStats();
 
-  const trainings = trainingsResponse?.data ?? [];
+  const allTrainings = trainingsResponse?.data ?? [];
   const stats = statsResponse?.data;
+
+  const searchLower = searchQuery.toLowerCase();
+  const trainings = allTrainings.filter((t) => {
+    const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
+    if (!matchesStatus) return false;
+    if (!searchQuery) return true;
+    const memberName = t.member
+      ? `${t.member.firstName} ${t.member.lastName}`.toLowerCase()
+      : '';
+    const planName = (t.planVariant?.planType?.name ?? '').toLowerCase();
+    const trainerName = t.trainerName.toLowerCase();
+    return (
+      memberName.includes(searchLower) ||
+      planName.includes(searchLower) ||
+      trainerName.includes(searchLower)
+    );
+  });
+
+  const hasActiveFilters = statusFilter !== 'all' || !!searchQuery;
+  const filterLabel =
+    statusOptions.find((o) => o.value === statusFilter)?.label ?? 'Filter';
 
   return (
     <div className="space-y-6">
@@ -280,13 +333,90 @@ export function TrainingsPage() {
             : null}
       </div>
 
-      {/* Trainings Count */}
-      {!isLoading && (
-        <p className="text-sm text-muted-foreground tabular-nums">
-          <span className="font-medium text-foreground">{trainings.length}</span>{' '}
-          {trainings.length === 1 ? 'training' : 'trainings'}
-        </p>
-      )}
+      {/* Toolbar: search + filter */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            type="text"
+            placeholder="Search by member, plan, or trainer..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-8 h-9"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 gap-2 shrink-0"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              <span className="hidden sm:inline">
+                {statusFilter === 'all' ? 'Filter' : filterLabel}
+              </span>
+              {statusFilter !== 'all' && (
+                <Badge
+                  variant="secondary"
+                  className="h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold"
+                >
+                  1
+                </Badge>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuRadioGroup
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+            >
+              {statusOptions.map(({ value, label, icon: Icon }) => (
+                <DropdownMenuRadioItem
+                  key={value}
+                  value={value}
+                  className="gap-2"
+                >
+                  <Icon className="h-4 w-4 text-muted-foreground" />
+                  {label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 text-xs text-muted-foreground shrink-0"
+            onClick={() => {
+              setSearchQuery('');
+              setStatusFilter('all');
+            }}
+          >
+            Reset
+          </Button>
+        )}
+
+        {!isLoading && (
+          <p className="text-sm text-muted-foreground ml-auto hidden sm:block tabular-nums">
+            <span className="font-medium text-foreground">{trainings.length}</span>{' '}
+            {trainings.length === 1 ? 'training' : 'trainings'}
+          </p>
+        )}
+      </div>
 
       {/* Trainings List */}
       {isLoading ? (
@@ -301,14 +431,30 @@ export function TrainingsPage() {
             <div className="rounded-full bg-muted p-4 mb-4">
               <Dumbbell className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold mb-1">No trainings yet</h3>
+            <h3 className="text-lg font-semibold mb-1">
+              {hasActiveFilters ? 'No trainings match your filters' : 'No trainings yet'}
+            </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Create a training to assign a trainer and plan to a member.
+              {hasActiveFilters
+                ? 'Try adjusting your search or filter criteria.'
+                : 'Create a training to assign a trainer and plan to a member.'}
             </p>
-            <Button onClick={() => navigate(ROUTES.CREATE_TRAINING)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create First Training
-            </Button>
+            {hasActiveFilters ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchQuery('');
+                  setStatusFilter('all');
+                }}
+              >
+                Clear Filters
+              </Button>
+            ) : (
+              <Button onClick={() => navigate(ROUTES.CREATE_TRAINING)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create First Training
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (

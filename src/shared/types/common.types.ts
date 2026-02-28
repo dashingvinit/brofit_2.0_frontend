@@ -276,6 +276,8 @@ export interface MembershipStats {
   expired: number;
   cancelled: number;
   newThisMonth: number;
+  totalCollected: number;
+  collectedThisMonth: number;
 }
 
 /**
@@ -358,4 +360,6 @@ export interface TrainingStats {
   expired: number;
   cancelled: number;
   newThisMonth: number;
+  totalCollected: number;
+  collectedThisMonth: number;
 }

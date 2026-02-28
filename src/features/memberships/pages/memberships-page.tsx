@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus,
@@ -9,8 +10,12 @@ import {
   Snowflake,
   IndianRupee,
   CalendarDays,
+  SlidersHorizontal,
+  Search,
+  X,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
 import {
   Card,
   CardContent,
@@ -19,6 +24,15 @@ import {
 } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Skeleton } from '@/shared/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -32,6 +46,8 @@ import { useMemberships, useMembershipStats } from '../hooks/use-memberships';
 import { ROUTES } from '@/shared/lib/constants';
 import type { Membership, MembershipStatus } from '@/shared/types/common.types';
 
+type StatusFilter = 'all' | MembershipStatus;
+
 const statusConfig: Record<
   MembershipStatus,
   { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
@@ -41,6 +57,18 @@ const statusConfig: Record<
   cancelled: { label: 'Cancelled', variant: 'destructive' },
   frozen: { label: 'Frozen', variant: 'outline' },
 };
+
+const statusOptions: {
+  value: StatusFilter;
+  label: string;
+  icon: typeof CreditCard;
+}[] = [
+  { value: 'all', label: 'All Memberships', icon: CreditCard },
+  { value: 'active', label: 'Active', icon: CheckCircle2 },
+  { value: 'expired', label: 'Expired', icon: Clock },
+  { value: 'cancelled', label: 'Cancelled', icon: XCircle },
+  { value: 'frozen', label: 'Frozen', icon: Snowflake },
+];
 
 const statCards = [
   {
@@ -172,11 +200,29 @@ function MembershipCard({
 
 export function MembershipsPage() {
   const navigate = useNavigate();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const { data: membershipsResponse, isLoading } = useMemberships();
   const { data: statsResponse, isLoading: isLoadingStats } = useMembershipStats();
 
-  const memberships = membershipsResponse?.data ?? [];
+  const allMemberships = membershipsResponse?.data ?? [];
   const stats = statsResponse?.data;
+
+  const searchLower = searchQuery.toLowerCase();
+  const memberships = allMemberships.filter((m) => {
+    const matchesStatus = statusFilter === 'all' || m.status === statusFilter;
+    if (!matchesStatus) return false;
+    if (!searchQuery) return true;
+    const memberName = m.member
+      ? `${m.member.firstName} ${m.member.lastName}`.toLowerCase()
+      : '';
+    const planName = (m.planVariant?.planType?.name ?? '').toLowerCase();
+    return memberName.includes(searchLower) || planName.includes(searchLower);
+  });
+
+  const hasActiveFilters = statusFilter !== 'all' || !!searchQuery;
+  const filterLabel =
+    statusOptions.find((o) => o.value === statusFilter)?.label ?? 'Filter';
 
   return (
     <div className="space-y-6">
@@ -278,13 +324,90 @@ export function MembershipsPage() {
             : null}
       </div>
 
-      {/* Memberships Count */}
-      {!isLoading && (
-        <p className="text-sm text-muted-foreground tabular-nums">
-          <span className="font-medium text-foreground">{memberships.length}</span>{' '}
-          {memberships.length === 1 ? 'membership' : 'memberships'}
-        </p>
-      )}
+      {/* Toolbar: search + filter */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            type="text"
+            placeholder="Search by member or plan..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-8 h-9"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 gap-2 shrink-0"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              <span className="hidden sm:inline">
+                {statusFilter === 'all' ? 'Filter' : filterLabel}
+              </span>
+              {statusFilter !== 'all' && (
+                <Badge
+                  variant="secondary"
+                  className="h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold"
+                >
+                  1
+                </Badge>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuRadioGroup
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+            >
+              {statusOptions.map(({ value, label, icon: Icon }) => (
+                <DropdownMenuRadioItem
+                  key={value}
+                  value={value}
+                  className="gap-2"
+                >
+                  <Icon className="h-4 w-4 text-muted-foreground" />
+                  {label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 text-xs text-muted-foreground shrink-0"
+            onClick={() => {
+              setSearchQuery('');
+              setStatusFilter('all');
+            }}
+          >
+            Reset
+          </Button>
+        )}
+
+        {!isLoading && (
+          <p className="text-sm text-muted-foreground ml-auto hidden sm:block tabular-nums">
+            <span className="font-medium text-foreground">{memberships.length}</span>{' '}
+            {memberships.length === 1 ? 'membership' : 'memberships'}
+          </p>
+        )}
+      </div>
 
       {/* Memberships List */}
       {isLoading ? (
@@ -299,14 +422,30 @@ export function MembershipsPage() {
             <div className="rounded-full bg-muted p-4 mb-4">
               <CreditCard className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold mb-1">No memberships yet</h3>
+            <h3 className="text-lg font-semibold mb-1">
+              {hasActiveFilters ? 'No memberships match your filters' : 'No memberships yet'}
+            </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Create a membership to assign a plan to a member.
+              {hasActiveFilters
+                ? 'Try adjusting your search or filter criteria.'
+                : 'Create a membership to assign a plan to a member.'}
             </p>
-            <Button onClick={() => navigate(ROUTES.CREATE_MEMBERSHIP)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create First Membership
-            </Button>
+            {hasActiveFilters ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchQuery('');
+                  setStatusFilter('all');
+                }}
+              >
+                Clear Filters
+              </Button>
+            ) : (
+              <Button onClick={() => navigate(ROUTES.CREATE_MEMBERSHIP)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create First Membership
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
