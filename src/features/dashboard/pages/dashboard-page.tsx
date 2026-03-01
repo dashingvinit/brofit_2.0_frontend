@@ -25,6 +25,7 @@ import { PageHeader } from '@/shared/components/page-header';
 import { useMemberStats } from '@/features/members/hooks/use-members';
 import { useMembershipStats, useExpiringMemberships } from '@/features/memberships/hooks/use-memberships';
 import { useTrainingStats, useExpiringTrainings } from '@/features/training/hooks/use-training';
+import { useDuesReport } from '@/features/members/hooks/use-member-detail';
 import { ROUTES } from '@/shared/lib/constants';
 import type { Membership, Training } from '@/shared/types/common.types';
 
@@ -177,6 +178,7 @@ export function DashboardPage() {
   const { data: trainingStatsRes, isLoading: isLoadingTrainings } = useTrainingStats();
   const { data: expiringMembershipsRes } = useExpiringMemberships(7);
   const { data: expiringTrainingsRes } = useExpiringTrainings(7);
+  const { data: duesReportRes, isLoading: isLoadingDues } = useDuesReport(1, 10);
 
   const memberStats = memberStatsRes?.data;
   const membershipStats = membershipStatsRes?.data;
@@ -187,6 +189,9 @@ export function DashboardPage() {
 
   const totalRevenue = (membershipStats?.totalCollected ?? 0) + (trainingStats?.totalCollected ?? 0);
   const revenueThisMonth = (membershipStats?.collectedThisMonth ?? 0) + (trainingStats?.collectedThisMonth ?? 0);
+
+  const duesMembers = duesReportRes?.data ?? [];
+  const duesSummary = duesReportRes?.summary ?? { totalMembersWithDues: 0, grandTotal: 0 };
 
   const expiringItems = [
     ...expiringMemberships.map((m) => ({
@@ -349,6 +354,136 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Outstanding Dues */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base flex items-center gap-2">
+            <IndianRupee className="h-4 w-4" />
+            Outstanding Dues
+          </CardTitle>
+          <div className="flex items-center gap-3">
+            {!isLoadingDues && duesSummary.grandTotal > 0 && (
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Grand Total</p>
+                <p className="text-sm font-bold text-amber-600 dark:text-amber-400 inline-flex items-center">
+                  <IndianRupee className="h-3 w-3" />
+                  {formatCurrency(duesSummary.grandTotal)}
+                </p>
+              </div>
+            )}
+            {!isLoadingDues && duesSummary.totalMembersWithDues > 0 && (
+              <Badge variant="secondary">
+                {duesSummary.totalMembersWithDues} member{duesSummary.totalMembersWithDues !== 1 ? 's' : ''}
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoadingDues ? (
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : duesMembers.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              No outstanding dues. All payments are up to date!
+            </p>
+          ) : (
+            <>
+              {/* Desktop Table */}
+              <div className="hidden sm:block">
+                <div className="rounded-lg border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="text-left py-2.5 px-3 font-medium text-muted-foreground">Member</th>
+                        <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">Membership Dues</th>
+                        <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">Training Dues</th>
+                        <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">Total Due</th>
+                        <th className="w-8 py-2.5 px-3" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {duesMembers.map((m) => (
+                        <tr
+                          key={m.memberId}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => navigate(`/members/${m.memberId}`)}
+                        >
+                          <td className="py-2.5 px-3">
+                            <div>
+                              <p className="font-medium">{m.firstName} {m.lastName}</p>
+                              <p className="text-xs text-muted-foreground">{m.phone}</p>
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            {m.membershipDuesTotal > 0 ? (
+                              <span className="inline-flex items-center">
+                                <IndianRupee className="h-3 w-3" />
+                                {formatCurrency(m.membershipDuesTotal)}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            {m.trainingDuesTotal > 0 ? (
+                              <span className="inline-flex items-center">
+                                <IndianRupee className="h-3 w-3" />
+                                {formatCurrency(m.trainingDuesTotal)}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            <span className="font-semibold text-amber-600 dark:text-amber-400 inline-flex items-center">
+                              <IndianRupee className="h-3 w-3" />
+                              {formatCurrency(m.totalDue)}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="space-y-3 sm:hidden">
+                {duesMembers.map((m) => (
+                  <div
+                    key={m.memberId}
+                    className="rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate(`/members/${m.memberId}`)}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="font-medium text-sm">{m.firstName} {m.lastName}</p>
+                      <span className="font-semibold text-amber-600 dark:text-amber-400 inline-flex items-center text-sm">
+                        <IndianRupee className="h-3 w-3" />
+                        {formatCurrency(m.totalDue)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{m.phone}</span>
+                      <span>
+                        {m.membershipDuesTotal > 0 && `Membership: ₹${formatCurrency(m.membershipDuesTotal)}`}
+                        {m.membershipDuesTotal > 0 && m.trainingDuesTotal > 0 && ' · '}
+                        {m.trainingDuesTotal > 0 && `Training: ₹${formatCurrency(m.trainingDuesTotal)}`}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Quick Actions */}
       <Card>

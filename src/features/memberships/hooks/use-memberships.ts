@@ -90,7 +90,7 @@ export function useUpdateMembership() {
       data,
     }: {
       id: string;
-      data: { notes?: string; autoRenew?: boolean; endDate?: string };
+      data: { notes?: string; autoRenew?: boolean; startDate?: string; endDate?: string; discountAmount?: number };
     }) => membershipsApi.updateMembership(id, data),
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['memberships'] });

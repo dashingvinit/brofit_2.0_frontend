@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Users,
   Pencil,
@@ -70,6 +70,7 @@ function getAvatarColor(name: string) {
 }
 
 export function MembersList({ members, isLoading }: MembersListProps) {
+  const navigate = useNavigate();
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
   const deleteMember = useDeleteMember();
@@ -213,7 +214,11 @@ export function MembersList({ members, isLoading }: MembersListProps) {
           </TableHeader>
           <TableBody>
             {members.map((member) => (
-              <TableRow key={member.id} className="group transition-colors">
+              <TableRow
+                key={member.id}
+                className="group transition-colors cursor-pointer"
+                onClick={() => navigate(`/members/${member.id}`)}
+              >
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9">
@@ -279,6 +284,7 @@ export function MembersList({ members, isLoading }: MembersListProps) {
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
@@ -311,7 +317,8 @@ export function MembersList({ members, isLoading }: MembersListProps) {
         {members.map((member) => (
           <Card
             key={member.id}
-            className="p-4 transition-shadow hover:shadow-md"
+            className="p-4 transition-shadow hover:shadow-md cursor-pointer"
+            onClick={() => navigate(`/members/${member.id}`)}
           >
             <div className="flex items-start gap-3">
               <Avatar className="h-10 w-10 shrink-0">
@@ -352,6 +359,7 @@ export function MembersList({ members, isLoading }: MembersListProps) {
                           variant="ghost"
                           size="sm"
                           className="h-7 w-7 p-0"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>

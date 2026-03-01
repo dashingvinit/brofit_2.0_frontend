@@ -5,6 +5,7 @@ import { DashboardPage } from "@/features/dashboard/pages/dashboard-page";
 import { ProfilePage } from "@/features/users/pages/profile-page";
 import { MembersListPage } from "@/features/members/pages/members-list-page";
 import { RegisterMemberPage } from "@/features/members/pages/register-member-page";
+import { MemberDetailPage } from "@/features/members/pages/member-detail-page";
 import { PlansPage } from "@/features/plans/pages/plans-page";
 import { MembershipsPage } from "@/features/memberships/pages/memberships-page";
 import { CreateMembershipPage } from "@/features/memberships/pages/create-membership-page";
@@ -35,6 +36,10 @@ export const protectedRoutes: RouteObject[] = [
           {
             path: "/members/register",
             element: <RegisterMemberPage />,
+          },
+          {
+            path: "/members/:id",
+            element: <MemberDetailPage />,
           },
           {
             path: "/plans",

@@ -18,7 +18,9 @@ import { useUpdateMembership } from '../hooks/use-memberships';
 import type { Membership } from '@/shared/types/common.types';
 
 const editMembershipSchema = z.object({
+  startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().min(1, 'End date is required'),
+  discountAmount: z.coerce.number().min(0, 'Discount cannot be negative'),
   autoRenew: z.boolean(),
   notes: z.string().optional(),
 });
@@ -41,7 +43,9 @@ export function EditMembershipDialog({
   const form = useForm<EditMembershipFormData>({
     resolver: zodResolver(editMembershipSchema),
     defaultValues: {
+      startDate: membership.startDate.split('T')[0],
       endDate: membership.endDate.split('T')[0],
+      discountAmount: membership.discountAmount,
       autoRenew: membership.autoRenew,
       notes: membership.notes || '',
     },
@@ -52,7 +56,9 @@ export function EditMembershipDialog({
       {
         id: membership.id,
         data: {
+          startDate: data.startDate,
           endDate: data.endDate,
+          discountAmount: data.discountAmount,
           autoRenew: data.autoRenew,
           notes: data.notes || undefined,
         },
@@ -71,22 +77,52 @@ export function EditMembershipDialog({
         <DialogHeader>
           <DialogTitle>Edit Membership</DialogTitle>
           <DialogDescription>
-            Update end date, auto-renew, and notes. Plan and pricing cannot be
-            changed.
+            Correct start date, end date, discount, and other details.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                {...form.register('startDate')}
+              />
+              {form.formState.errors.startDate && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.startDate.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="endDate">End Date</Label>
+              <Input
+                id="endDate"
+                type="date"
+                {...form.register('endDate')}
+              />
+              {form.formState.errors.endDate && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.endDate.message}
+                </p>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="endDate">End Date</Label>
+            <Label htmlFor="discountAmount">Discount Amount (₹)</Label>
             <Input
-              id="endDate"
-              type="date"
-              {...form.register('endDate')}
+              id="discountAmount"
+              type="number"
+              min={0}
+              {...form.register('discountAmount')}
             />
-            {form.formState.errors.endDate && (
+            {form.formState.errors.discountAmount && (
               <p className="text-sm text-destructive">
-                {form.formState.errors.endDate.message}
+                {form.formState.errors.discountAmount.message}
               </p>
             )}
           </div>

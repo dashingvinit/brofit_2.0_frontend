@@ -99,7 +99,7 @@ export const membershipsApi = {
    */
   updateMembership: async (
     id: string,
-    data: { notes?: string; autoRenew?: boolean; endDate?: string }
+    data: { notes?: string; autoRenew?: boolean; startDate?: string; endDate?: string; discountAmount?: number }
   ): Promise<ApiResponse<Membership>> => {
     const response = await apiClient.patch(`/memberships/${id}`, data);
     return response.data;
