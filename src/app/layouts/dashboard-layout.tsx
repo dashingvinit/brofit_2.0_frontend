@@ -39,6 +39,7 @@ import {
   ChevronUp,
   Receipt,
   Settings2,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 
@@ -52,6 +53,7 @@ export function DashboardLayout() {
   const flatItems = [
     { name: "Dashboard", href: ROUTES.DASHBOARD, icon: LayoutDashboard, isActive: isActive(ROUTES.DASHBOARD) },
     { name: "Members", href: ROUTES.MEMBERS, icon: Users, isActive: isActive(ROUTES.MEMBERS) },
+    { name: "Financials", href: ROUTES.FINANCIALS, icon: TrendingUp, isActive: isActive(ROUTES.FINANCIALS) },
   ];
 
   const navGroups: { label: string; icon: LucideIcon; items: { name: string; href: string; isActive: boolean }[] }[] = [
@@ -222,7 +224,7 @@ export function DashboardLayout() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto flex flex-col gap-4 p-4 md:p-6">
+          <main className="flex-1 overflow-auto flex flex-col gap-4 p-3 md:p-5 bg-zinc-100 dark:bg-zinc-950">
             <Outlet />
           </main>
         </SidebarInset>

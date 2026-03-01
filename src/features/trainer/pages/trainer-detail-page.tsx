@@ -72,7 +72,7 @@ export function TrainerDetailPage() {
 
   if (!trainer) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <PageHeader title="Trainer Not Found" />
         <Card>
           <CardContent className="flex flex-col items-center py-12">
@@ -92,7 +92,7 @@ export function TrainerDetailPage() {
   const activeClients = trainer.trainings ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={trainer.name}
         description="Trainer profile and active clients."

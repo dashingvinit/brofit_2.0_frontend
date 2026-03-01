@@ -38,7 +38,7 @@ export function TrainersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Trainers"
         description="Manage trainers in your gym."

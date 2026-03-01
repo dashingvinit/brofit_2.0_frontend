@@ -19,6 +19,7 @@ export const ROUTES = {
   TRAINERS: "/trainers",
   TRAINER_DETAIL: "/trainers",
   TRAINER_ASSIGNMENTS: "/trainer-assignments",
+  FINANCIALS: "/financials",
 } as const;
 
 export const ROLES = {

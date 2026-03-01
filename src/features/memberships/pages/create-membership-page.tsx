@@ -18,7 +18,7 @@ export function CreateMembershipPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Create New Membership"
         description="Assign a membership plan to a member with optional payment recording."

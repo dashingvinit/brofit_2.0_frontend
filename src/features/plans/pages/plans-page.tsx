@@ -115,7 +115,7 @@ export function PlansPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Plans Management"
         description="Manage plan types and their pricing variants"
@@ -215,7 +215,7 @@ export function PlansPage() {
       {/* Plan Types Grid */}
       {planTypes && planTypes.length > 0 ? (
         filteredPlans.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredPlans.map((planType) => (
               <Card key={planType.id} className="flex flex-col">
                 <CardHeader>
@@ -229,7 +229,7 @@ export function PlansPage() {
                         )}
                       </div>
                       <div>
-                        <CardTitle className="text-xl">{planType.name}</CardTitle>
+                        <CardTitle className="text-sm font-semibold">{planType.name}</CardTitle>
                         <div className="flex gap-1 mt-1">
                           <Badge variant={planType.isActive ? 'default' : 'secondary'}>
                             {planType.isActive ? 'Active' : 'Inactive'}

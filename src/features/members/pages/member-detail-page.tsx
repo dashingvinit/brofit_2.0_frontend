@@ -139,7 +139,7 @@ export function MemberDetailPage() {
   // Loading state
   if (memberLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Skeleton className="h-10 w-64" />
         <div className="grid gap-4 lg:grid-cols-3">
           <Skeleton className="h-56 lg:col-span-2" />
@@ -154,7 +154,7 @@ export function MemberDetailPage() {
   // Not found state
   if (!member) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <PageHeader title="Member Not Found" />
         <Card>
           <CardContent className="flex flex-col items-center py-12">
@@ -199,7 +199,7 @@ export function MemberDetailPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <PageHeader
         title="Member Details"

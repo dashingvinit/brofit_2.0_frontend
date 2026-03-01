@@ -140,7 +140,7 @@ export function TrainingDetailPage() {
 
   if (trainingLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Skeleton className="h-10 w-64" />
         <div className="grid gap-4 lg:grid-cols-3">
           <Skeleton className="h-48 lg:col-span-2" />
@@ -153,7 +153,7 @@ export function TrainingDetailPage() {
 
   if (!training) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <PageHeader title="Training Not Found" />
         <Card>
           <CardContent className="flex flex-col items-center py-12">
@@ -190,7 +190,7 @@ export function TrainingDetailPage() {
     training.status === 'active' || training.status === 'frozen';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Training Details"
         actions={

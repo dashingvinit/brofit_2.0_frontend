@@ -7,7 +7,7 @@ export function ProfilePage() {
   const { user } = useUser();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader title="Profile" description="Manage your account settings" />
 
       <Card className="p-6">

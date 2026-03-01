@@ -16,6 +16,7 @@ import { CreateTrainingPage } from "@/features/training/pages/create-training-pa
 import { TrainingDetailPage } from "@/features/training/pages/training-detail-page";
 import { TrainersPage } from "@/features/trainer/pages/trainers-page";
 import { TrainerDetailPage } from "@/features/trainer/pages/trainer-detail-page";
+import { FinancialsPage } from "@/features/financials";
 
 export const protectedRoutes: RouteObject[] = [
   {
@@ -80,6 +81,10 @@ export const protectedRoutes: RouteObject[] = [
           {
             path: "/trainers/:id",
             element: <TrainerDetailPage />,
+          },
+          {
+            path: "/financials",
+            element: <FinancialsPage />,
           },
         ],
       },

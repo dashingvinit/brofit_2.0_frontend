@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -116,6 +116,8 @@ export function CreateMembershipForm({
 }: CreateMembershipFormProps) {
   const [currentStep, setCurrentStep] = useState(preselectedMemberId ? 1 : 0);
   const [memberSearch, setMemberSearch] = useState('');
+  const [discountPercentage, setDiscountPercentage] = useState<number | ''>('');
+  const [trainingDiscountPercentage, setTrainingDiscountPercentage] = useState<number | ''>('');
 
   const { data: membersResponse, isLoading: membersLoading } = useMembers();
   const { data: planTypes, isLoading: planTypesLoading } = usePlanTypesByCategory('membership');
@@ -199,6 +201,31 @@ export function CreateMembershipForm({
     return start.toISOString().split('T')[0];
   }, [startDate, selectedVariant]);
 
+  // Sync percentage → discountAmount for membership
+  useEffect(() => {
+    if (discountPercentage === '' || !selectedVariant) return;
+    const calculated = Math.round((discountPercentage / 100) * selectedVariant.price);
+    form.setValue('discountAmount', Math.min(calculated, selectedVariant.price));
+  }, [discountPercentage, selectedVariant, form]);
+
+  // Sync percentage → trainingDiscountAmount for training
+  useEffect(() => {
+    if (trainingDiscountPercentage === '' || !selectedTrainingVariant) return;
+    const calculated = Math.round((trainingDiscountPercentage / 100) * selectedTrainingVariant.price);
+    form.setValue('trainingDiscountAmount', Math.min(calculated, selectedTrainingVariant.price));
+  }, [trainingDiscountPercentage, selectedTrainingVariant, form]);
+
+  // Reset percentage when plan variant changes
+  useEffect(() => {
+    setDiscountPercentage('');
+    form.setValue('discountAmount', 0);
+  }, [selectedPlanVariantId, form]);
+
+  useEffect(() => {
+    setTrainingDiscountPercentage('');
+    form.setValue('trainingDiscountAmount', 0);
+  }, [trainingPlanVariantId, form]);
+
   // Get the current step ID
   const currentStepId = steps[currentStep]?.id;
 
@@ -249,6 +276,7 @@ export function CreateMembershipForm({
       form.setValue('trainerName', '');
       form.setValue('trainingDiscountAmount', 0);
       form.setValue('trainingNotes', '');
+      setTrainingDiscountPercentage('');
     }
   };
 
@@ -617,17 +645,63 @@ export function CreateMembershipForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="discountAmount">Discount Amount</Label>
-              <div className="relative">
-                <IndianRupee className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="discountAmount"
-                  type="number"
-                  min={0}
-                  max={selectedVariant?.price || 0}
-                  className="pl-9"
-                  {...form.register('discountAmount')}
-                />
+              <Label>Discount</Label>
+              {/* Preset percentage chips */}
+              <div className="flex flex-wrap gap-2">
+                {[5, 10, 15, 20, 25, 50].map((pct) => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => {
+                      setDiscountPercentage(discountPercentage === pct ? '' : pct);
+                      if (discountPercentage === pct) form.setValue('discountAmount', 0);
+                    }}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                      discountPercentage === pct
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground'
+                    }`}
+                  >
+                    {pct}%
+                  </button>
+                ))}
+              </div>
+              {/* Custom percentage or fixed amount row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Custom %</p>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      placeholder="0"
+                      value={discountPercentage}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? '' : Math.min(100, Math.max(0, Number(e.target.value)));
+                        setDiscountPercentage(val);
+                      }}
+                      className="pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Amount (₹)</p>
+                  <div className="relative">
+                    <IndianRupee className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="discountAmount"
+                      type="number"
+                      min={0}
+                      max={selectedVariant?.price || 0}
+                      className="pl-9"
+                      {...form.register('discountAmount', {
+                        onChange: () => setDiscountPercentage(''),
+                      })}
+                    />
+                  </div>
+                </div>
               </div>
               {form.formState.errors.discountAmount && (
                 <p className="text-sm text-destructive">
@@ -840,17 +914,62 @@ export function CreateMembershipForm({
 
             {/* Training discount */}
             <div className="space-y-2">
-              <Label htmlFor="trainingDiscountAmount">Training Discount</Label>
-              <div className="relative">
-                <IndianRupee className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="trainingDiscountAmount"
-                  type="number"
-                  min={0}
-                  max={selectedTrainingVariant?.price || 0}
-                  className="pl-9"
-                  {...form.register('trainingDiscountAmount')}
-                />
+              <Label>Training Discount</Label>
+              {/* Preset percentage chips */}
+              <div className="flex flex-wrap gap-2">
+                {[5, 10, 15, 20, 25, 50].map((pct) => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => {
+                      setTrainingDiscountPercentage(trainingDiscountPercentage === pct ? '' : pct);
+                      if (trainingDiscountPercentage === pct) form.setValue('trainingDiscountAmount', 0);
+                    }}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                      trainingDiscountPercentage === pct
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground'
+                    }`}
+                  >
+                    {pct}%
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Custom %</p>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      placeholder="0"
+                      value={trainingDiscountPercentage}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? '' : Math.min(100, Math.max(0, Number(e.target.value)));
+                        setTrainingDiscountPercentage(val);
+                      }}
+                      className="pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Amount (₹)</p>
+                  <div className="relative">
+                    <IndianRupee className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="trainingDiscountAmount"
+                      type="number"
+                      min={0}
+                      max={selectedTrainingVariant?.price || 0}
+                      className="pl-9"
+                      {...form.register('trainingDiscountAmount', {
+                        onChange: () => setTrainingDiscountPercentage(''),
+                      })}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 

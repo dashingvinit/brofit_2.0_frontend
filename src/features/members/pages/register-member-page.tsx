@@ -16,7 +16,7 @@ export function RegisterMemberPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Register New Member"
         description="Add a new member to your gym. Membership and training plans can be assigned separately."

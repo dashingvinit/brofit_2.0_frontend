@@ -395,3 +395,91 @@ export interface TrainingStats {
   totalCollected: number;
   collectedThisMonth: number;
 }
+
+// ─── Financials ───────────────────────────────────────────────────────────────
+
+export type ExpenseCategory =
+  | 'rent'
+  | 'utilities'
+  | 'staff'
+  | 'equipment'
+  | 'marketing'
+  | 'maintenance'
+  | 'other';
+
+export interface Expense {
+  id: string;
+  orgId: string;
+  amount: number;
+  category: ExpenseCategory;
+  description?: string | null;
+  date: string; // ISO date string
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Investment {
+  id: string;
+  orgId: string;
+  name: string;
+  amount: number;
+  date: string; // ISO date string
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MonthlySummary {
+  period: string; // "YYYY-MM"
+  from: string;
+  to: string;
+  revenue: number;
+  expenses: number;
+  netProfit: number;
+}
+
+export interface RoiMetrics {
+  totalInvested: number;
+  totalRevenue: number;
+  totalExpenses: number;
+  totalNetProfit: number;
+  roiPercent: number | null;
+  paybackMonths: number | null;
+}
+
+export interface TrendPoint {
+  year: number;
+  month: number; // 1-indexed
+  label: string; // e.g. "Mar 2026"
+  revenue: number;
+  expenses: number;
+  netProfit: number;
+}
+
+export interface CreateExpenseData {
+  amount: number;
+  category: ExpenseCategory;
+  date: string; // "YYYY-MM-DD"
+  description?: string;
+}
+
+export interface UpdateExpenseData {
+  amount?: number;
+  category?: ExpenseCategory;
+  date?: string;
+  description?: string;
+}
+
+export interface CreateInvestmentData {
+  name: string;
+  amount: number;
+  date: string; // "YYYY-MM-DD"
+  notes?: string;
+}
+
+export interface UpdateInvestmentData {
+  name?: string;
+  amount?: number;
+  date?: string;
+  notes?: string;
+}

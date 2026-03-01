@@ -234,7 +234,7 @@ export function TrainingsPage() {
     statusOptions.find((o) => o.value === statusFilter)?.label ?? 'Filter';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Trainings"
         description="Manage personal training assignments"

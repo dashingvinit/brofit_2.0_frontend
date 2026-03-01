@@ -18,7 +18,7 @@ export function CreateTrainingPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Create New Training"
         description="Assign a training plan to a member with a trainer and optional payment recording."

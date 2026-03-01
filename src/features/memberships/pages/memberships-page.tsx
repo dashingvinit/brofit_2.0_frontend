@@ -225,7 +225,7 @@ export function MembershipsPage() {
     statusOptions.find((o) => o.value === statusFilter)?.label ?? 'Filter';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Memberships"
         description="Manage gym memberships"
