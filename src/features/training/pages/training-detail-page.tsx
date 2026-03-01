@@ -59,6 +59,7 @@ import {
   useFreezeTraining,
   useUnfreezeTraining,
 } from '../hooks/use-training';
+import { RecordTrainingPaymentDialog } from '../components/record-training-payment-dialog';
 import { ROUTES } from '@/shared/lib/constants';
 import type {
   TrainingStatus,
@@ -121,6 +122,7 @@ function formatDateTime(dateStr: string) {
 export function TrainingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [freezeDialogOpen, setFreezeDialogOpen] = useState(false);
   const [unfreezeDialogOpen, setUnfreezeDialogOpen] = useState(false);
@@ -291,7 +293,7 @@ export function TrainingDetailPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Trainer</p>
-                  <p className="font-medium">{training.trainerName}</p>
+                  <p className="font-medium">{training.trainer?.name ?? '—'}</p>
                 </div>
               </div>
 
@@ -427,6 +429,16 @@ export function TrainingDetailPage() {
                   </div>
                 </div>
 
+                {!dues.isFullyPaid && training.status !== 'cancelled' && (
+                  <Button
+                    className="w-full"
+                    onClick={() => setPaymentDialogOpen(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Record Payment
+                  </Button>
+                )}
+
                 {dues.isFullyPaid && (
                   <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-50 p-3 text-sm font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
                     <CheckCircle2 className="h-4 w-4" />
@@ -553,6 +565,17 @@ export function TrainingDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Record Payment Dialog */}
+      {training && dues && (
+        <RecordTrainingPaymentDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          memberId={training.memberId}
+          trainingId={training.id}
+          dueAmount={dues.dueAmount}
+        />
+      )}
+
       {/* Cancel Confirmation */}
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
@@ -563,7 +586,7 @@ export function TrainingDetailPage() {
               <span className="font-medium text-foreground">
                 {memberName}
               </span>
-              's {planName} training with {training.trainerName}. This action cannot be undone.
+              's {planName} training with {training.trainer?.name}. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

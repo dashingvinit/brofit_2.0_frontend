@@ -1,6 +1,7 @@
 import type { RouteObject } from "react-router-dom";
 import { ProtectedRoute } from "./route-guards";
 import { DashboardLayout } from "../layouts/dashboard-layout";
+import { RouteErrorBoundary } from "@/shared/components/route-error-boundary";
 import { DashboardPage } from "@/features/dashboard/pages/dashboard-page";
 import { ProfilePage } from "@/features/users/pages/profile-page";
 import { MembersListPage } from "@/features/members/pages/members-list-page";
@@ -14,6 +15,7 @@ import { TrainingsPage } from "@/features/training/pages/trainings-page";
 import { CreateTrainingPage } from "@/features/training/pages/create-training-page";
 import { TrainingDetailPage } from "@/features/training/pages/training-detail-page";
 import { TrainersPage } from "@/features/trainer/pages/trainers-page";
+import { TrainerDetailPage } from "@/features/trainer/pages/trainer-detail-page";
 
 export const protectedRoutes: RouteObject[] = [
   {
@@ -21,6 +23,7 @@ export const protectedRoutes: RouteObject[] = [
     children: [
       {
         element: <DashboardLayout />,
+        errorElement: <RouteErrorBoundary />,
         children: [
           {
             path: "/dashboard",
@@ -73,6 +76,10 @@ export const protectedRoutes: RouteObject[] = [
           {
             path: "/trainers",
             element: <TrainersPage />,
+          },
+          {
+            path: "/trainers/:id",
+            element: <TrainerDetailPage />,
           },
         ],
       },

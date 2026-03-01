@@ -458,25 +458,10 @@ export function MembershipDetailPage() {
       {/* Payment History */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg">Payment History</CardTitle>
-              <CardDescription>
-                All payments recorded against this membership
-              </CardDescription>
-            </div>
-            {dues &&
-              !dues.isFullyPaid &&
-              membership.status !== 'cancelled' && (
-                <Button
-                  size="sm"
-                  onClick={() => setPaymentDialogOpen(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Payment
-                </Button>
-              )}
-          </div>
+          <CardTitle className="text-lg">Payment History</CardTitle>
+          <CardDescription>
+            All payments recorded against this membership
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {duesLoading ? (

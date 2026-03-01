@@ -139,7 +139,7 @@ function TrainingRow({
           <p className="text-xs text-muted-foreground">{durationLabel}</p>
         </div>
       </TableCell>
-      <TableCell>{training.trainerName}</TableCell>
+      <TableCell>{training.trainer?.name ?? '—'}</TableCell>
       <TableCell>
         <Badge variant={status.variant}>{status.label}</Badge>
       </TableCell>
@@ -182,7 +182,7 @@ function TrainingCard({
               {planName} - {durationLabel}
             </p>
             <p className="text-xs text-muted-foreground">
-              Trainer: {training.trainerName}
+              Trainer: {training.trainer?.name ?? '—'}
             </p>
           </div>
           <Badge variant={status.variant}>{status.label}</Badge>
@@ -221,7 +221,7 @@ export function TrainingsPage() {
       ? `${t.member.firstName} ${t.member.lastName}`.toLowerCase()
       : '';
     const planName = (t.planVariant?.planType?.name ?? '').toLowerCase();
-    const trainerName = t.trainerName.toLowerCase();
+    const trainerName = (t.trainer?.name ?? '').toLowerCase();
     return (
       memberName.includes(searchLower) ||
       planName.includes(searchLower) ||

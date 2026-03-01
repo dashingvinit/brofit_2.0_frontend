@@ -4,7 +4,7 @@ import {
   Dumbbell,
   CreditCard,
   Calendar,
-  DollarSign,
+  IndianRupee,
   Edit,
   Trash2,
   MoreVertical,
@@ -297,7 +297,7 @@ export function PlansPage() {
                                 <span className="font-medium text-sm">{variant.durationLabel}</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                <IndianRupee className="h-4 w-4 text-muted-foreground" />
                                 <span className="font-semibold">{variant.price}</span>
                               </div>
                             </div>

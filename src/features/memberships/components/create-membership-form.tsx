@@ -89,6 +89,7 @@ type CreateMembershipFormData = z.infer<typeof createMembershipSchema>;
 interface CreateMembershipFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
+  preselectedMemberId?: string;
 }
 
 const BASE_STEPS = [
@@ -111,8 +112,9 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
 export function CreateMembershipForm({
   onSuccess,
   onCancel,
+  preselectedMemberId,
 }: CreateMembershipFormProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(preselectedMemberId ? 1 : 0);
   const [memberSearch, setMemberSearch] = useState('');
 
   const { data: membersResponse, isLoading: membersLoading } = useMembers();
@@ -124,6 +126,7 @@ export function CreateMembershipForm({
   const form = useForm<CreateMembershipFormData>({
     resolver: zodResolver(createMembershipSchema),
     defaultValues: {
+      memberId: preselectedMemberId || '',
       startDate: new Date().toISOString().split('T')[0],
       discountAmount: 0,
       autoRenew: false,

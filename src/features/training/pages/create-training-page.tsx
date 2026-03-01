@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card } from '@/shared/components/ui/card';
 import { PageHeader } from '@/shared/components/page-header';
 import { CreateTrainingForm } from '../components/create-training-form';
@@ -6,6 +6,8 @@ import { ROUTES } from '@/shared/lib/constants';
 
 export function CreateTrainingPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preselectedMemberId = searchParams.get('memberId') ?? undefined;
 
   const handleSuccess = () => {
     navigate(ROUTES.TRAININGS || '/trainings');
@@ -26,6 +28,7 @@ export function CreateTrainingPage() {
         <CreateTrainingForm
           onSuccess={handleSuccess}
           onCancel={handleCancel}
+          preselectedMemberId={preselectedMemberId}
         />
       </Card>
     </div>

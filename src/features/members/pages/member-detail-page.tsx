@@ -406,7 +406,7 @@ export function MemberDetailPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => navigate('/memberships/create')}
+              onClick={() => navigate(`/memberships/create?memberId=${id}`)}
             >
               Add Membership
             </Button>
@@ -535,7 +535,7 @@ export function MemberDetailPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => navigate('/memberships/create')}
+                onClick={() => navigate(`/memberships/create?memberId=${id}`)}
               >
                 Add Membership
               </Button>
@@ -559,7 +559,7 @@ export function MemberDetailPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => navigate('/trainings/create')}
+              onClick={() => navigate(`/trainings/create?memberId=${id}`)}
             >
               Add Training
             </Button>
@@ -609,7 +609,7 @@ export function MemberDetailPage() {
                             </div>
                           </TableCell>
                           <TableCell className="text-sm">
-                            {tr.trainerName}
+                            {tr.trainer?.name ?? '—'}
                           </TableCell>
                           <TableCell className="text-sm">
                             {formatDate(tr.startDate)} - {formatDate(tr.endDate)}
@@ -658,7 +658,7 @@ export function MemberDetailPage() {
                             {tr.planVariant?.planType?.name || 'N/A'}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {tr.trainerName} &middot; {tr.planVariant?.durationLabel || ''}
+                            {tr.trainer?.name ?? '—'} &middot; {tr.planVariant?.durationLabel || ''}
                           </p>
                         </div>
                         <Badge variant={status.variant}>{status.label}</Badge>
@@ -685,14 +685,14 @@ export function MemberDetailPage() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-8">
-              <CreditCard className="h-8 w-8 text-muted-foreground mb-3" />
+              <Dumbbell className="h-8 w-8 text-muted-foreground mb-3" />
               <p className="text-sm text-muted-foreground mb-3">
                 No trainings yet
               </p>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => navigate('/trainings/create')}
+                onClick={() => navigate(`/trainings/create?memberId=${id}`)}
               >
                 Add Training
               </Button>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { UserRound, Plus, Loader2, PowerOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { UserRound, Plus, Loader2, PowerOff, Dumbbell } from 'lucide-react';
 import { PageHeader } from '@/shared/components/page-header';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -18,6 +19,7 @@ import { useTrainers, useCreateTrainer, useDeactivateTrainer } from '../hooks/us
 export function TrainersPage() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
+  const navigate = useNavigate();
 
   const { data: trainersResponse, isLoading } = useTrainers();
   const createTrainer = useCreateTrainer();
@@ -67,7 +69,11 @@ export function TrainersPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {trainers.map((trainer) => (
-            <Card key={trainer.id}>
+            <Card
+              key={trainer.id}
+              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => navigate(`/trainers/${trainer.id}`)}
+            >
               <CardContent className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
@@ -75,12 +81,20 @@ export function TrainersPage() {
                   </div>
                   <div>
                     <p className="font-medium">{trainer.name}</p>
-                    <Badge
-                      variant={trainer.isActive ? 'default' : 'secondary'}
-                      className="mt-0.5 text-xs"
-                    >
-                      {trainer.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <Badge
+                        variant={trainer.isActive ? 'default' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {trainer.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                      {trainer._count !== undefined && (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <Dumbbell className="h-3 w-3" />
+                          {trainer._count.trainings} active
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 {trainer.isActive && (
@@ -89,7 +103,7 @@ export function TrainersPage() {
                     variant="ghost"
                     className="text-muted-foreground hover:text-destructive"
                     disabled={deactivateTrainer.isPending}
-                    onClick={() => deactivateTrainer.mutate(trainer.id)}
+                    onClick={(e) => { e.stopPropagation(); deactivateTrainer.mutate(trainer.id); }}
                   >
                     <PowerOff className="h-4 w-4" />
                   </Button>

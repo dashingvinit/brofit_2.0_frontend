@@ -290,6 +290,25 @@ export interface Trainer {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  _count?: { trainings: number };
+}
+
+/**
+ * Trainer with active client trainings (from GET /trainers/:id/clients)
+ */
+export interface TrainerWithClients extends Trainer {
+  trainings: Array<{
+    id: string;
+    status: TrainingStatus;
+    startDate: string;
+    endDate: string;
+    finalPrice: number;
+    member: Pick<Member, 'id' | 'firstName' | 'lastName' | 'phone' | 'email' | 'isActive'>;
+    planVariant?: {
+      durationLabel: string;
+      planType?: { name: string };
+    };
+  }>;
 }
 
 /**

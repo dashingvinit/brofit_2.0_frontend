@@ -66,7 +66,7 @@ export const trainingApi = {
 
   updateTraining: async (
     id: string,
-    data: { notes?: string; autoRenew?: boolean; endDate?: string; trainerName?: string }
+    data: { notes?: string; autoRenew?: boolean; endDate?: string; trainerId?: string }
   ): Promise<ApiResponse<Training>> => {
     const response = await apiClient.patch(`/trainings/${id}`, data);
     return response.data;

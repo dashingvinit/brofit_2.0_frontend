@@ -18,9 +18,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -31,6 +28,8 @@ import {
 } from "@/shared/components/ui/sidebar";
 import { Separator } from "@/shared/components/ui/separator";
 import { ThemeToggle } from "@/shared/components/theme-toggle";
+import { NavFlat } from "@/shared/components/nav-flat";
+import { NavMain } from "@/shared/components/nav-main";
 import { ROUTES } from "@/shared/lib/constants";
 import {
   LayoutDashboard,
@@ -38,9 +37,9 @@ import {
   User,
   LogOut,
   ChevronUp,
-  CreditCard,
-  Dumbbell,
-  UserRound,
+  Receipt,
+  Settings2,
+  type LucideIcon,
 } from "lucide-react";
 
 export function DashboardLayout() {
@@ -48,17 +47,53 @@ export function DashboardLayout() {
   const { user } = useUser();
   const location = useLocation();
 
-  const navigation = [
-    { name: "Dashboard", href: ROUTES.DASHBOARD, icon: LayoutDashboard },
-    { name: "Members", href: ROUTES.MEMBERS, icon: Users },
-    { name: "Plans", href: ROUTES.PLANS, icon: CreditCard },
-    { name: "Memberships", href: ROUTES.MEMBERSHIPS, icon: CreditCard },
-    { name: "Trainings", href: ROUTES.TRAININGS, icon: Dumbbell },
-    { name: "Trainers", href: ROUTES.TRAINERS, icon: UserRound },
-    { name: "Profile", href: ROUTES.PROFILE, icon: User },
+  const isActive = (path: string) => location.pathname === path;
+
+  const flatItems = [
+    { name: "Dashboard", href: ROUTES.DASHBOARD, icon: LayoutDashboard, isActive: isActive(ROUTES.DASHBOARD) },
+    { name: "Members", href: ROUTES.MEMBERS, icon: Users, isActive: isActive(ROUTES.MEMBERS) },
   ];
 
-  const isActive = (path: string) => location.pathname === path;
+  const navGroups: { label: string; icon: LucideIcon; items: { name: string; href: string; isActive: boolean }[] }[] = [
+    {
+      label: "Subscriptions",
+      icon: Receipt,
+      items: [
+        { name: "Memberships", href: ROUTES.MEMBERSHIPS, isActive: isActive(ROUTES.MEMBERSHIPS) },
+        { name: "Trainings", href: ROUTES.TRAININGS, isActive: isActive(ROUTES.TRAININGS) },
+      ],
+    },
+    {
+      label: "Configuration",
+      icon: Settings2,
+      items: [
+        { name: "Plans", href: ROUTES.PLANS, isActive: isActive(ROUTES.PLANS) },
+        { name: "Trainers", href: ROUTES.TRAINERS, isActive: isActive(ROUTES.TRAINERS) },
+      ],
+    },
+  ];
+
+  const detailTitles: [string, string][] = [
+    [ROUTES.REGISTER_MEMBER, "Register Member"],
+    [ROUTES.CREATE_MEMBERSHIP, "Create Membership"],
+    [ROUTES.CREATE_TRAINING, "Create Training"],
+    [ROUTES.PROFILE, "Profile"],
+  ];
+  const detailPrefixes: [string, string][] = [
+    ["/members/", "Member Details"],
+    ["/memberships/", "Membership Details"],
+    ["/trainings/", "Training Details"],
+  ];
+  const detailPageTitle =
+    detailTitles.find(([path]) => location.pathname === path)?.[1] ??
+    detailPrefixes.find(([prefix]) => location.pathname.startsWith(prefix))?.[1] ??
+    null;
+
+  const currentPageName =
+    flatItems.find((i) => i.isActive)?.name ??
+    navGroups.flatMap((g) => g.items).find((i) => i.isActive)?.name ??
+    detailPageTitle ??
+    "Brofit 2.0";
 
   return (
     <SidebarProvider>
@@ -79,30 +114,8 @@ export function DashboardLayout() {
           </SidebarHeader>
 
           <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {navigation.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <SidebarMenuItem key={item.name}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive(item.href)}
-                          tooltip={item.name}
-                        >
-                          <Link to={item.href}>
-                            <Icon />
-                            <span>{item.name}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            <NavFlat items={flatItems} />
+            <NavMain groups={navGroups} />
           </SidebarContent>
 
           <SidebarFooter>
@@ -186,15 +199,12 @@ export function DashboardLayout() {
         </Sidebar>
 
         <SidebarInset className="flex-1 flex flex-col overflow-hidden">
-          <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
+          <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur-sm px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <div className="flex flex-1 items-center justify-between gap-2">
-              <h1 className="truncate text-lg font-semibold">
-                {navigation.find((item) => isActive(item.href))?.name ||
-                  "Brofit 2.0"}
-              </h1>
-              <div className="flex items-center gap-2 md:gap-4">
+              <h1 className="truncate text-sm font-medium text-foreground/80">{currentPageName}</h1>
+              <div className="flex items-center gap-2 md:gap-3">
                 <OrganizationSwitcher
                   hidePersonal
                   afterCreateOrganizationUrl={ROUTES.DASHBOARD}

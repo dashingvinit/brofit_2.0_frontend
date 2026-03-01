@@ -205,7 +205,7 @@ export function DashboardPage() {
     ...expiringTrainings.map((t) => ({
       id: t.id,
       name: t.member ? `${t.member.firstName} ${t.member.lastName}` : 'Unknown',
-      plan: `${t.planVariant?.planType?.name ?? 'N/A'} (${t.trainerName})`,
+      plan: `${t.planVariant?.planType?.name ?? 'N/A'} (${t.trainer?.name ?? '—'})`,
       endDate: t.endDate,
       type: 'training' as const,
       path: `/trainings/${t.id}`,
@@ -251,7 +251,7 @@ export function DashboardPage() {
         <StatCard
           label="Total Revenue"
           value={totalRevenue}
-          subtext={`₹${formatCurrency(membershipStats?.collectedThisMonth ?? 0)} membership + ₹${formatCurrency(trainingStats?.collectedThisMonth ?? 0)} training`}
+          subtext={revenueThisMonth > 0 ? `₹${formatCurrency(revenueThisMonth)} this month` : undefined}
           icon={TrendingUp}
           colorClass="text-amber-600 dark:text-amber-400"
           bgClass="bg-amber-50 dark:bg-amber-950/50"
@@ -282,35 +282,25 @@ export function DashboardPage() {
                 <div className="flex items-center justify-between py-2 border-b">
                   <div className="flex items-center gap-2">
                     <CreditCard className="h-4 w-4 text-emerald-600" />
-                    <span className="text-sm font-medium">Membership Revenue</span>
+                    <span className="text-sm font-medium">Memberships</span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold inline-flex items-center">
-                      <IndianRupee className="h-3 w-3" />
-                      {formatCurrency(membershipStats?.totalCollected ?? 0)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatCurrency(membershipStats?.collectedThisMonth ?? 0)} this month
-                    </p>
-                  </div>
+                  <span className="text-sm font-semibold inline-flex items-center">
+                    <IndianRupee className="h-3 w-3" />
+                    {formatCurrency(membershipStats?.totalCollected ?? 0)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between py-2 border-b">
                   <div className="flex items-center gap-2">
                     <Dumbbell className="h-4 w-4 text-violet-600" />
-                    <span className="text-sm font-medium">Training Revenue</span>
+                    <span className="text-sm font-medium">Trainings</span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold inline-flex items-center">
-                      <IndianRupee className="h-3 w-3" />
-                      {formatCurrency(trainingStats?.totalCollected ?? 0)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatCurrency(trainingStats?.collectedThisMonth ?? 0)} this month
-                    </p>
-                  </div>
+                  <span className="text-sm font-semibold inline-flex items-center">
+                    <IndianRupee className="h-3 w-3" />
+                    {formatCurrency(trainingStats?.totalCollected ?? 0)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-sm font-semibold">Total Revenue</span>
+                  <span className="text-sm font-semibold">Total</span>
                   <p className="text-lg font-bold inline-flex items-center">
                     <IndianRupee className="h-4 w-4" />
                     {formatCurrency(totalRevenue)}
@@ -480,6 +470,18 @@ export function DashboardPage() {
                   </div>
                 ))}
               </div>
+
+              {duesSummary.totalMembersWithDues > duesMembers.length && (
+                <div className="mt-3 pt-3 border-t text-center">
+                  <button
+                    className="text-sm text-primary hover:underline font-medium inline-flex items-center gap-1"
+                    onClick={() => navigate(ROUTES.MEMBERS)}
+                  >
+                    View all {duesSummary.totalMembersWithDues} members with dues
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
             </>
           )}
         </CardContent>
@@ -531,59 +533,10 @@ export function DashboardPage() {
                 <p className="text-xs text-muted-foreground">Assign a trainer</p>
               </div>
             </Button>
-            <Button
-              variant="outline"
-              className="h-auto py-3 justify-start gap-3"
-              onClick={() => navigate(ROUTES.PLANS)}
-            >
-              <div className="rounded-lg p-2 bg-amber-50 dark:bg-amber-950/50">
-                <Plus className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-medium">Manage Plans</p>
-                <p className="text-xs text-muted-foreground">Create or edit plans</p>
-              </div>
-            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Overview Links */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Button
-          variant="outline"
-          className="h-auto py-4 justify-between"
-          onClick={() => navigate(ROUTES.MEMBERS)}
-        >
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span className="font-medium">View All Members</span>
-          </div>
-          <ArrowRight className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          className="h-auto py-4 justify-between"
-          onClick={() => navigate(ROUTES.MEMBERSHIPS)}
-        >
-          <div className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            <span className="font-medium">View Memberships</span>
-          </div>
-          <ArrowRight className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          className="h-auto py-4 justify-between"
-          onClick={() => navigate(ROUTES.TRAININGS)}
-        >
-          <div className="flex items-center gap-2">
-            <Dumbbell className="h-4 w-4" />
-            <span className="font-medium">View Trainings</span>
-          </div>
-          <ArrowRight className="h-4 w-4" />
-        </Button>
-      </div>
     </div>
   );
 }

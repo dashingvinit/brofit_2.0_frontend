@@ -9,6 +9,8 @@ import {
   TrendingUp,
   X,
   SlidersHorizontal,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -39,6 +41,8 @@ import {
 import { ROUTES } from "@/shared/lib/constants";
 
 type StatusFilter = "all" | "active" | "inactive";
+
+const PAGE_SIZE = 10;
 
 const statusOptions: {
   value: StatusFilter;
@@ -90,37 +94,45 @@ export function MembersListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [page, setPage] = useState(1);
 
-  const { data: allMembersResponse, isLoading: isLoadingMembers } = useMembers(
-    1,
-    100,
-  );
-  const { data: searchResponse, isLoading: isSearching } = useSearchMembers({
-    q: debouncedSearch,
-    page: 1,
-    limit: 100,
-  });
-
-  const { data: statsResponse, isLoading: isLoadingStats } = useMemberStats();
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
+      setPage(1);
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const baseMembers = debouncedSearch
-    ? searchResponse?.data
-    : allMembersResponse?.data;
-  const isLoading = debouncedSearch ? isSearching : isLoadingMembers;
+  const isActiveParam =
+    statusFilter === "active"
+      ? true
+      : statusFilter === "inactive"
+        ? false
+        : null;
 
-  const members = baseMembers?.filter((member) => {
-    if (statusFilter === "all") return true;
-    if (statusFilter === "active") return member.isActive;
-    if (statusFilter === "inactive") return !member.isActive;
-    return true;
+  const { data: membersResponse, isLoading: isLoadingMembers } = useMembers(
+    page,
+    PAGE_SIZE,
+    isActiveParam,
+  );
+  const { data: searchResponse, isLoading: isSearching } = useSearchMembers({
+    q: debouncedSearch,
+    page: 1,
+    limit: 50,
   });
+
+  const { data: statsResponse, isLoading: isLoadingStats } = useMemberStats();
+
+  const isSearchMode = !!debouncedSearch;
+  const members = isSearchMode ? searchResponse?.data : membersResponse?.data;
+  const isLoading = isSearchMode ? isSearching : isLoadingMembers;
+  const pagination = isSearchMode ? null : membersResponse?.pagination;
 
   const stats = statsResponse?.data;
   const hasActiveFilters = statusFilter !== "all" || !!debouncedSearch;
@@ -184,9 +196,7 @@ export function MembersListPage() {
                 }) => {
                   const value = stats[key];
                   const percentage =
-                    stats.total > 0 &&
-                    key !== "total" &&
-                    key !== "newThisMonth"
+                    stats.total > 0 && key !== "total" && key !== "newThisMonth"
                       ? Math.round((value / stats.total) * 100)
                       : null;
 
@@ -245,7 +255,7 @@ export function MembersListPage() {
             : null}
       </div>
 
-      {/* Toolbar: search + filter dropdown on one line */}
+      {/* Toolbar */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -271,11 +281,7 @@ export function MembersListPage() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 gap-2 shrink-0"
-            >
+            <Button variant="outline" size="sm" className="h-9 gap-2 shrink-0">
               <SlidersHorizontal className="h-4 w-4" />
               <span className="hidden sm:inline">
                 {statusFilter === "all" ? "Filter" : filterLabel}
@@ -326,18 +332,58 @@ export function MembersListPage() {
           </Button>
         )}
 
-        {!isLoading && members && (
-          <p className="text-sm text-muted-foreground ml-auto hidden sm:block tabular-nums">
+        {!isLoading && pagination && (
+          <p className="text-sm text-muted-foreground ml-auto tabular-nums">
+            <span className="font-medium text-foreground">
+              {(pagination.page - 1) * pagination.limit + 1}–
+              {Math.min(pagination.page * pagination.limit, pagination.total)}
+            </span>{" "}
+            of{" "}
+            <span className="font-medium text-foreground">
+              {pagination.total}
+            </span>{" "}
+            members
+          </p>
+        )}
+        {!isLoading && isSearchMode && members && (
+          <p className="text-sm text-muted-foreground ml-auto tabular-nums">
             <span className="font-medium text-foreground">
               {members.length}
             </span>{" "}
-            {members.length === 1 ? "member" : "members"}
+            {members.length === 1 ? "result" : "results"}
           </p>
         )}
       </div>
 
       {/* Members List */}
       <MembersList members={members} isLoading={isLoading} />
+
+      {/* Pagination */}
+      {!isSearchMode && pagination && pagination.pages > 1 && (
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => p - 1)}
+            disabled={!pagination.hasPrev}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground tabular-nums px-1">
+            {pagination.page} / {pagination.pages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={!pagination.hasNext}
+          >
+            Next
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -69,7 +69,7 @@ export function useUpdateTraining() {
       data,
     }: {
       id: string;
-      data: { notes?: string; autoRenew?: boolean; endDate?: string; trainerName?: string };
+      data: { notes?: string; autoRenew?: boolean; endDate?: string; trainerId?: string };
     }) => trainingApi.updateTraining(id, data),
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['trainings'] });

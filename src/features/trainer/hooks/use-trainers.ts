@@ -13,6 +13,17 @@ export function useTrainers() {
 }
 
 /**
+ * Hook to fetch a trainer with their active clients
+ */
+export function useTrainerWithClients(trainerId: string) {
+  return useQuery({
+    queryKey: ['trainers', trainerId, 'clients'],
+    queryFn: () => trainersApi.getTrainerWithClients(trainerId),
+    enabled: !!trainerId,
+  });
+}
+
+/**
  * Hook to create a new trainer
  */
 export function useCreateTrainer() {

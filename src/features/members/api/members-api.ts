@@ -37,11 +37,13 @@ export const membersApi = {
    */
   getAllMembers: async (
     page = 1,
-    limit = 100
+    limit = 20,
+    isActive?: boolean | null
   ): Promise<GetAllMembersResponse> => {
-    const response = await apiClient.get('/members', {
-      params: { page, limit },
-    });
+    const params: Record<string, unknown> = { page, limit };
+    if (isActive === true) params.isActive = 'true';
+    else if (isActive === false) params.isActive = 'false';
+    const response = await apiClient.get('/members', { params });
     return response.data;
   },
 
