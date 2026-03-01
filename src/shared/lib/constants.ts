@@ -16,6 +16,7 @@ export const ROUTES = {
   PLANS: "/plans",
   TRAININGS: "/trainings",
   CREATE_TRAINING: "/trainings/create",
+  TRAINERS: "/trainers",
   TRAINER_ASSIGNMENTS: "/trainer-assignments",
 } as const;
 

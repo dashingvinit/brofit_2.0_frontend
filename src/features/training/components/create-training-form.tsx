@@ -32,6 +32,7 @@ import {
 import { useMembers } from '@/features/members/hooks/use-members';
 import { usePlanTypesByCategory } from '@/features/plans/hooks/use-plan-types';
 import { usePlanVariantsByType } from '@/features/plans/hooks/use-plan-variants';
+import { useTrainers } from '@/features/trainer/hooks/use-trainers';
 import { useCreateTraining, useActiveTraining } from '../hooks/use-training';
 import type { CreateTrainingData, PaymentMethod } from '@/shared/types/common.types';
 
@@ -40,7 +41,7 @@ const createTrainingSchema = z
     memberId: z.string().min(1, 'Please select a member'),
     planTypeId: z.string().min(1, 'Please select a plan type'),
     planVariantId: z.string().min(1, 'Please select a plan variant'),
-    trainerName: z.string().min(1, 'Trainer name is required'),
+    trainerId: z.string().min(1, 'Please select a trainer'),
     startDate: z.string().min(1, 'Start date is required'),
     discountAmount: z.coerce.number().min(0, 'Discount cannot be negative').default(0),
     autoRenew: z.boolean().default(false),
@@ -97,6 +98,7 @@ export function CreateTrainingForm({
 
   const { data: membersResponse, isLoading: membersLoading } = useMembers();
   const { data: planTypes, isLoading: planTypesLoading } = usePlanTypesByCategory('training');
+  const { data: trainersResponse, isLoading: trainersLoading } = useTrainers();
   const createTraining = useCreateTraining();
 
   const form = useForm<CreateTrainingFormData>({
@@ -107,7 +109,7 @@ export function CreateTrainingForm({
       discountAmount: 0,
       autoRenew: false,
       collectPayment: false,
-      trainerName: '',
+      trainerId: '',
     },
   });
 
@@ -127,6 +129,8 @@ export function CreateTrainingForm({
   const existingActiveTraining = activeTrainingResponse?.data;
 
   const members = membersResponse?.data ?? [];
+  const trainers = trainersResponse?.data ?? [];
+
   const filteredMembers = useMemo(() => {
     if (!memberSearch.trim()) return members;
     const q = memberSearch.toLowerCase();
@@ -144,6 +148,7 @@ export function CreateTrainingForm({
   const selectedVariant = planVariants?.find(
     (v) => v.id === selectedPlanVariantId
   );
+  const selectedTrainer = trainers.find((t) => t.id === form.watch('trainerId'));
   const finalPrice = selectedVariant
     ? Math.max(0, selectedVariant.price - discountAmount)
     : 0;
@@ -162,7 +167,7 @@ export function CreateTrainingForm({
       case 1:
         return !!selectedPlanTypeId && !!selectedPlanVariantId;
       case 2:
-        return !!startDate && !!form.watch('trainerName');
+        return !!startDate && !!form.watch('trainerId');
       case 3:
         return true;
       default:
@@ -186,7 +191,7 @@ export function CreateTrainingForm({
     const payload: CreateTrainingData = {
       memberId: data.memberId,
       planVariantId: data.planVariantId,
-      trainerName: data.trainerName,
+      trainerId: data.trainerId,
       startDate: data.startDate,
       discountAmount: data.discountAmount || 0,
       autoRenew: data.autoRenew,
@@ -501,15 +506,37 @@ export function CreateTrainingForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="trainerName">Trainer Name *</Label>
-              <Input
-                id="trainerName"
-                placeholder="Enter trainer name"
-                {...form.register('trainerName')}
-              />
-              {form.formState.errors.trainerName && (
+              <Label htmlFor="trainerId">Trainer *</Label>
+              {trainersLoading ? (
+                <div className="flex items-center gap-2 h-10">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Loading trainers...</span>
+                </div>
+              ) : (
+                <Select
+                  value={form.watch('trainerId') || ''}
+                  onValueChange={(value) => form.setValue('trainerId', value)}
+                >
+                  <SelectTrigger id="trainerId">
+                    <SelectValue placeholder="Select a trainer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {trainers.filter((t) => t.isActive).map((trainer) => (
+                      <SelectItem key={trainer.id} value={trainer.id}>
+                        {trainer.name}
+                      </SelectItem>
+                    ))}
+                    {trainers.filter((t) => t.isActive).length === 0 && (
+                      <SelectItem value="_none" disabled>
+                        No active trainers available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+              {form.formState.errors.trainerId && (
                 <p className="text-sm text-destructive">
-                  {form.formState.errors.trainerName.message}
+                  {form.formState.errors.trainerId.message}
                 </p>
               )}
             </div>
@@ -651,7 +678,7 @@ export function CreateTrainingForm({
                   <div>
                     <span className="text-muted-foreground">Trainer: </span>
                     <span className="font-medium">
-                      {form.watch('trainerName')}
+                      {selectedTrainer?.name ?? '—'}
                     </span>
                   </div>
                   <div>

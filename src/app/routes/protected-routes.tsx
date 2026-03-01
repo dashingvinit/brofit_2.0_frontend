@@ -13,6 +13,7 @@ import { MembershipDetailPage } from "@/features/memberships/pages/membership-de
 import { TrainingsPage } from "@/features/training/pages/trainings-page";
 import { CreateTrainingPage } from "@/features/training/pages/create-training-page";
 import { TrainingDetailPage } from "@/features/training/pages/training-detail-page";
+import { TrainersPage } from "@/features/trainer/pages/trainers-page";
 
 export const protectedRoutes: RouteObject[] = [
   {
@@ -68,6 +69,10 @@ export const protectedRoutes: RouteObject[] = [
           {
             path: "/trainings/:id",
             element: <TrainingDetailPage />,
+          },
+          {
+            path: "/trainers",
+            element: <TrainersPage />,
           },
         ],
       },

@@ -281,6 +281,18 @@ export interface MembershipStats {
 }
 
 /**
+ * Trainer - Matches Prisma schema
+ */
+export interface Trainer {
+  id: string;
+  orgId: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
  * Training status enum
  */
 export type TrainingStatus = "active" | "expired" | "cancelled" | "frozen";
@@ -293,7 +305,7 @@ export interface Training {
   orgId: string;
   memberId: string;
   planVariantId: string;
-  trainerName: string;
+  trainerId: string;
   startDate: string;
   endDate: string;
   status: TrainingStatus;
@@ -306,6 +318,7 @@ export interface Training {
   updatedAt: string;
   member?: Member;
   planVariant?: PlanVariant & { planType?: PlanType };
+  trainer?: Trainer;
   payments?: Payment[];
 }
 
@@ -315,7 +328,7 @@ export interface Training {
 export interface CreateTrainingData {
   memberId: string;
   planVariantId: string;
-  trainerName: string;
+  trainerId: string;
   startDate?: string;
   discountAmount?: number;
   autoRenew?: boolean;
