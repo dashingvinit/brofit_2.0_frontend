@@ -7,6 +7,7 @@ import type {
   Payment,
   RecordPaymentData,
   ApiResponse,
+  PaginationInfo,
 } from '@/shared/types/common.types';
 
 /**
@@ -15,14 +16,7 @@ import type {
  */
 
 export interface GetAllMembershipsResponse extends ApiResponse<Membership[]> {
-  pagination?: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
+  pagination?: PaginationInfo;
 }
 
 export const membershipsApi = {

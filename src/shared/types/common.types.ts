@@ -452,7 +452,6 @@ export interface RoiMetrics {
 export interface TrendPoint {
   year: number;
   month: number; // 1-indexed
-  label: string; // e.g. "Mar 2026"
   revenue: number;
   expenses: number;
   netProfit: number;

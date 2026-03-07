@@ -7,17 +7,11 @@ import type {
   Payment,
   RecordTrainingPaymentData,
   ApiResponse,
+  PaginationInfo,
 } from '@/shared/types/common.types';
 
 export interface GetAllTrainingsResponse extends ApiResponse<Training[]> {
-  pagination?: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
+  pagination?: PaginationInfo;
 }
 
 export const trainingApi = {
