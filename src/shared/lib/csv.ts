@@ -86,30 +86,139 @@ export function printPdf(
     )
     .join('');
 
+  const exportedAt = new Date().toLocaleString('en-IN', {
+    day: 'numeric', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+
   const html = `<!DOCTYPE html><html><head>
 <meta charset="UTF-8">
 <title>${esc(title)}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; font-size: 11px; color: #111; padding: 24px; }
-  h1 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
-  p.meta { font-size: 10px; color: #666; margin-bottom: 16px; }
-  table { width: 100%; border-collapse: collapse; }
-  th { background: #f4f4f5; font-weight: 600; text-align: left; padding: 6px 8px; border: 1px solid #e4e4e7; }
-  td { padding: 5px 8px; border: 1px solid #e4e4e7; vertical-align: top; }
-  tr:nth-child(even) td { background: #fafafa; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 11.5px;
+    color: #1a1a1a;
+    background: #fff;
+    padding: 40px 48px;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid #18181b;
+  }
+  .header-left h1 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: #18181b;
+    margin-bottom: 4px;
+  }
+  .header-left .subtitle {
+    font-size: 11px;
+    color: #71717a;
+  }
+  .header-right {
+    text-align: right;
+    font-size: 11px;
+    color: #71717a;
+    line-height: 1.6;
+  }
+  .header-right strong {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #3f3f46;
+    margin-bottom: 2px;
+  }
+
+  /* ── Table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4px;
+  }
+  thead tr {
+    background: #18181b;
+  }
+  th {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #fff;
+    text-align: left;
+    padding: 9px 12px;
+  }
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e4e4e7;
+    vertical-align: top;
+    color: #27272a;
+    line-height: 1.45;
+  }
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+  tbody tr:nth-child(even) td {
+    background: #f9f9fb;
+  }
+  tbody tr:hover td {
+    background: #f4f4f5;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 28px;
+    padding-top: 12px;
+    border-top: 1px solid #e4e4e7;
+    font-size: 10px;
+    color: #a1a1aa;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ── Print overrides ── */
+  @page { margin: 12mm; }
   @media print {
-    body { padding: 0; }
-    @page { margin: 16mm; }
+    /* Keep the same body padding so content never touches the paper edge */
+    body { padding: 24px 28px; background: #fff; }
+    thead { display: table-header-group; }
+    /* Footer flows naturally at end of content — no fixed positioning */
+    .footer { position: static; margin-top: 20px; }
+    tbody tr:hover td { background: inherit; }
   }
 </style>
 </head><body>
-<h1>${esc(title)}</h1>
-<p class="meta">Exported ${new Date().toLocaleString('en-IN')} · ${rows.length} record${rows.length !== 1 ? 's' : ''}</p>
+
+<div class="header">
+  <div class="header-left">
+    <h1>${esc(title)}</h1>
+    <span class="subtitle">${rows.length} record${rows.length !== 1 ? 's' : ''}</span>
+  </div>
+  <div class="header-right">
+    <strong>Exported on</strong>
+    ${esc(exportedAt)}
+  </div>
+</div>
+
 <table>
   <thead><tr>${thead}</tr></thead>
   <tbody>${tbody}</tbody>
 </table>
+
+<div class="footer">
+  <span>${esc(title)}</span>
+  <span>Exported ${esc(exportedAt)}</span>
+</div>
+
 <script>window.onload = function(){ window.print(); }<\/script>
 </body></html>`;
 

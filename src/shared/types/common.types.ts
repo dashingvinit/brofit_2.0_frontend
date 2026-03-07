@@ -485,3 +485,66 @@ export interface UpdateInvestmentData {
   date?: string;
   notes?: string;
 }
+
+// ─── Analytics ─────────────────────────────────────────────────────────────
+
+export interface TopPlanVariant {
+  planVariantId: string;
+  durationLabel: string;
+  count: number;
+  revenue: number;
+}
+
+export interface TopPlanItem {
+  planName: string;
+  category: PlanCategory;
+  totalCount: number;
+  totalRevenue: number;
+  variants: TopPlanVariant[];
+}
+
+export interface RetentionMetrics {
+  totalMembers: number;
+  activeCount: number;
+  membersWithHistory: number;
+  repeatCount: number;
+  oneTimeCount: number;
+  churnedCount: number;
+  retentionRate: number;
+}
+
+export interface RevenueBreakdownPoint {
+  year: number;
+  month: number;
+  membership: number;
+  training: number;
+  total: number;
+}
+
+export interface PaymentMethodItem {
+  method: PaymentMethod;
+  count: number;
+  amount: number;
+  percentage: number;
+}
+
+export interface TrainerPerformanceItem {
+  trainerId: string;
+  trainerName: string;
+  activeClients: number;
+  totalClients: number;
+  totalRevenue: number;
+  avgPlanPrice: number;
+}
+
+export interface MemberGrowthPoint {
+  year: number;
+  month: number;
+  newMembers: number;
+}
+
+export interface DemographicsData {
+  gender: { label: string; count: number; percentage: number }[];
+  ageBrackets: { label: string; count: number; percentage: number }[];
+  totalMembers: number;
+}

@@ -17,6 +17,7 @@ import { TrainingDetailPage } from "@/features/training/pages/training-detail-pa
 import { TrainersPage } from "@/features/trainer/pages/trainers-page";
 import { TrainerDetailPage } from "@/features/trainer/pages/trainer-detail-page";
 import { FinancialsPage } from "@/features/financials";
+import { AnalyticsPage } from "@/features/analytics";
 
 export const protectedRoutes: RouteObject[] = [
   {
@@ -85,6 +86,10 @@ export const protectedRoutes: RouteObject[] = [
           {
             path: "/financials",
             element: <FinancialsPage />,
+          },
+          {
+            path: "/analytics",
+            element: <AnalyticsPage />,
           },
         ],
       },

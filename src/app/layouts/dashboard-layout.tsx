@@ -40,6 +40,7 @@ import {
   Receipt,
   Settings2,
   TrendingUp,
+  BarChart2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -54,6 +55,7 @@ export function DashboardLayout() {
     { name: "Dashboard", href: ROUTES.DASHBOARD, icon: LayoutDashboard, isActive: isActive(ROUTES.DASHBOARD) },
     { name: "Members", href: ROUTES.MEMBERS, icon: Users, isActive: isActive(ROUTES.MEMBERS) },
     { name: "Financials", href: ROUTES.FINANCIALS, icon: TrendingUp, isActive: isActive(ROUTES.FINANCIALS) },
+    { name: "Analytics", href: ROUTES.ANALYTICS, icon: BarChart2, isActive: isActive(ROUTES.ANALYTICS) },
   ];
 
   const navGroups: { label: string; icon: LucideIcon; items: { name: string; href: string; isActive: boolean }[] }[] = [
