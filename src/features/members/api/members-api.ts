@@ -109,4 +109,15 @@ export const membersApi = {
     const response = await apiClient.delete(`/members/${memberId}`);
     return response.data;
   },
+
+  /**
+   * Bulk import members from CSV rows
+   * POST /api/v1/members/import
+   */
+  importMembers: async (
+    rows: Record<string, string>[],
+  ): Promise<{ success: boolean; imported: number; errors: string[] }> => {
+    const response = await apiClient.post('/members/import', { rows });
+    return response.data;
+  },
 };

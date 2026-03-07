@@ -240,6 +240,7 @@ export interface CreateMembershipData {
   paymentMethod?: PaymentMethod;
   paymentReference?: string;
   paymentNotes?: string;
+  paymentDate?: string;
 }
 
 /**
@@ -356,6 +357,7 @@ export interface CreateTrainingData {
   paymentMethod?: PaymentMethod;
   paymentReference?: string;
   paymentNotes?: string;
+  paymentDate?: string;
 }
 
 /**

@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   ArrowRight,
   CalendarDays,
+  UserX,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -30,19 +31,15 @@ import {
   useTrainingStats,
   useExpiringTrainings,
 } from "@/features/training/hooks/use-training";
-import { useDuesReport } from "@/features/members/hooks/use-member-detail";
+import {
+  useDuesReport,
+  useInactiveCandidates,
+} from "@/features/members/hooks/use-member-detail";
 import { ROUTES } from "@/shared/lib/constants";
 import type { Membership, Training } from "@/shared/types/common.types";
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-IN");
-}
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-  });
 }
 
 function daysUntil(dateStr: string) {
@@ -228,6 +225,7 @@ export function DashboardPage() {
     useTrainingStats();
   const { data: expiringMembershipsRes } = useExpiringMemberships(7);
   const { data: expiringTrainingsRes } = useExpiringTrainings(7);
+  const { data: inactiveSubRes } = useInactiveCandidates(1, 10);
   const { data: duesReportRes, isLoading: isLoadingDues } = useDuesReport(
     1,
     10,
@@ -246,6 +244,8 @@ export function DashboardPage() {
   const revenueThisMonth =
     (membershipStats?.collectedThisMonth ?? 0) +
     (trainingStats?.collectedThisMonth ?? 0);
+
+  const inactiveSubMembers = inactiveSubRes?.data ?? [];
 
   const duesMembers = duesReportRes?.data ?? [];
   const duesSummary = duesReportRes?.summary ?? {
@@ -366,8 +366,8 @@ export function DashboardPage() {
         />
       </div>
 
-      {/* Revenue Breakdown + Expiring */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* Revenue Breakdown + Expiring + Inactive */}
+      <div className="grid gap-4 lg:grid-cols-3">
         {/* Revenue Breakdown */}
         <Card>
           <CardHeader>
@@ -434,7 +434,7 @@ export function DashboardPage() {
                 No memberships or trainings expiring in the next 7 days.
               </p>
             ) : (
-              <div className="divide-y max-h-[280px] overflow-y-auto">
+              <div className="divide-y">
                 {expiringItems.slice(0, 10).map((item) => (
                   <ExpiringItem
                     key={`${item.type}-${item.id}`}
@@ -445,6 +445,61 @@ export function DashboardPage() {
                     onClick={() => navigate(item.path)}
                   />
                 ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* No Active Membership */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-base flex items-center gap-2">
+              <UserX className="h-4 w-4" />
+              No Active Membership
+            </CardTitle>
+            {inactiveSubMembers.length > 0 && (
+              <Badge variant="secondary">{inactiveSubMembers.length}</Badge>
+            )}
+          </CardHeader>
+          <CardContent>
+            {inactiveSubMembers.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                All active members have a membership.
+              </p>
+            ) : (
+              <div className="divide-y">
+                {inactiveSubMembers.map((member) => {
+                  const expiredAgo = member.lastSubscriptionEnd
+                    ? Math.abs(daysUntil(member.lastSubscriptionEnd))
+                    : null;
+
+                  return (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between py-3 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors"
+                      onClick={() => navigate(`/members/${member.id}`)}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="rounded-full p-1.5 shrink-0 bg-red-100 dark:bg-red-950/50">
+                          <UserX className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {member.firstName} {member.lastName}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {member.phone}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-medium text-red-600 dark:text-red-400 whitespace-nowrap shrink-0 ml-2">
+                        {expiredAgo !== null
+                          ? `Expired ${expiredAgo}d ago`
+                          : "Never subscribed"}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </CardContent>

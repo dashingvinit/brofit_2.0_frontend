@@ -51,6 +51,7 @@ const createMembershipSchema = z
     paymentMethod: z.string().optional(),
     paymentReference: z.string().optional(),
     paymentNotes: z.string().optional(),
+    paymentDate: z.string().optional(),
     // Training fields
     addTraining: z.boolean().default(false),
     trainingPlanTypeId: z.string().optional(),
@@ -135,6 +136,7 @@ export function CreateMembershipForm({
       collectPayment: false,
       addTraining: false,
       trainingDiscountAmount: 0,
+      paymentDate: new Date().toISOString().split('T')[0],
     },
   });
 
@@ -297,6 +299,7 @@ export function CreateMembershipForm({
       payload.paymentMethod = data.paymentMethod as PaymentMethod;
       payload.paymentReference = data.paymentReference;
       payload.paymentNotes = data.paymentNotes;
+      payload.paymentDate = data.paymentDate;
     }
 
     createMembership.mutate(payload, {
@@ -1143,6 +1146,18 @@ export function CreateMembershipForm({
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="paymentDate">Payment Date *</Label>
+                  <Input
+                    id="paymentDate"
+                    type="date"
+                    {...form.register('paymentDate')}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    When was this payment actually received?
+                  </p>
                 </div>
 
                 <div className="space-y-2">

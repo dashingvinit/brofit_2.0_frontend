@@ -51,6 +51,7 @@ const createTrainingSchema = z
     paymentMethod: z.string().optional(),
     paymentReference: z.string().optional(),
     paymentNotes: z.string().optional(),
+    paymentDate: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -110,6 +111,7 @@ export function CreateTrainingForm({
       autoRenew: false,
       collectPayment: false,
       trainerId: '',
+      paymentDate: new Date().toISOString().split('T')[0],
     },
   });
 
@@ -203,6 +205,7 @@ export function CreateTrainingForm({
       payload.paymentMethod = data.paymentMethod as PaymentMethod;
       payload.paymentReference = data.paymentReference;
       payload.paymentNotes = data.paymentNotes;
+      payload.paymentDate = data.paymentDate;
     }
 
     createTraining.mutate(payload, {
@@ -754,6 +757,18 @@ export function CreateTrainingForm({
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="paymentDate">Payment Date *</Label>
+                  <Input
+                    id="paymentDate"
+                    type="date"
+                    {...form.register('paymentDate')}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    When was this payment actually received?
+                  </p>
                 </div>
 
                 <div className="space-y-2">

@@ -47,7 +47,33 @@ export interface DuesReportResponse {
   };
 }
 
+export interface InactiveCandidate {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  joinDate: string;
+  lastSubscriptionEnd: string | null;
+  latestMembership: { id: string; status: string; endDate: string } | null;
+  latestTraining: { id: string; status: string; endDate: string } | null;
+}
+
 export const reportsApi = {
+  /**
+   * Get active members with no active memberships or trainings
+   * GET /api/v1/reports/inactive-candidates
+   */
+  getInactiveCandidates: async (
+    page = 1,
+    limit = 10
+  ): Promise<{ success: boolean; data: InactiveCandidate[] }> => {
+    const response = await apiClient.get('/reports/inactive-candidates', {
+      params: { page, limit },
+    });
+    return response.data;
+  },
+
   /**
    * Get dues report for a specific member
    * GET /api/v1/reports/dues?memberId=<id>

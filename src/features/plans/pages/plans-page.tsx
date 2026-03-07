@@ -12,6 +12,7 @@ import {
   Search,
   X,
   LayoutGrid,
+  Upload,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -44,8 +45,35 @@ import { usePlanTypes, useDeletePlanType } from '../hooks/use-plan-types';
 import { PlanTypeDialog } from '../components/plan-type-dialog';
 import { PlanVariantsSheet } from '../components/plan-variants-sheet';
 import type { PlanType, PlanCategory } from '@/shared/types/common.types';
+import { ImportCsvDialog } from '@/shared/components/import-csv-dialog';
+import { ExportDropdown } from '@/shared/components/export-dropdown';
+import { planTypesApi } from '../api/plan-types-api';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 type CategoryFilter = 'all' | PlanCategory;
+
+const PLAN_CSV_HEADERS = [
+  { key: 'Plan Name', label: 'Plan Name' },
+  { key: 'Category', label: 'Category' },
+  { key: 'Description', label: 'Description' },
+  { key: 'Duration Label', label: 'Duration Label' },
+  { key: 'Duration Days', label: 'Duration Days' },
+  { key: 'Price', label: 'Price' },
+  { key: 'Plan Active', label: 'Plan Active' },
+  { key: 'Variant Active', label: 'Variant Active' },
+];
+
+const PLAN_CSV_SAMPLE: Record<string, string> = {
+  'Plan Name': 'Gold Membership',
+  'Category': 'membership',
+  'Description': 'Access to all gym facilities',
+  'Duration Label': '1 Month',
+  'Duration Days': '30',
+  'Price': '1500',
+  'Plan Active': 'true',
+  'Variant Active': 'true',
+};
 
 const categoryOptions: {
   value: CategoryFilter;
@@ -58,6 +86,7 @@ const categoryOptions: {
 ];
 
 export function PlansPage() {
+  const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingPlanType, setEditingPlanType] = useState<PlanType | null>(null);
   const [selectedPlanType, setSelectedPlanType] = useState<PlanType | null>(null);
@@ -65,6 +94,7 @@ export function PlansPage() {
   const [planTypeToDelete, setPlanTypeToDelete] = useState<PlanType | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [importOpen, setImportOpen] = useState(false);
 
   const { data: planTypes, isLoading } = usePlanTypes();
   const deleteMutation = useDeletePlanType();
@@ -93,6 +123,50 @@ export function PlansPage() {
     setSelectedPlanType(planType);
   };
 
+  function getPlansForExport() {
+    const allPlans = planTypes ?? [];
+    const rows: Record<string, string>[] = [];
+    for (const pt of allPlans) {
+      const variants = pt.variants ?? [];
+      if (variants.length === 0) {
+        rows.push({
+          'Plan Name': pt.name,
+          'Category': pt.category,
+          'Description': pt.description ?? '',
+          'Duration Label': '',
+          'Duration Days': '',
+          'Price': '',
+          'Plan Active': String(pt.isActive),
+          'Variant Active': '',
+        });
+      } else {
+        for (const v of variants) {
+          rows.push({
+            'Plan Name': pt.name,
+            'Category': pt.category,
+            'Description': pt.description ?? '',
+            'Duration Label': v.durationLabel,
+            'Duration Days': String(v.durationDays),
+            'Price': String(v.price),
+            'Plan Active': String(pt.isActive),
+            'Variant Active': String(v.isActive),
+          });
+        }
+      }
+    }
+    return rows;
+  }
+
+  async function handleImportPlans(rows: Record<string, string>[]) {
+    const res = await planTypesApi.importPlans(rows);
+    queryClient.invalidateQueries({ queryKey: ['plan-types'] });
+    const imported = (res.importedTypes ?? 0) + (res.importedVariants ?? 0);
+    return {
+      imported,
+      errors: res.errors,
+    };
+  }
+
   const searchLower = searchQuery.toLowerCase();
   const filteredPlans = (planTypes ?? []).filter((pt) => {
     const matchesCategory = categoryFilter === 'all' || pt.category === categoryFilter;
@@ -120,11 +194,37 @@ export function PlansPage() {
         title="Plans Management"
         description="Manage plan types and their pricing variants"
         actions={
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Plan Type
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setImportOpen(true)}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Import
+            </Button>
+            <ExportDropdown
+              title="Plans"
+              filename={`plans_${new Date().toISOString().slice(0, 10)}`}
+              headers={PLAN_CSV_HEADERS}
+              getData={getPlansForExport}
+              disabled={!planTypes?.length}
+            />
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Plan Type
+            </Button>
+          </div>
         }
+      />
+
+      <ImportCsvDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        entityName="plans"
+        templateHeaders={PLAN_CSV_HEADERS}
+        templateSample={PLAN_CSV_SAMPLE}
+        onImport={handleImportPlans}
       />
 
       {/* Toolbar: search + category filter */}

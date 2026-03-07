@@ -31,6 +31,7 @@ import {
 import { PageHeader } from '@/shared/components/page-header';
 import { ROUTES } from '@/shared/lib/constants';
 import { useTrainerWithClients } from '../hooks/use-trainers';
+import { ExportDropdown } from '@/shared/components/export-dropdown';
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-IN', {
@@ -54,6 +55,17 @@ function getAvatarColor(name: string) {
     colors.length;
   return colors[index];
 }
+
+const TRAINER_CLIENTS_CSV_HEADERS = [
+  { key: 'memberName', label: 'Member Name' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'email', label: 'Email' },
+  { key: 'planName', label: 'Plan Name' },
+  { key: 'durationLabel', label: 'Duration' },
+  { key: 'startDate', label: 'Start Date' },
+  { key: 'endDate', label: 'End Date' },
+  { key: 'status', label: 'Status' },
+];
 
 export function TrainerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -91,16 +103,39 @@ export function TrainerDetailPage() {
 
   const activeClients = trainer.trainings ?? [];
 
+  function getClientsForExport() {
+    return activeClients.map((t) => ({
+      memberName: `${t.member.firstName} ${t.member.lastName}`,
+      phone: t.member.phone ?? '',
+      email: t.member.email ?? '',
+      planName: t.planVariant?.planType?.name ?? '',
+      durationLabel: t.planVariant?.durationLabel ?? '',
+      startDate: new Date(t.startDate).toISOString().slice(0, 10),
+      endDate: new Date(t.endDate).toISOString().slice(0, 10),
+      status: t.status,
+    }));
+  }
+
   return (
     <div className="space-y-4">
       <PageHeader
         title={trainer.name}
         description="Trainer profile and active clients."
         actions={
-          <Button variant="outline" onClick={() => navigate(ROUTES.TRAINERS)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
+          <div className="flex items-center gap-2">
+            {activeClients.length > 0 && (
+              <ExportDropdown
+                title={`${trainer.name} – Active Clients`}
+                filename={`${trainer.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_clients_${new Date().toISOString().slice(0, 10)}`}
+                headers={TRAINER_CLIENTS_CSV_HEADERS}
+                getData={getClientsForExport}
+              />
+            )}
+            <Button variant="outline" onClick={() => navigate(ROUTES.TRAINERS)}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+          </div>
         }
       />
 

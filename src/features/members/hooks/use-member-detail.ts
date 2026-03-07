@@ -13,6 +13,16 @@ export function useMemberDues(memberId: string) {
 }
 
 /**
+ * Hook to fetch members with no active membership or training
+ */
+export function useInactiveCandidates(page = 1, limit = 10) {
+  return useQuery({
+    queryKey: ['reports', 'inactive-candidates', page, limit],
+    queryFn: () => reportsApi.getInactiveCandidates(page, limit),
+  });
+}
+
+/**
  * Hook to fetch all members with outstanding dues
  */
 export function useDuesReport(page = 1, limit = 10) {

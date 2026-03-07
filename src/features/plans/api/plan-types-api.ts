@@ -92,4 +92,15 @@ export const planTypesApi = {
     const response = await apiClient.put(`/plans/types/${id}/deactivate`);
     return response.data;
   },
+
+  /**
+   * Bulk import plan types + variants from CSV rows
+   * POST /api/v1/plans/import
+   */
+  importPlans: async (
+    rows: Record<string, string>[],
+  ): Promise<{ success: boolean; importedTypes: number; importedVariants: number; errors: string[] }> => {
+    const response = await apiClient.post('/plans/import', { rows });
+    return response.data;
+  },
 };

@@ -13,6 +13,7 @@ import {
   ChevronRight,
   IndianRupee,
   ArrowRight,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -42,6 +43,11 @@ import {
 } from "../hooks/use-members";
 import { useDuesReport } from "../hooks/use-member-detail";
 import { ROUTES } from "@/shared/lib/constants";
+import { ImportCsvDialog } from "@/shared/components/import-csv-dialog";
+import { ExportDropdown } from "@/shared/components/export-dropdown";
+import { membersApi } from "../api/members-api";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -92,8 +98,33 @@ const statCards = [
   },
 ] as const;
 
+const MEMBER_CSV_HEADERS = [
+  { key: "firstName", label: "First Name" },
+  { key: "lastName", label: "Last Name" },
+  { key: "email", label: "Email" },
+  { key: "phone", label: "Phone" },
+  { key: "gender", label: "Gender" },
+  { key: "dateOfBirth", label: "Date of Birth" },
+  { key: "joinDate", label: "Join Date" },
+  { key: "isActive", label: "Is Active" },
+  { key: "notes", label: "Notes" },
+];
+
+const MEMBER_CSV_SAMPLE: Record<string, string> = {
+  firstName: "John",
+  lastName: "Doe",
+  email: "john@example.com",
+  phone: "9876543210",
+  gender: "Male",
+  dateOfBirth: "1995-06-15",
+  joinDate: "2024-01-01",
+  isActive: "true",
+  notes: "",
+};
+
 export function MembersListPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const showDues = searchParams.get("dues") === "true";
 
@@ -102,6 +133,7 @@ export function MembersListPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [page, setPage] = useState(1);
   const [duesPage, setDuesPage] = useState(1);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Reset to page 1 when filter changes
   useEffect(() => {
@@ -150,21 +182,71 @@ export function MembersListPage() {
   const filterLabel =
     statusOptions.find((o) => o.value === statusFilter)?.label ?? "Filter";
 
+  async function getMembersForExport() {
+    const res = await membersApi.getAllMembers(1, 10000, null);
+    return (res.data ?? []).map((m) => ({
+      firstName: m.firstName,
+      lastName: m.lastName,
+      email: m.email ?? "",
+      phone: m.phone ?? "",
+      gender: m.gender ?? "",
+      dateOfBirth: m.dateOfBirth
+        ? new Date(m.dateOfBirth).toISOString().slice(0, 10)
+        : "",
+      joinDate: m.joinDate
+        ? new Date(m.joinDate).toISOString().slice(0, 10)
+        : "",
+      isActive: String(m.isActive),
+      notes: m.notes ?? "",
+    }));
+  }
+
+  async function handleImportMembers(rows: Record<string, string>[]) {
+    const res = await membersApi.importMembers(rows);
+    queryClient.invalidateQueries({ queryKey: ["members"] });
+    return { imported: res.imported, errors: res.errors };
+  }
+
   return (
     <div className="space-y-4">
       <PageHeader
         title="Members"
         description="Manage your gym members"
         actions={
-          <Button
-            onClick={() =>
-              navigate(ROUTES.REGISTER_MEMBER || "/members/register")
-            }
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Member
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setImportOpen(true)}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Import
+            </Button>
+            <ExportDropdown
+              title="Members"
+              filename={`members_${new Date().toISOString().slice(0, 10)}`}
+              headers={MEMBER_CSV_HEADERS}
+              getData={getMembersForExport}
+            />
+            <Button
+              onClick={() =>
+                navigate(ROUTES.REGISTER_MEMBER || "/members/register")
+              }
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Member
+            </Button>
+          </div>
         }
+      />
+
+      <ImportCsvDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        entityName="members"
+        templateHeaders={MEMBER_CSV_HEADERS}
+        templateSample={MEMBER_CSV_SAMPLE}
+        onImport={handleImportMembers}
       />
 
       {/* Statistics Cards */}
