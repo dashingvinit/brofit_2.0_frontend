@@ -1,5 +1,13 @@
 import { apiClient } from '@/shared/lib/api-client';
-import type { Trainer, TrainerWithClients, ApiResponse } from '@/shared/types/common.types';
+import type {
+  Trainer,
+  TrainerWithClients,
+  ApiResponse,
+  TrainerPayoutSchedule,
+  TrainerPayoutRecord,
+  TrainerOutstandingSummary,
+  RecordTrainerPayoutData,
+} from '@/shared/types/common.types';
 
 export const trainersApi = {
   /**
@@ -15,8 +23,13 @@ export const trainersApi = {
    * Create a new trainer
    * POST /api/v1/trainers
    */
-  createTrainer: async (name: string): Promise<ApiResponse<Trainer>> => {
-    const response = await apiClient.post('/trainers', { name });
+  createTrainer: async (data: { name: string; splitPercent?: number }): Promise<ApiResponse<Trainer>> => {
+    const response = await apiClient.post('/trainers', data);
+    return response.data;
+  },
+
+  updateTrainer: async (trainerId: string, data: { name?: string; splitPercent?: number }): Promise<ApiResponse<Trainer>> => {
+    const response = await apiClient.patch(`/trainers/${trainerId}`, data);
     return response.data;
   },
 
@@ -35,6 +48,45 @@ export const trainersApi = {
    */
   getTrainerWithClients: async (trainerId: string): Promise<ApiResponse<TrainerWithClients>> => {
     const response = await apiClient.get(`/trainers/${trainerId}/clients`);
+    return response.data;
+  },
+
+  /**
+   * Get per-client, per-month payout schedule for a trainer
+   * GET /api/v1/trainers/:id/payout-schedule
+   */
+  getPayoutSchedule: async (trainerId: string): Promise<ApiResponse<TrainerPayoutSchedule>> => {
+    const response = await apiClient.get(`/trainers/${trainerId}/payout-schedule`);
+    return response.data;
+  },
+
+  /**
+   * Record a cash payout for a specific client-month
+   * POST /api/v1/trainers/:id/payouts
+   */
+  recordPayout: async (
+    trainerId: string,
+    data: RecordTrainerPayoutData,
+  ): Promise<ApiResponse<TrainerPayoutRecord>> => {
+    const response = await apiClient.post(`/trainers/${trainerId}/payouts`, data);
+    return response.data;
+  },
+
+  /**
+   * Get payout history for a trainer
+   * GET /api/v1/trainers/:id/payout-history
+   */
+  getPayoutHistory: async (trainerId: string): Promise<ApiResponse<TrainerPayoutRecord[]>> => {
+    const response = await apiClient.get(`/trainers/${trainerId}/payout-history`);
+    return response.data;
+  },
+
+  /**
+   * Get outstanding payout totals for all trainers in org
+   * GET /api/v1/trainers/payout-summary
+   */
+  getOutstandingSummary: async (): Promise<ApiResponse<TrainerOutstandingSummary>> => {
+    const response = await apiClient.get('/trainers/payout-summary');
     return response.data;
   },
 };

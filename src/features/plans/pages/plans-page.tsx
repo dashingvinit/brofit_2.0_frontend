@@ -13,6 +13,7 @@ import {
   X,
   LayoutGrid,
   Upload,
+  Settings2,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -49,7 +50,6 @@ import { ImportCsvDialog } from '@/shared/components/import-csv-dialog';
 import { ExportDropdown } from '@/shared/components/export-dropdown';
 import { planTypesApi } from '../api/plan-types-api';
 import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 
 type CategoryFilter = 'all' | PlanCategory;
 
@@ -90,7 +90,6 @@ export function PlansPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingPlanType, setEditingPlanType] = useState<PlanType | null>(null);
   const [selectedPlanType, setSelectedPlanType] = useState<PlanType | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [planTypeToDelete, setPlanTypeToDelete] = useState<PlanType | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,26 +97,6 @@ export function PlansPage() {
 
   const { data: planTypes, isLoading } = usePlanTypes();
   const deleteMutation = useDeletePlanType();
-
-  const handleEdit = (planType: PlanType) => {
-    setEditingPlanType(planType);
-  };
-
-  const handleDelete = (planType: PlanType) => {
-    setPlanTypeToDelete(planType);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = () => {
-    if (planTypeToDelete) {
-      deleteMutation.mutate(planTypeToDelete.id, {
-        onSuccess: () => {
-          setDeleteDialogOpen(false);
-          setPlanTypeToDelete(null);
-        },
-      });
-    }
-  };
 
   const handleManageVariants = (planType: PlanType) => {
     setSelectedPlanType(planType);
@@ -319,17 +298,17 @@ export function PlansPage() {
             {filteredPlans.map((planType) => (
               <Card key={planType.id} className="flex flex-col">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 bg-primary/10 rounded-lg">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                         {planType.category === 'training' ? (
                           <Dumbbell className="h-5 w-5 text-primary" />
                         ) : (
                           <CreditCard className="h-5 w-5 text-primary" />
                         )}
                       </div>
-                      <div>
-                        <CardTitle className="text-sm font-semibold">{planType.name}</CardTitle>
+                      <div className="min-w-0">
+                        <CardTitle className="text-sm font-semibold truncate">{planType.name}</CardTitle>
                         <div className="flex gap-1 mt-1">
                           <Badge variant={planType.isActive ? 'default' : 'secondary'}>
                             {planType.isActive ? 'Active' : 'Inactive'}
@@ -342,19 +321,16 @@ export function PlansPage() {
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(planType)}>
+                        <DropdownMenuItem onClick={() => setEditingPlanType(planType)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(planType)}
-                          className="text-destructive"
-                        >
+                        <DropdownMenuItem onClick={() => setPlanTypeToDelete(planType)} className="text-destructive focus:text-destructive">
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
                         </DropdownMenuItem>
@@ -374,14 +350,12 @@ export function PlansPage() {
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-semibold text-muted-foreground">
                         Pricing Variants
+                        {planType.variants && planType.variants.length > 0 && (
+                          <span className="ml-1.5 text-xs font-normal">
+                            ({planType.variants.length})
+                          </span>
+                        )}
                       </h4>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleManageVariants(planType)}
-                      >
-                        Manage
-                      </Button>
                     </div>
 
                     {planType.variants && planType.variants.length > 0 ? (
@@ -406,33 +380,28 @@ export function PlansPage() {
                             </div>
                           </div>
                         ))}
-                        {planType.variants.length > 3 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => handleManageVariants(planType)}
-                          >
-                            View all {planType.variants.length} variants
-                          </Button>
-                        )}
                       </div>
                     ) : (
-                      <div className="text-center py-6">
-                        <p className="text-sm text-muted-foreground mb-3">
-                          No pricing variants yet
-                        </p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleManageVariants(planType)}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Variant
-                        </Button>
-                      </div>
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No pricing variants yet
+                      </p>
                     )}
                   </div>
+
+                  {/* Manage Variants CTA */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-4"
+                    onClick={() => handleManageVariants(planType)}
+                  >
+                    <Settings2 className="h-4 w-4 mr-2" />
+                    {planType.variants && planType.variants.length > 0
+                      ? planType.variants.length > 3
+                        ? `Manage variants · ${planType.variants.length} total`
+                        : 'Manage variants'
+                      : 'Add pricing variants'}
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -495,20 +464,26 @@ export function PlansPage() {
       />
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog open={!!planTypeToDelete} onOpenChange={(open) => { if (!open) setPlanTypeToDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete "{planTypeToDelete?.name}"?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the plan type "{planTypeToDelete?.name}" and all its
-              variants. This action cannot be undone.
+              This will permanently delete this plan type and all its variants. If any memberships or trainings are using this plan, the deletion will be blocked.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (planTypeToDelete) {
+                  deleteMutation.mutate(planTypeToDelete.id, {
+                    onSuccess: () => setPlanTypeToDelete(null),
+                    onError: () => setPlanTypeToDelete(null),
+                  });
+                }
+              }}
             >
               Delete
             </AlertDialogAction>

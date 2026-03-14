@@ -2,6 +2,7 @@ import type { RouteObject } from "react-router-dom";
 import { PublicLayout } from "../layouts/public-layout";
 import { RouteErrorBoundary } from "@/shared/components/route-error-boundary";
 import { HomePage } from "@/pages/home-page";
+import { SaasLandingPage } from "@/pages/saas-landing-page";
 import { AdminPortalPage } from "@/pages/admin-portal-page";
 import { SignInPage } from "@/features/auth/pages/sign-in-page";
 import { SignUpPage } from "@/features/auth/pages/sign-up-page";
@@ -17,6 +18,10 @@ export const publicRoutes: RouteObject[] = [
         element: <HomePage />,
       },
     ],
+  },
+  {
+    path: "/snt",
+    element: <SaasLandingPage />,
   },
   {
     path: "/admin",

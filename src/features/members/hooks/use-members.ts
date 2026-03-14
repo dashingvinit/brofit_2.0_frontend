@@ -6,10 +6,16 @@ import type { CreateMemberData, UpdateMemberData } from '@/shared/types/common.t
 /**
  * Hook to fetch all members with pagination
  */
-export function useMembers(page = 1, limit = 20, isActive?: boolean | null) {
+export function useMembers(
+  page = 1,
+  limit = 20,
+  isActive?: boolean | null,
+  joinedFrom?: string | null,
+  joinedTo?: string | null,
+) {
   return useQuery({
-    queryKey: ['members', page, limit, isActive],
-    queryFn: () => membersApi.getAllMembers(page, limit, isActive),
+    queryKey: ['members', page, limit, isActive, joinedFrom, joinedTo],
+    queryFn: () => membersApi.getAllMembers(page, limit, isActive, joinedFrom, joinedTo),
   });
 }
 

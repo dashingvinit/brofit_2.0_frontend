@@ -44,6 +44,7 @@ import {
 import { PageHeader } from '@/shared/components/page-header';
 import { useMemberships, useMembershipStats } from '../hooks/use-memberships';
 import { ROUTES } from '@/shared/lib/constants';
+import { getThisMonthDateRange } from '@/shared/lib/utils';
 import type { Membership, MembershipStatus } from '@/shared/types/common.types';
 
 type StatusFilter = 'all' | MembershipStatus;
@@ -78,6 +79,7 @@ const statCards = [
     icon: CreditCard,
     colorClass: 'text-blue-600 dark:text-blue-400',
     bgClass: 'bg-blue-50 dark:bg-blue-950/50',
+    filter: 'all' as StatusFilter,
   },
   {
     key: 'active' as const,
@@ -86,6 +88,7 @@ const statCards = [
     icon: CheckCircle2,
     colorClass: 'text-emerald-600 dark:text-emerald-400',
     bgClass: 'bg-emerald-50 dark:bg-emerald-950/50',
+    filter: 'active' as StatusFilter,
   },
   {
     key: 'expired' as const,
@@ -94,6 +97,7 @@ const statCards = [
     icon: Clock,
     colorClass: 'text-amber-600 dark:text-amber-400',
     bgClass: 'bg-amber-50 dark:bg-amber-950/50',
+    filter: 'expired' as StatusFilter,
   },
   {
     key: 'newThisMonth' as const,
@@ -102,6 +106,7 @@ const statCards = [
     icon: TrendingUp,
     colorClass: 'text-violet-600 dark:text-violet-400',
     bgClass: 'bg-violet-50 dark:bg-violet-950/50',
+    filter: 'newThisMonth' as const,
   },
 ];
 
@@ -201,8 +206,15 @@ function MembershipCard({
 export function MembershipsPage() {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [dateRange, setDateRange] = useState<{ from: string; to: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const { data: membershipsResponse, isLoading } = useMemberships();
+  const { data: membershipsResponse, isLoading } = useMemberships(
+    1,
+    100,
+    statusFilter !== 'all' ? statusFilter : null,
+    dateRange?.from ?? null,
+    dateRange?.to ?? null,
+  );
   const { data: statsResponse, isLoading: isLoadingStats } = useMembershipStats();
 
   const allMemberships = membershipsResponse?.data ?? [];
@@ -210,8 +222,6 @@ export function MembershipsPage() {
 
   const searchLower = searchQuery.toLowerCase();
   const memberships = allMemberships.filter((m) => {
-    const matchesStatus = statusFilter === 'all' || m.status === statusFilter;
-    if (!matchesStatus) return false;
     if (!searchQuery) return true;
     const memberName = m.member
       ? `${m.member.firstName} ${m.member.lastName}`.toLowerCase()
@@ -220,7 +230,7 @@ export function MembershipsPage() {
     return memberName.includes(searchLower) || planName.includes(searchLower);
   });
 
-  const hasActiveFilters = statusFilter !== 'all' || !!searchQuery;
+  const hasActiveFilters = statusFilter !== 'all' || !!searchQuery || !!dateRange;
   const filterLabel =
     statusOptions.find((o) => o.value === statusFilter)?.label ?? 'Filter';
 
@@ -265,17 +275,37 @@ export function MembershipsPage() {
             ))
           : stats
             ? statCards.map(
-                ({ key, label, shortLabel, icon: Icon, colorClass, bgClass }) => {
+                ({ key, label, shortLabel, icon: Icon, colorClass, bgClass, filter }) => {
                   const value = stats[key];
                   const percentage =
                     stats.total > 0 && key !== 'total' && key !== 'newThisMonth'
                       ? Math.round((value / stats.total) * 100)
                       : null;
+                  const isSelected =
+                    filter === 'newThisMonth'
+                      ? !!dateRange
+                      : filter !== null && statusFilter === filter && !dateRange;
+
+                  const handleClick =
+                    filter === 'newThisMonth'
+                      ? () => {
+                          setDateRange(getThisMonthDateRange());
+                          setStatusFilter('all');
+                          setSearchQuery('');
+                        }
+                      : filter !== null
+                        ? () => {
+                            setStatusFilter(filter as StatusFilter);
+                            setDateRange(null);
+                            setSearchQuery('');
+                          }
+                        : undefined;
 
                   return (
                     <Card
                       key={key}
-                      className="overflow-hidden transition-shadow hover:shadow-md"
+                      onClick={handleClick}
+                      className={`overflow-hidden transition-shadow hover:shadow-md ${filter !== null ? 'cursor-pointer' : ''} ${isSelected ? 'ring-2 ring-primary' : ''}`}
                     >
                       <div className="p-3 lg:hidden">
                         <div className="flex items-center gap-2.5">
@@ -354,9 +384,9 @@ export function MembershipsPage() {
             >
               <SlidersHorizontal className="h-4 w-4" />
               <span className="hidden sm:inline">
-                {statusFilter === 'all' ? 'Filter' : filterLabel}
+                {dateRange ? 'Date Range' : statusFilter === 'all' ? 'Filter' : filterLabel}
               </span>
-              {statusFilter !== 'all' && (
+              {(statusFilter !== 'all' || !!dateRange) && (
                 <Badge
                   variant="secondary"
                   className="h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold"
@@ -371,7 +401,7 @@ export function MembershipsPage() {
             <DropdownMenuSeparator />
             <DropdownMenuRadioGroup
               value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+              onValueChange={(v) => { setStatusFilter(v as StatusFilter); setDateRange(null); }}
             >
               {statusOptions.map(({ value, label, icon: Icon }) => (
                 <DropdownMenuRadioItem
@@ -395,6 +425,7 @@ export function MembershipsPage() {
             onClick={() => {
               setSearchQuery('');
               setStatusFilter('all');
+              setDateRange(null);
             }}
           >
             Reset
@@ -436,6 +467,7 @@ export function MembershipsPage() {
                 onClick={() => {
                   setSearchQuery('');
                   setStatusFilter('all');
+                  setDateRange(null);
                 }}
               >
                 Clear Filters

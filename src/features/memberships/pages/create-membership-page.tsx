@@ -9,12 +9,16 @@ export function CreateMembershipPage() {
   const [searchParams] = useSearchParams();
   const preselectedMemberId = searchParams.get('memberId') ?? undefined;
 
+  const returnTo = preselectedMemberId
+    ? `${ROUTES.MEMBERS}/${preselectedMemberId}`
+    : ROUTES.MEMBERSHIPS;
+
   const handleSuccess = () => {
-    navigate(ROUTES.MEMBERSHIPS || '/memberships');
+    navigate(returnTo);
   };
 
   const handleCancel = () => {
-    navigate(ROUTES.MEMBERSHIPS || '/memberships');
+    navigate(returnTo);
   };
 
   return (

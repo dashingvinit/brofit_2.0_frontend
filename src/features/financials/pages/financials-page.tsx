@@ -39,6 +39,7 @@ import {
 } from '../hooks/use-financials';
 import { ExpenseDialog } from '../components/expense-dialog';
 import { InvestmentDialog } from '../components/investment-dialog';
+import { formatCurrency } from '@/shared/lib/utils';
 import type { Expense, Investment, ExpenseCategory } from '@/shared/types/common.types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -62,10 +63,6 @@ const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   maintenance: 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300',
   other: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
 };
-
-function formatCurrency(value: number) {
-  return value.toLocaleString('en-IN');
-}
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-IN', {

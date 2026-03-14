@@ -1,18 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import {
-  Users,
-  UserCheck,
-  CreditCard,
-  Dumbbell,
-  IndianRupee,
-  TrendingUp,
   AlertTriangle,
-  ArrowRight,
   CalendarDays,
   UserX,
+  IndianRupee,
+  ArrowRight,
 } from "lucide-react";
-import { Button } from "@/shared/components/ui/button";
 import {
   Card,
   CardContent,
@@ -22,125 +16,18 @@ import {
 import { Badge } from "@/shared/components/ui/badge";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { PageHeader } from "@/shared/components/page-header";
-import { useMemberStats } from "@/features/members/hooks/use-members";
 import {
-  useMembershipStats,
   useExpiringMemberships,
 } from "@/features/memberships/hooks/use-memberships";
 import {
-  useTrainingStats,
   useExpiringTrainings,
 } from "@/features/training/hooks/use-training";
 import {
   useDuesReport,
   useInactiveCandidates,
 } from "@/features/members/hooks/use-member-detail";
-import { ROUTES } from "@/shared/lib/constants";
 import { formatCurrency, daysUntil } from "@/shared/lib/utils";
 import type { Membership, Training } from "@/shared/types/common.types";
-
-function StatCard({
-  label,
-  shortLabel,
-  value,
-  subtext,
-  icon: Icon,
-  colorClass,
-  bgClass,
-  isLoading,
-  isCurrency,
-}: {
-  label: string;
-  shortLabel: string;
-  value: number | undefined;
-  subtext?: string;
-  icon: typeof Users;
-  colorClass: string;
-  bgClass: string;
-  isLoading: boolean;
-  isCurrency?: boolean;
-}) {
-  if (isLoading) {
-    return (
-      <Card className="overflow-hidden">
-        <div className="p-3 lg:hidden">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
-            <div className="space-y-1.5 flex-1">
-              <Skeleton className="h-3 w-14" />
-              <Skeleton className="h-5 w-10" />
-            </div>
-          </div>
-        </div>
-        <div className="hidden lg:block">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-8 rounded-lg" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-8 w-20 mb-1" />
-            <Skeleton className="h-3 w-16" />
-          </CardContent>
-        </div>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="overflow-hidden transition-shadow hover:shadow-md">
-      {/* Compact layout on mobile */}
-      <div className="p-3 lg:hidden">
-        <div className="flex items-center gap-2.5">
-          <div className={`rounded-lg p-2 shrink-0 ${bgClass}`}>
-            <Icon className={`h-4 w-4 ${colorClass}`} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-medium text-muted-foreground leading-tight truncate">
-              {shortLabel}
-            </p>
-            <p className="text-lg font-bold leading-tight tracking-tight">
-              {isCurrency ? (
-                <span className="inline-flex items-center">
-                  <IndianRupee className="h-3.5 w-3.5" />
-                  {formatCurrency(value ?? 0)}
-                </span>
-              ) : (
-                (value ?? 0)
-              )}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Full layout on desktop */}
-      <div className="hidden lg:block">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            {label}
-          </CardTitle>
-          <div className={`rounded-lg p-2 ${bgClass}`}>
-            <Icon className={`h-4 w-4 ${colorClass}`} />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold tracking-tight">
-            {isCurrency ? (
-              <span className="inline-flex items-center">
-                <IndianRupee className="h-5 w-5" />
-                {formatCurrency(value ?? 0)}
-              </span>
-            ) : (
-              (value ?? 0)
-            )}
-          </div>
-          {subtext && (
-            <p className="text-xs text-muted-foreground mt-1">{subtext}</p>
-          )}
-        </CardContent>
-      </div>
-    </Card>
-  );
-}
 
 function ExpiringItem({
   name,
@@ -205,40 +92,19 @@ function ExpiringItem({
   );
 }
 
-export function DashboardPage() {
+export function ReceptionPage() {
   const { user } = useUser();
   const navigate = useNavigate();
 
-  const { data: memberStatsRes, isLoading: isLoadingMembers } =
-    useMemberStats();
-  const { data: membershipStatsRes, isLoading: isLoadingMemberships } =
-    useMembershipStats();
-  const { data: trainingStatsRes, isLoading: isLoadingTrainings } =
-    useTrainingStats();
   const { data: expiringMembershipsRes } = useExpiringMemberships(7);
   const { data: expiringTrainingsRes } = useExpiringTrainings(7);
   const { data: inactiveSubRes } = useInactiveCandidates(1, 10);
-  const { data: duesReportRes, isLoading: isLoadingDues } = useDuesReport(
-    1,
-    10,
-  );
-
-  const memberStats = memberStatsRes?.data;
-  const membershipStats = membershipStatsRes?.data;
-  const trainingStats = trainingStatsRes?.data;
+  const { data: duesReportRes, isLoading: isLoadingDues } = useDuesReport(1, 10);
 
   const expiringMemberships: Membership[] = expiringMembershipsRes?.data ?? [];
   const expiringTrainings: Training[] = expiringTrainingsRes?.data ?? [];
 
-  const totalRevenue =
-    (membershipStats?.totalCollected ?? 0) +
-    (trainingStats?.totalCollected ?? 0);
-  const revenueThisMonth =
-    (membershipStats?.collectedThisMonth ?? 0) +
-    (trainingStats?.collectedThisMonth ?? 0);
-
   const inactiveSubMembers = inactiveSubRes?.data ?? [];
-
   const duesMembers = duesReportRes?.data ?? [];
   const duesSummary = duesReportRes?.summary ?? {
     totalMembersWithDues: 0,
@@ -269,146 +135,12 @@ export function DashboardPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Dashboard"
-        description={`Welcome back, ${user?.firstName || "User"}!`}
-        actions={
-          <>
-            <Button
-              size="sm"
-              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white border-0"
-              onClick={() => navigate(ROUTES.REGISTER_MEMBER)}
-            >
-              <UserCheck className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Add Member</span>
-            </Button>
-            <Button
-              size="sm"
-              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white border-0"
-              onClick={() => navigate(ROUTES.CREATE_MEMBERSHIP)}
-            >
-              <CreditCard className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">New Membership</span>
-            </Button>
-            <Button
-              size="sm"
-              className="gap-2 bg-violet-600 hover:bg-violet-700 text-white border-0"
-              onClick={() => navigate(ROUTES.CREATE_TRAINING)}
-            >
-              <Dumbbell className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">New Training</span>
-            </Button>
-          </>
-        }
+        title="Reception"
+        description={`Welcome, ${user?.firstName || "Staff"}!`}
       />
 
-      {/* Key Stats */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Total Members"
-          shortLabel="Members"
-          value={memberStats?.total}
-          subtext={memberStats ? `${memberStats.active} active` : undefined}
-          icon={Users}
-          colorClass="text-blue-600 dark:text-blue-400"
-          bgClass="bg-blue-50 dark:bg-blue-950/50"
-          isLoading={isLoadingMembers}
-        />
-        <StatCard
-          label="Active Memberships"
-          shortLabel="Memberships"
-          value={membershipStats?.active}
-          subtext={
-            membershipStats
-              ? `${membershipStats.newThisMonth} new this month`
-              : undefined
-          }
-          icon={CreditCard}
-          colorClass="text-emerald-600 dark:text-emerald-400"
-          bgClass="bg-emerald-50 dark:bg-emerald-950/50"
-          isLoading={isLoadingMemberships}
-        />
-        <StatCard
-          label="Active Trainings"
-          shortLabel="Trainings"
-          value={trainingStats?.active}
-          subtext={
-            trainingStats
-              ? `${trainingStats.newThisMonth} new this month`
-              : undefined
-          }
-          icon={Dumbbell}
-          colorClass="text-violet-600 dark:text-violet-400"
-          bgClass="bg-violet-50 dark:bg-violet-950/50"
-          isLoading={isLoadingTrainings}
-        />
-        <StatCard
-          label="Total Revenue"
-          shortLabel="Revenue"
-          value={totalRevenue}
-          subtext={
-            revenueThisMonth > 0
-              ? `₹${formatCurrency(revenueThisMonth)} this month`
-              : undefined
-          }
-          icon={TrendingUp}
-          colorClass="text-amber-600 dark:text-amber-400"
-          bgClass="bg-amber-50 dark:bg-amber-950/50"
-          isLoading={isLoadingMemberships || isLoadingTrainings}
-          isCurrency
-        />
-      </div>
-
-      {/* Revenue Breakdown + Expiring + Inactive */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Revenue Breakdown */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <IndianRupee className="h-4 w-4" />
-              Revenue Breakdown
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {isLoadingMemberships || isLoadingTrainings ? (
-              <div className="space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between py-2 border-b">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-emerald-600" />
-                    <span className="text-sm font-medium">Memberships</span>
-                  </div>
-                  <span className="text-sm font-semibold inline-flex items-center">
-                    <IndianRupee className="h-3 w-3" />
-                    {formatCurrency(membershipStats?.totalCollected ?? 0)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-2 border-b">
-                  <div className="flex items-center gap-2">
-                    <Dumbbell className="h-4 w-4 text-violet-600" />
-                    <span className="text-sm font-medium">Trainings</span>
-                  </div>
-                  <span className="text-sm font-semibold inline-flex items-center">
-                    <IndianRupee className="h-3 w-3" />
-                    {formatCurrency(trainingStats?.totalCollected ?? 0)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm font-semibold">Total</span>
-                  <p className="text-lg font-bold inline-flex items-center">
-                    <IndianRupee className="h-4 w-4" />
-                    {formatCurrency(totalRevenue)}
-                  </p>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
+      {/* Expiring Soon + No Active Membership */}
+      <div className="grid gap-4 lg:grid-cols-2">
         {/* Expiring Soon */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -498,30 +230,19 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* Outstanding Dues */}
+      {/* Outstanding Dues — amounts visible but no grand total revenue context */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base flex items-center gap-2">
             <IndianRupee className="h-4 w-4" />
             Outstanding Dues
           </CardTitle>
-          <div className="flex items-center gap-3">
-            {!isLoadingDues && duesSummary.grandTotal > 0 && (
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Grand Total</p>
-                <p className="text-sm font-bold text-amber-600 dark:text-amber-400 inline-flex items-center">
-                  <IndianRupee className="h-3 w-3" />
-                  {formatCurrency(duesSummary.grandTotal)}
-                </p>
-              </div>
-            )}
-            {!isLoadingDues && duesSummary.totalMembersWithDues > 0 && (
-              <Badge variant="secondary">
-                {duesSummary.totalMembersWithDues} member
-                {duesSummary.totalMembersWithDues !== 1 ? "s" : ""}
-              </Badge>
-            )}
-          </div>
+          {!isLoadingDues && duesSummary.totalMembersWithDues > 0 && (
+            <Badge variant="secondary">
+              {duesSummary.totalMembersWithDues} member
+              {duesSummary.totalMembersWithDues !== 1 ? "s" : ""}
+            </Badge>
+          )}
         </CardHeader>
         <CardContent>
           {isLoadingDues ? (
@@ -642,19 +363,6 @@ export function DashboardPage() {
                   </div>
                 ))}
               </div>
-
-              {duesSummary.totalMembersWithDues > duesMembers.length && (
-                <div className="mt-3 pt-3 border-t text-center">
-                  <button
-                    className="text-sm text-primary hover:underline font-medium inline-flex items-center gap-1"
-                    onClick={() => navigate(`${ROUTES.MEMBERS}?dues=true`)}
-                  >
-                    View all {duesSummary.totalMembersWithDues} members with
-                    dues
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )}
             </>
           )}
         </CardContent>

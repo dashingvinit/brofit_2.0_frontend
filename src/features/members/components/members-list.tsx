@@ -46,6 +46,7 @@ import {
 interface MembersListProps {
   members?: Member[];
   isLoading?: boolean;
+  isAdmin?: boolean;
 }
 
 function getInitials(firstName: string, lastName: string) {
@@ -69,7 +70,7 @@ function getAvatarColor(name: string) {
   return colors[index];
 }
 
-export function MembersList({ members, isLoading }: MembersListProps) {
+export function MembersList({ members, isLoading, isAdmin = true }: MembersListProps) {
   const navigate = useNavigate();
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
@@ -188,11 +189,13 @@ export function MembersList({ members, isLoading }: MembersListProps) {
           Get started by registering your first member to begin managing your
           gym roster.
         </p>
-        <Button asChild className="mt-6">
-          <Link to={ROUTES.REGISTER_MEMBER || "/members/register"}>
-            Register Member
-          </Link>
-        </Button>
+        {isAdmin && (
+          <Button asChild className="mt-6">
+            <Link to={ROUTES.REGISTER_MEMBER || "/members/register"}>
+              Register Member
+            </Link>
+          </Button>
+        )}
       </Card>
     );
   }
@@ -209,7 +212,7 @@ export function MembersList({ members, isLoading }: MembersListProps) {
               <TableHead>Age / Gender</TableHead>
               <TableHead>Join Date</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              {isAdmin && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -277,35 +280,37 @@ export function MembersList({ members, isLoading }: MembersListProps) {
                     {member.isActive ? "Active" : "Inactive"}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => setEditingMember(member)}
-                      >
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Edit Member
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setDeletingMember(member)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Member
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+                {isAdmin && (
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => setEditingMember(member)}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit Member
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setDeletingMember(member)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Member
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
@@ -353,33 +358,35 @@ export function MembersList({ members, isLoading }: MembersListProps) {
                     >
                       {member.isActive ? "Active" : "Inactive"}
                     </Badge>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => setEditingMember(member)}
-                        >
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setDeletingMember(member)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {isAdmin && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => setEditingMember(member)}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setDeletingMember(member)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </div>
 

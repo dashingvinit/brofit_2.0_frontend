@@ -43,11 +43,12 @@ import {
 } from "../hooks/use-members";
 import { useDuesReport } from "../hooks/use-member-detail";
 import { ROUTES } from "@/shared/lib/constants";
+import { getThisMonthDateRange } from "@/shared/lib/utils";
 import { ImportCsvDialog } from "@/shared/components/import-csv-dialog";
 import { ExportDropdown } from "@/shared/components/export-dropdown";
 import { membersApi } from "../api/members-api";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useRole } from "@/shared/hooks/use-role";
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -71,6 +72,7 @@ const statCards = [
     icon: Users,
     colorClass: "text-blue-600 dark:text-blue-400",
     bgClass: "bg-blue-50 dark:bg-blue-950/50",
+    filter: "all" as StatusFilter,
   },
   {
     key: "active",
@@ -79,6 +81,7 @@ const statCards = [
     icon: UserCheck,
     colorClass: "text-emerald-600 dark:text-emerald-400",
     bgClass: "bg-emerald-50 dark:bg-emerald-950/50",
+    filter: "active" as StatusFilter,
   },
   {
     key: "inactive",
@@ -87,6 +90,7 @@ const statCards = [
     icon: UserX,
     colorClass: "text-amber-600 dark:text-amber-400",
     bgClass: "bg-amber-50 dark:bg-amber-950/50",
+    filter: "inactive" as StatusFilter,
   },
   {
     key: "newThisMonth",
@@ -95,6 +99,7 @@ const statCards = [
     icon: TrendingUp,
     colorClass: "text-violet-600 dark:text-violet-400",
     bgClass: "bg-violet-50 dark:bg-violet-950/50",
+    filter: "newThisMonth" as const,
   },
 ] as const;
 
@@ -125,12 +130,17 @@ const MEMBER_CSV_SAMPLE: Record<string, string> = {
 export function MembersListPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isAdmin } = useRole();
   const [searchParams, setSearchParams] = useSearchParams();
   const showDues = searchParams.get("dues") === "true";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [dateRange, setDateRange] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
   const [page, setPage] = useState(1);
   const [duesPage, setDuesPage] = useState(1);
   const [importOpen, setImportOpen] = useState(false);
@@ -138,7 +148,7 @@ export function MembersListPage() {
   // Reset to page 1 when filter changes
   useEffect(() => {
     setPage(1);
-  }, [statusFilter]);
+  }, [statusFilter, dateRange]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -159,6 +169,8 @@ export function MembersListPage() {
     page,
     PAGE_SIZE,
     isActiveParam,
+    dateRange?.from ?? null,
+    dateRange?.to ?? null,
   );
   const { data: searchResponse, isLoading: isSearching } = useSearchMembers({
     q: debouncedSearch,
@@ -178,7 +190,8 @@ export function MembersListPage() {
   const pagination = isSearchMode ? null : membersResponse?.pagination;
 
   const stats = statsResponse?.data;
-  const hasActiveFilters = statusFilter !== "all" || !!debouncedSearch;
+  const hasActiveFilters =
+    statusFilter !== "all" || !!debouncedSearch || !!dateRange;
   const filterLabel =
     statusOptions.find((o) => o.value === statusFilter)?.label ?? "Filter";
 
@@ -213,30 +226,32 @@ export function MembersListPage() {
         title="Members"
         description="Manage your gym members"
         actions={
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setImportOpen(true)}
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Import
-            </Button>
-            <ExportDropdown
-              title="Members"
-              filename={`members_${new Date().toISOString().slice(0, 10)}`}
-              headers={MEMBER_CSV_HEADERS}
-              getData={getMembersForExport}
-            />
-            <Button
-              onClick={() =>
-                navigate(ROUTES.REGISTER_MEMBER || "/members/register")
-              }
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Member
-            </Button>
-          </div>
+          isAdmin ? (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setImportOpen(true)}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+              <ExportDropdown
+                title="Members"
+                filename={`members_${new Date().toISOString().slice(0, 10)}`}
+                headers={MEMBER_CSV_HEADERS}
+                getData={getMembersForExport}
+              />
+              <Button
+                onClick={() =>
+                  navigate(ROUTES.REGISTER_MEMBER || "/members/register")
+                }
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Member
+              </Button>
+            </div>
+          ) : undefined
         }
       />
 
@@ -286,17 +301,42 @@ export function MembersListPage() {
                   icon: Icon,
                   colorClass,
                   bgClass,
+                  filter,
                 }) => {
                   const value = stats[key];
                   const percentage =
                     stats.total > 0 && key !== "total" && key !== "newThisMonth"
                       ? Math.round((value / stats.total) * 100)
                       : null;
+                  const isSelected =
+                    filter === "newThisMonth"
+                      ? !!dateRange
+                      : filter !== null &&
+                        statusFilter === filter &&
+                        !dateRange;
+
+                  const handleClick =
+                    filter === "newThisMonth"
+                      ? () => {
+                          setDateRange(getThisMonthDateRange());
+                          setStatusFilter("all");
+                          setSearchQuery("");
+                          setDebouncedSearch("");
+                        }
+                      : filter !== null
+                        ? () => {
+                            setStatusFilter(filter);
+                            setDateRange(null);
+                            setSearchQuery("");
+                            setDebouncedSearch("");
+                          }
+                        : undefined;
 
                   return (
                     <Card
                       key={key}
-                      className="overflow-hidden transition-shadow hover:shadow-md"
+                      onClick={handleClick}
+                      className={`overflow-hidden transition-shadow hover:shadow-md ${filter !== null ? "cursor-pointer" : ""} ${isSelected ? "ring-2 ring-primary" : ""}`}
                     >
                       {/* Compact layout on mobile */}
                       <div className="p-3 lg:hidden">
@@ -494,32 +534,33 @@ export function MembersListPage() {
                 ))}
               </div>
 
-              {duesReportRes.pagination && duesReportRes.pagination.pages > 1 && (
-                <div className="flex items-center justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDuesPage((p) => p - 1)}
-                    disabled={!duesReportRes.pagination.hasPrev}
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
-                  </Button>
-                  <span className="text-sm text-muted-foreground tabular-nums px-1">
-                    {duesReportRes.pagination.page} /{" "}
-                    {duesReportRes.pagination.pages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDuesPage((p) => p + 1)}
-                    disabled={!duesReportRes.pagination.hasNext}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
-              )}
+              {duesReportRes.pagination &&
+                duesReportRes.pagination.pages > 1 && (
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDuesPage((p) => p - 1)}
+                      disabled={!duesReportRes.pagination.hasPrev}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Previous
+                    </Button>
+                    <span className="text-sm text-muted-foreground tabular-nums px-1">
+                      {duesReportRes.pagination.page} /{" "}
+                      {duesReportRes.pagination.pages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDuesPage((p) => p + 1)}
+                      disabled={!duesReportRes.pagination.hasNext}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                )}
             </>
           )}
         </>
@@ -552,12 +593,20 @@ export function MembersListPage() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 gap-2 shrink-0"
+                >
                   <SlidersHorizontal className="h-4 w-4" />
                   <span className="hidden sm:inline">
-                    {statusFilter === "all" ? "Filter" : filterLabel}
+                    {dateRange
+                      ? "Date Range"
+                      : statusFilter === "all"
+                        ? "Filter"
+                        : filterLabel}
                   </span>
-                  {statusFilter !== "all" && (
+                  {(statusFilter !== "all" || !!dateRange) && (
                     <Badge
                       variant="secondary"
                       className="h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold"
@@ -572,7 +621,10 @@ export function MembersListPage() {
                 <DropdownMenuSeparator />
                 <DropdownMenuRadioGroup
                   value={statusFilter}
-                  onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+                  onValueChange={(v) => {
+                    setStatusFilter(v as StatusFilter);
+                    setDateRange(null);
+                  }}
                 >
                   {statusOptions.map(({ value, label, icon: Icon }) => (
                     <DropdownMenuRadioItem
@@ -597,6 +649,7 @@ export function MembersListPage() {
                   setSearchQuery("");
                   setDebouncedSearch("");
                   setStatusFilter("all");
+                  setDateRange(null);
                 }}
               >
                 Reset
@@ -607,7 +660,10 @@ export function MembersListPage() {
               <p className="text-sm text-muted-foreground ml-auto tabular-nums">
                 <span className="font-medium text-foreground">
                   {(pagination.page - 1) * pagination.limit + 1}–
-                  {Math.min(pagination.page * pagination.limit, pagination.total)}
+                  {Math.min(
+                    pagination.page * pagination.limit,
+                    pagination.total,
+                  )}
                 </span>{" "}
                 of{" "}
                 <span className="font-medium text-foreground">
@@ -627,7 +683,11 @@ export function MembersListPage() {
           </div>
 
           {/* Members List */}
-          <MembersList members={members} isLoading={isLoading} />
+          <MembersList
+            members={members}
+            isLoading={isLoading}
+            isAdmin={isAdmin}
+          />
 
           {/* Pagination */}
           {!isSearchMode && pagination && pagination.pages > 1 && (

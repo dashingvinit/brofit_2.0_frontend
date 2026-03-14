@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserRound, Plus, Loader2, PowerOff, Dumbbell } from 'lucide-react';
+import { UserRound, Plus, Loader2, PowerOff, Dumbbell, IndianRupee } from 'lucide-react';
 import { PageHeader } from '@/shared/components/page-header';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -14,27 +14,35 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/shared/components/ui/dialog';
-import { useTrainers, useCreateTrainer, useDeactivateTrainer } from '../hooks/use-trainers';
+import { useTrainers, useCreateTrainer, useDeactivateTrainer, useTrainerOutstandingSummary } from '../hooks/use-trainers';
 
 export function TrainersPage() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
+  const [splitPercent, setSplitPercent] = useState('60');
   const navigate = useNavigate();
 
   const { data: trainersResponse, isLoading } = useTrainers();
   const createTrainer = useCreateTrainer();
   const deactivateTrainer = useDeactivateTrainer();
+  const { data: summaryResponse } = useTrainerOutstandingSummary();
 
   const trainers = trainersResponse?.data ?? [];
+  const outstandingSummary = summaryResponse?.data ?? {};
 
   const handleCreate = () => {
     if (!name.trim()) return;
-    createTrainer.mutate(name.trim(), {
-      onSuccess: () => {
-        setName('');
-        setOpen(false);
+    const split = parseFloat(splitPercent);
+    createTrainer.mutate(
+      { name: name.trim(), splitPercent: isNaN(split) ? 60 : split },
+      {
+        onSuccess: () => {
+          setName('');
+          setSplitPercent('60');
+          setOpen(false);
+        },
       },
-    });
+    );
   };
 
   return (
@@ -81,7 +89,7 @@ export function TrainersPage() {
                   </div>
                   <div>
                     <p className="font-medium">{trainer.name}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       <Badge
                         variant={trainer.isActive ? 'default' : 'secondary'}
                         className="text-xs"
@@ -92,6 +100,15 @@ export function TrainersPage() {
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                           <Dumbbell className="h-3 w-3" />
                           {trainer._count.trainings} active
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
+                        {trainer.splitPercent ?? 60}% split
+                      </span>
+                      {outstandingSummary[trainer.id]?.outstanding > 0 && (
+                        <span className="inline-flex items-center gap-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                          <IndianRupee className="h-3 w-3" />
+                          {outstandingSummary[trainer.id].outstanding.toLocaleString('en-IN', { maximumFractionDigits: 0 })} due
                         </span>
                       )}
                     </div>
@@ -119,16 +136,33 @@ export function TrainersPage() {
           <DialogHeader>
             <DialogTitle>Add Trainer</DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 py-2">
-            <Label htmlFor="trainerName">Trainer Name</Label>
-            <Input
-              id="trainerName"
-              placeholder="e.g. Pranjal Sharma"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-              autoFocus
-            />
+          <div className="space-y-3 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="trainerName">Trainer Name</Label>
+              <Input
+                id="trainerName"
+                placeholder="e.g. Pranjal Sharma"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="splitPercent">Revenue Split (%)</Label>
+              <Input
+                id="splitPercent"
+                type="number"
+                min={0}
+                max={100}
+                placeholder="60"
+                value={splitPercent}
+                onChange={(e) => setSplitPercent(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Percentage of training revenue paid to the trainer. Default is 60%.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>

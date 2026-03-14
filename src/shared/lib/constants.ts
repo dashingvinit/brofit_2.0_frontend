@@ -21,12 +21,7 @@ export const ROUTES = {
   TRAINER_ASSIGNMENTS: "/trainer-assignments",
   FINANCIALS: "/financials",
   ANALYTICS: "/analytics",
+  ATTENDANCE: "/attendance",
+  RECEPTION: "/reception",
 } as const;
 
-export const ROLES = {
-  ADMIN: "admin",
-  TRAINER: "trainer",
-  MEMBER: "member",
-} as const;
-
-export type Role = (typeof ROLES)[keyof typeof ROLES];

@@ -26,11 +26,16 @@ export const membershipsApi = {
    */
   getAllMemberships: async (
     page = 1,
-    limit = 100
+    limit = 100,
+    status?: string | null,
+    createdFrom?: string | null,
+    createdTo?: string | null,
   ): Promise<GetAllMembershipsResponse> => {
-    const response = await apiClient.get('/memberships', {
-      params: { page, limit },
-    });
+    const params: Record<string, unknown> = { page, limit };
+    if (status) params.status = status;
+    if (createdFrom) params.createdFrom = createdFrom;
+    if (createdTo) params.createdTo = createdTo;
+    const response = await apiClient.get('/memberships', { params });
     return response.data;
   },
 

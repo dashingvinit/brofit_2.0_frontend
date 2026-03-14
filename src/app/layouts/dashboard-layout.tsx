@@ -31,6 +31,7 @@ import { ThemeToggle } from "@/shared/components/theme-toggle";
 import { NavFlat } from "@/shared/components/nav-flat";
 import { NavMain } from "@/shared/components/nav-main";
 import { ROUTES } from "@/shared/lib/constants";
+import { useRole } from "@/shared/hooks/use-role";
 import {
   LayoutDashboard,
   Users,
@@ -41,24 +42,35 @@ import {
   Settings2,
   TrendingUp,
   BarChart2,
+  ScanLine,
+  ConciergeBell,
   type LucideIcon,
 } from "lucide-react";
 
 export function DashboardLayout() {
   const { signOut } = useClerk();
   const { user } = useUser();
+  const { isAdmin } = useRole();
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
 
-  const flatItems = [
+  const adminFlatItems = [
     { name: "Dashboard", href: ROUTES.DASHBOARD, icon: LayoutDashboard, isActive: isActive(ROUTES.DASHBOARD) },
     { name: "Members", href: ROUTES.MEMBERS, icon: Users, isActive: isActive(ROUTES.MEMBERS) },
+    { name: "Attendance", href: ROUTES.ATTENDANCE, icon: ScanLine, isActive: isActive(ROUTES.ATTENDANCE) },
     { name: "Financials", href: ROUTES.FINANCIALS, icon: TrendingUp, isActive: isActive(ROUTES.FINANCIALS) },
     { name: "Analytics", href: ROUTES.ANALYTICS, icon: BarChart2, isActive: isActive(ROUTES.ANALYTICS) },
   ];
 
-  const navGroups: { label: string; icon: LucideIcon; items: { name: string; href: string; isActive: boolean }[] }[] = [
+  const staffFlatItems = [
+    { name: "Reception", href: ROUTES.RECEPTION, icon: ConciergeBell, isActive: isActive(ROUTES.RECEPTION) },
+    { name: "Attendance", href: ROUTES.ATTENDANCE, icon: ScanLine, isActive: isActive(ROUTES.ATTENDANCE) },
+  ];
+
+  const flatItems = isAdmin ? adminFlatItems : staffFlatItems;
+
+  const adminNavGroups: { label: string; icon: LucideIcon; items: { name: string; href: string; isActive: boolean }[] }[] = [
     {
       label: "Subscriptions",
       icon: Receipt,
@@ -76,6 +88,8 @@ export function DashboardLayout() {
       ],
     },
   ];
+
+  const navGroups = isAdmin ? adminNavGroups : [];
 
   const detailTitles: [string, string][] = [
     [ROUTES.REGISTER_MEMBER, "Register Member"],

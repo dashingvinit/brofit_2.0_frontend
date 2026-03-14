@@ -38,11 +38,15 @@ export const membersApi = {
   getAllMembers: async (
     page = 1,
     limit = 20,
-    isActive?: boolean | null
+    isActive?: boolean | null,
+    joinedFrom?: string | null,
+    joinedTo?: string | null,
   ): Promise<GetAllMembersResponse> => {
     const params: Record<string, unknown> = { page, limit };
     if (isActive === true) params.isActive = 'true';
     else if (isActive === false) params.isActive = 'false';
+    if (joinedFrom) params.joinedFrom = joinedFrom;
+    if (joinedTo) params.joinedTo = joinedTo;
     const response = await apiClient.get('/members', { params });
     return response.data;
   },

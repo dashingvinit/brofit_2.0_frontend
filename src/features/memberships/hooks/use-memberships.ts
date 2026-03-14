@@ -6,10 +6,16 @@ import type { CreateMembershipData, RecordPaymentData } from '@/shared/types/com
 /**
  * Hook to fetch all memberships with pagination
  */
-export function useMemberships(page = 1, limit = 100) {
+export function useMemberships(
+  page = 1,
+  limit = 100,
+  status?: string | null,
+  createdFrom?: string | null,
+  createdTo?: string | null,
+) {
   return useQuery({
-    queryKey: ['memberships', page, limit],
-    queryFn: () => membershipsApi.getAllMemberships(page, limit),
+    queryKey: ['memberships', page, limit, status, createdFrom, createdTo],
+    queryFn: () => membershipsApi.getAllMemberships(page, limit, status, createdFrom, createdTo),
   });
 }
 

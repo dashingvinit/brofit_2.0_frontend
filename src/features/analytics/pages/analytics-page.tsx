@@ -33,13 +33,10 @@ import {
   useMemberGrowth,
   useDemographics,
 } from '../hooks/use-analytics';
+import { formatCurrency } from '@/shared/lib/utils';
 import type { PaymentMethod } from '@/shared/types/common.types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatCurrency(value: number) {
-  return value.toLocaleString('en-IN');
-}
 
 const METHOD_LABELS: Record<PaymentMethod, string> = {
   cash: 'Cash',

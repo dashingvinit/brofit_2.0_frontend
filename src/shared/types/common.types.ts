@@ -1,6 +1,3 @@
-import { ROLES } from "../lib/constants";
-
-export type Role = (typeof ROLES)[keyof typeof ROLES];
 
 /**
  * Member - Matches Prisma schema
@@ -168,9 +165,12 @@ export interface MemberStats {
 }
 
 /**
- * Membership status enum
+ * Shared status for memberships and trainings.
  */
-export type MembershipStatus = "active" | "expired" | "cancelled" | "frozen";
+export type SubscriptionStatus = "active" | "expired" | "cancelled" | "frozen";
+
+/** @alias SubscriptionStatus */
+export type MembershipStatus = SubscriptionStatus;
 
 /**
  * Payment method enum
@@ -256,11 +256,12 @@ export interface MembershipDues {
 }
 
 /**
- * Data required to record a payment
+ * Data required to record a payment (membership or training).
  */
 export interface RecordPaymentData {
   memberId: string;
   membershipId?: string;
+  trainingId?: string;
   amount: number;
   method: PaymentMethod;
   status?: PaymentStatus;
@@ -269,9 +270,9 @@ export interface RecordPaymentData {
 }
 
 /**
- * Membership statistics response
+ * Shared statistics for memberships and trainings.
  */
-export interface MembershipStats {
+export interface SubscriptionStats {
   total: number;
   active: number;
   expired: number;
@@ -281,6 +282,9 @@ export interface MembershipStats {
   collectedThisMonth: number;
 }
 
+/** @alias SubscriptionStats */
+export type MembershipStats = SubscriptionStats;
+
 /**
  * Trainer - Matches Prisma schema
  */
@@ -288,6 +292,7 @@ export interface Trainer {
   id: string;
   orgId: string;
   name: string;
+  splitPercent: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -312,10 +317,8 @@ export interface TrainerWithClients extends Trainer {
   }>;
 }
 
-/**
- * Training status enum
- */
-export type TrainingStatus = "active" | "expired" | "cancelled" | "frozen";
+/** @alias SubscriptionStatus */
+export type TrainingStatus = SubscriptionStatus;
 
 /**
  * Training - Matches Prisma schema
@@ -372,30 +375,81 @@ export interface TrainingDues {
   payments: Payment[];
 }
 
-/**
- * Data required to record a training payment
- */
-export interface RecordTrainingPaymentData {
-  memberId: string;
-  trainingId?: string;
+/** @alias RecordPaymentData */
+export type RecordTrainingPaymentData = RecordPaymentData;
+
+/** @alias SubscriptionStats */
+export type TrainingStats = SubscriptionStats;
+
+// ─── Trainer Payouts ──────────────────────────────────────────────────────────
+
+export interface TrainerPayoutMonthSlot {
+  month: number;
+  year: number;
+  revenueBase: number;
   amount: number;
-  method: PaymentMethod;
-  status?: PaymentStatus;
-  reference?: string;
-  notes?: string;
+  paid: boolean;
+  paidAt: string | null;
 }
 
-/**
- * Training statistics response
- */
-export interface TrainingStats {
-  total: number;
-  active: number;
-  expired: number;
-  cancelled: number;
-  newThisMonth: number;
-  totalCollected: number;
-  collectedThisMonth: number;
+export interface TrainerPayoutRow {
+  training: {
+    id: string;
+    status: TrainingStatus;
+    startDate: string;
+    endDate: string;
+    finalPrice: number;
+    member: Pick<Member, 'id' | 'firstName' | 'lastName' | 'phone' | 'email'>;
+    planVariant?: {
+      durationLabel: string;
+      planType?: { name: string };
+    };
+  };
+  months: TrainerPayoutMonthSlot[];
+  totalMonths: number;
+  totalOwed: number;
+  totalPaid: number;
+  outstanding: number;
+}
+
+export interface TrainerPayoutSchedule {
+  rows: TrainerPayoutRow[];
+  summary: {
+    totalOwed: number;
+    totalPaid: number;
+    outstanding: number;
+  };
+  splitPercent: number;
+}
+
+export interface TrainerPayoutRecord {
+  id: string;
+  orgId: string;
+  trainerId: string;
+  trainingId: string;
+  month: number;
+  year: number;
+  revenueBase: number;
+  splitPercent: number;
+  amount: number;
+  notes?: string | null;
+  paidAt: string;
+  createdAt: string;
+}
+
+export interface TrainerOutstandingSummary {
+  [trainerId: string]: {
+    totalOwed: number;
+    totalPaid: number;
+    outstanding: number;
+  };
+}
+
+export interface RecordTrainerPayoutData {
+  trainingId: string;
+  month: number;
+  year: number;
+  notes?: string;
 }
 
 // ─── Financials ───────────────────────────────────────────────────────────────
@@ -546,4 +600,35 @@ export interface DemographicsData {
   gender: { label: string; count: number; percentage: number }[];
   ageBrackets: { label: string; count: number; percentage: number }[];
   totalMembers: number;
+}
+
+// ─── Attendance ───────────────────────────────────────────────────────────────
+
+export interface AttendanceRecord {
+  id: string;
+  orgId: string;
+  memberId: string;
+  entryTime: string; // ISO datetime
+  exitTime: string | null; // ISO datetime, null if still inside
+  date: string; // ISO date
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  member?: Pick<Member, "id" | "firstName" | "lastName" | "phone" | "email">;
+}
+
+export interface AttendanceCurrentlyInside {
+  count: number;
+  records: AttendanceRecord[];
+}
+
+export interface AttendanceByDate {
+  totalVisits: number;
+  currentlyInside: number;
+  records: AttendanceRecord[];
+}
+
+export interface AttendanceTodayStats {
+  currentlyInside: number;
+  totalToday: number;
 }
