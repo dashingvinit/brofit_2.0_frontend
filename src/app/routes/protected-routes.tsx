@@ -20,6 +20,8 @@ import { TrainerDetailPage } from "@/features/trainer/pages/trainer-detail-page"
 import { FinancialsPage } from "@/features/financials";
 import { AnalyticsPage } from "@/features/analytics";
 import { AttendancePage } from "@/features/attendance/pages/attendance-page";
+import { SettingsPage } from "@/features/settings/pages/settings-page";
+import { InboxPage } from "@/features/inbox/pages/inbox-page";
 
 export const protectedRoutes: RouteObject[] = [
   {
@@ -108,6 +110,14 @@ export const protectedRoutes: RouteObject[] = [
               {
                 path: "/analytics",
                 element: <AnalyticsPage />,
+              },
+              {
+                path: "/settings",
+                element: <SettingsPage />,
+              },
+              {
+                path: "/inbox",
+                element: <InboxPage />,
               },
             ],
           },

@@ -29,7 +29,6 @@ import {
 import { Separator } from "@/shared/components/ui/separator";
 import { ThemeToggle } from "@/shared/components/theme-toggle";
 import { NavFlat } from "@/shared/components/nav-flat";
-import { NavMain } from "@/shared/components/nav-main";
 import { ROUTES } from "@/shared/lib/constants";
 import { useRole } from "@/shared/hooks/use-role";
 import {
@@ -38,13 +37,16 @@ import {
   User,
   LogOut,
   ChevronUp,
-  Receipt,
-  Settings2,
   TrendingUp,
   BarChart2,
   ScanLine,
   ConciergeBell,
-  type LucideIcon,
+  CreditCard,
+  Dumbbell,
+  UserRound,
+  LayoutGrid,
+  Settings,
+  Inbox,
 } from "lucide-react";
 
 export function DashboardLayout() {
@@ -55,10 +57,24 @@ export function DashboardLayout() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const adminFlatItems = [
+  // Admin: flat nav split into two visual groups via NavFlat sections
+  const adminTopItems = [
     { name: "Dashboard", href: ROUTES.DASHBOARD, icon: LayoutDashboard, isActive: isActive(ROUTES.DASHBOARD) },
+  ];
+
+  const adminPeopleItems = [
     { name: "Members", href: ROUTES.MEMBERS, icon: Users, isActive: isActive(ROUTES.MEMBERS) },
     { name: "Attendance", href: ROUTES.ATTENDANCE, icon: ScanLine, isActive: isActive(ROUTES.ATTENDANCE) },
+  ];
+
+  const adminOperationsItems = [
+    { name: "Trainers", href: ROUTES.TRAINERS, icon: UserRound, isActive: isActive(ROUTES.TRAINERS) },
+    { name: "Memberships", href: ROUTES.MEMBERSHIPS, icon: CreditCard, isActive: isActive(ROUTES.MEMBERSHIPS) },
+    { name: "Trainings", href: ROUTES.TRAININGS, icon: Dumbbell, isActive: isActive(ROUTES.TRAININGS) },
+  ];
+
+  const adminBusinessItems = [
+    { name: "Plans", href: ROUTES.PLANS, icon: LayoutGrid, isActive: isActive(ROUTES.PLANS) },
     { name: "Financials", href: ROUTES.FINANCIALS, icon: TrendingUp, isActive: isActive(ROUTES.FINANCIALS) },
     { name: "Analytics", href: ROUTES.ANALYTICS, icon: BarChart2, isActive: isActive(ROUTES.ANALYTICS) },
   ];
@@ -68,34 +84,17 @@ export function DashboardLayout() {
     { name: "Attendance", href: ROUTES.ATTENDANCE, icon: ScanLine, isActive: isActive(ROUTES.ATTENDANCE) },
   ];
 
-  const flatItems = isAdmin ? adminFlatItems : staffFlatItems;
-
-  const adminNavGroups: { label: string; icon: LucideIcon; items: { name: string; href: string; isActive: boolean }[] }[] = [
-    {
-      label: "Subscriptions",
-      icon: Receipt,
-      items: [
-        { name: "Memberships", href: ROUTES.MEMBERSHIPS, isActive: isActive(ROUTES.MEMBERSHIPS) },
-        { name: "Trainings", href: ROUTES.TRAININGS, isActive: isActive(ROUTES.TRAININGS) },
-      ],
-    },
-    {
-      label: "Configuration",
-      icon: Settings2,
-      items: [
-        { name: "Plans", href: ROUTES.PLANS, isActive: isActive(ROUTES.PLANS) },
-        { name: "Trainers", href: ROUTES.TRAINERS, isActive: isActive(ROUTES.TRAINERS) },
-      ],
-    },
-  ];
-
-  const navGroups = isAdmin ? adminNavGroups : [];
+  const allFlatItems = isAdmin
+    ? [...adminTopItems, ...adminPeopleItems, ...adminOperationsItems, ...adminBusinessItems]
+    : staffFlatItems;
 
   const detailTitles: [string, string][] = [
     [ROUTES.REGISTER_MEMBER, "Register Member"],
     [ROUTES.CREATE_MEMBERSHIP, "Create Membership"],
     [ROUTES.CREATE_TRAINING, "Create Training"],
     [ROUTES.PROFILE, "Profile"],
+    [ROUTES.SETTINGS, "Settings"],
+    [ROUTES.INBOX, "Inbox"],
   ];
   const detailPrefixes: [string, string][] = [
     ["/members/", "Member Details"],
@@ -108,8 +107,7 @@ export function DashboardLayout() {
     null;
 
   const currentPageName =
-    flatItems.find((i) => i.isActive)?.name ??
-    navGroups.flatMap((g) => g.items).find((i) => i.isActive)?.name ??
+    allFlatItems.find((i) => i.isActive)?.name ??
     detailPageTitle ??
     "Brofit 2.0";
 
@@ -132,12 +130,36 @@ export function DashboardLayout() {
           </SidebarHeader>
 
           <SidebarContent>
-            <NavFlat items={flatItems} />
-            <NavMain groups={navGroups} />
+            {isAdmin ? (
+              <>
+                <NavFlat items={adminTopItems} />
+                <NavFlat items={adminPeopleItems} label="People" />
+                <NavFlat items={adminOperationsItems} label="Operations" />
+                <NavFlat items={adminBusinessItems} label="Business" />
+              </>
+            ) : (
+              <NavFlat items={staffFlatItems} />
+            )}
           </SidebarContent>
 
           <SidebarFooter>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive(ROUTES.INBOX)} tooltip="Inbox">
+                  <Link to={ROUTES.INBOX}>
+                    <Inbox />
+                    <span>Inbox</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive(ROUTES.SETTINGS)} tooltip="Settings">
+                  <Link to={ROUTES.SETTINGS}>
+                    <Settings />
+                    <span>Settings</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

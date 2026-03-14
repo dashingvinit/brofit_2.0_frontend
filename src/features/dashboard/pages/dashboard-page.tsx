@@ -272,14 +272,14 @@ export function DashboardPage() {
         title="Dashboard"
         description={`Welcome back, ${user?.firstName || "User"}!`}
         actions={
-          <>
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               size="sm"
               className="gap-2 bg-blue-600 hover:bg-blue-700 text-white border-0"
               onClick={() => navigate(ROUTES.REGISTER_MEMBER)}
             >
               <UserCheck className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Add Member</span>
+              Add Member
             </Button>
             <Button
               size="sm"
@@ -287,7 +287,7 @@ export function DashboardPage() {
               onClick={() => navigate(ROUTES.CREATE_MEMBERSHIP)}
             >
               <CreditCard className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">New Membership</span>
+              <span className="hidden xs:inline">New </span>Membership
             </Button>
             <Button
               size="sm"
@@ -295,9 +295,9 @@ export function DashboardPage() {
               onClick={() => navigate(ROUTES.CREATE_TRAINING)}
             >
               <Dumbbell className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">New Training</span>
+              <span className="hidden xs:inline">New </span>Training
             </Button>
-          </>
+          </div>
         }
       />
 

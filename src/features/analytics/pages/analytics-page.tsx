@@ -176,7 +176,9 @@ function AnalyticsStatCards() {
 
 function MemberGrowthCard() {
   const { data: growthRes, isLoading } = useMemberGrowth(12);
-  const points = growthRes?.data ?? [];
+  const allPoints = growthRes?.data ?? [];
+  // Show last 6 months on mobile (narrow screens can't fit 12 readable bars)
+  const points = allPoints;
   const maxVal = Math.max(...points.map((p) => p.newMembers), 1);
 
   return (
@@ -199,34 +201,36 @@ function MemberGrowthCard() {
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="flex items-end gap-1 h-28">
-              {points.map((p) => {
-                const barH = Math.round((p.newMembers / maxVal) * 100);
-                const shortLabel = new Date(p.year, p.month - 1, 1).toLocaleString('default', {
-                  month: 'short',
-                });
-                return (
-                  <div
-                    key={`${p.year}-${p.month}`}
-                    className="group relative flex-1 flex flex-col items-center gap-1"
-                  >
-                    {/* Tooltip */}
-                    <div className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 z-10 hidden group-hover:flex flex-col items-center">
-                      <div className="rounded bg-foreground px-2 py-1 text-[10px] font-medium text-background whitespace-nowrap shadow-md">
-                        {p.newMembers} joined
+            <div className="overflow-x-auto -mx-1 px-1">
+              <div className="flex items-end gap-1 h-28 min-w-[280px]">
+                {points.map((p) => {
+                  const barH = Math.round((p.newMembers / maxVal) * 100);
+                  const shortLabel = new Date(p.year, p.month - 1, 1).toLocaleString('default', {
+                    month: 'short',
+                  });
+                  return (
+                    <div
+                      key={`${p.year}-${p.month}`}
+                      className="group relative flex-1 flex flex-col items-center gap-1"
+                    >
+                      {/* Tooltip */}
+                      <div className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 z-10 hidden group-hover:flex flex-col items-center">
+                        <div className="rounded bg-foreground px-2 py-1 text-[10px] font-medium text-background whitespace-nowrap shadow-md">
+                          {p.newMembers} joined
+                        </div>
+                        <div className="h-1.5 w-px bg-foreground/40" />
                       </div>
-                      <div className="h-1.5 w-px bg-foreground/40" />
+                      <div className="w-full flex items-end h-24">
+                        <div
+                          className="w-full rounded-t bg-blue-500/80 transition-all group-hover:bg-blue-500"
+                          style={{ height: `${barH}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">{shortLabel}</span>
                     </div>
-                    <div className="w-full flex items-end h-24">
-                      <div
-                        className="w-full rounded-t bg-blue-500/80 transition-all group-hover:bg-blue-500"
-                        style={{ height: `${barH}%` }}
-                      />
-                    </div>
-                    <span className="text-[9px] text-muted-foreground">{shortLabel}</span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue-500/80" />
@@ -266,47 +270,49 @@ function RevenueBreakdownCard() {
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="flex items-end gap-1.5 h-28">
-              {points.map((p) => {
-                const totalH = Math.round((p.total / maxVal) * 100);
-                const membershipRatio = p.total > 0 ? p.membership / p.total : 0;
-                const shortLabel = new Date(p.year, p.month - 1, 1).toLocaleString('default', {
-                  month: 'short',
-                });
-                return (
-                  <div
-                    key={`${p.year}-${p.month}`}
-                    className="group relative flex-1 flex flex-col items-center gap-1"
-                  >
-                    {/* Tooltip */}
-                    <div className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 z-10 hidden group-hover:flex flex-col items-center">
-                      <div className="rounded bg-foreground px-2 py-1 text-[10px] font-medium text-background whitespace-nowrap shadow-md space-y-0.5">
-                        <div>M: ₹{formatCurrency(p.membership)}</div>
-                        <div>T: ₹{formatCurrency(p.training)}</div>
-                      </div>
-                      <div className="h-1.5 w-px bg-foreground/40" />
-                    </div>
+            <div className="overflow-x-auto -mx-1 px-1">
+              <div className="flex items-end gap-1.5 h-28 min-w-[200px]">
+                {points.map((p) => {
+                  const totalH = Math.round((p.total / maxVal) * 100);
+                  const membershipRatio = p.total > 0 ? p.membership / p.total : 0;
+                  const shortLabel = new Date(p.year, p.month - 1, 1).toLocaleString('default', {
+                    month: 'short',
+                  });
+                  return (
                     <div
-                      className="w-full flex flex-col justify-end h-24 overflow-hidden rounded-t"
+                      key={`${p.year}-${p.month}`}
+                      className="group relative flex-1 flex flex-col items-center gap-1"
                     >
+                      {/* Tooltip */}
+                      <div className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 z-10 hidden group-hover:flex flex-col items-center">
+                        <div className="rounded bg-foreground px-2 py-1 text-[10px] font-medium text-background whitespace-nowrap shadow-md space-y-0.5">
+                          <div>M: ₹{formatCurrency(p.membership)}</div>
+                          <div>T: ₹{formatCurrency(p.training)}</div>
+                        </div>
+                        <div className="h-1.5 w-px bg-foreground/40" />
+                      </div>
                       <div
-                        className="w-full flex flex-col"
-                        style={{ height: `${totalH}%` }}
+                        className="w-full flex flex-col justify-end h-24 overflow-hidden rounded-t"
                       >
                         <div
-                          className="w-full bg-blue-500/80 group-hover:bg-blue-500 transition-colors"
-                          style={{ flex: membershipRatio }}
-                        />
-                        <div
-                          className="w-full bg-violet-500/80 group-hover:bg-violet-500 transition-colors"
-                          style={{ flex: 1 - membershipRatio }}
-                        />
+                          className="w-full flex flex-col"
+                          style={{ height: `${totalH}%` }}
+                        >
+                          <div
+                            className="w-full bg-blue-500/80 group-hover:bg-blue-500 transition-colors"
+                            style={{ flex: membershipRatio }}
+                          />
+                          <div
+                            className="w-full bg-violet-500/80 group-hover:bg-violet-500 transition-colors"
+                            style={{ flex: 1 - membershipRatio }}
+                          />
+                        </div>
                       </div>
+                      <span className="text-[10px] text-muted-foreground">{shortLabel}</span>
                     </div>
-                    <span className="text-[9px] text-muted-foreground">{shortLabel}</span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">

@@ -14,12 +14,23 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/shared/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/components/ui/alert-dialog';
 import { useTrainers, useCreateTrainer, useDeactivateTrainer, useTrainerOutstandingSummary } from '../hooks/use-trainers';
 
 export function TrainersPage() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [splitPercent, setSplitPercent] = useState('60');
+  const [deactivateTarget, setDeactivateTarget] = useState<{ id: string; name: string } | null>(null);
   const navigate = useNavigate();
 
   const { data: trainersResponse, isLoading } = useTrainers();
@@ -103,7 +114,7 @@ export function TrainersPage() {
                         </span>
                       )}
                       <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
-                        {trainer.splitPercent ?? 60}% split
+                        {trainer.splitPercent ?? 60}% trainer share
                       </span>
                       {outstandingSummary[trainer.id]?.outstanding > 0 && (
                         <span className="inline-flex items-center gap-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
@@ -118,11 +129,12 @@ export function TrainersPage() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="text-muted-foreground hover:text-destructive"
+                    className="text-muted-foreground hover:text-destructive gap-1.5"
                     disabled={deactivateTrainer.isPending}
-                    onClick={(e) => { e.stopPropagation(); deactivateTrainer.mutate(trainer.id); }}
+                    onClick={(e) => { e.stopPropagation(); setDeactivateTarget({ id: trainer.id, name: trainer.name }); }}
                   >
                     <PowerOff className="h-4 w-4" />
+                    <span className="hidden sm:inline text-xs">Deactivate</span>
                   </Button>
                 )}
               </CardContent>
@@ -130,6 +142,34 @@ export function TrainersPage() {
           ))}
         </div>
       )}
+
+      <AlertDialog open={!!deactivateTarget} onOpenChange={(o) => !o && setDeactivateTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate Trainer?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark <span className="font-semibold">{deactivateTarget?.name}</span> as inactive. They won't appear in new training sessions. You can reactivate them later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deactivateTrainer.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deactivateTrainer.isPending}
+              onClick={() => {
+                if (deactivateTarget) {
+                  deactivateTrainer.mutate(deactivateTarget.id, {
+                    onSettled: () => setDeactivateTarget(null),
+                  });
+                }
+              }}
+            >
+              {deactivateTrainer.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-sm">
@@ -149,7 +189,7 @@ export function TrainersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="splitPercent">Revenue Split (%)</Label>
+              <Label htmlFor="splitPercent">Trainer's Share of Revenue (%)</Label>
               <Input
                 id="splitPercent"
                 type="number"

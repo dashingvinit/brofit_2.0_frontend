@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { type LucideIcon } from "lucide-react";
 import {
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -14,9 +15,10 @@ type FlatItem = {
   isActive?: boolean;
 };
 
-export function NavFlat({ items }: { items: FlatItem[] }) {
+export function NavFlat({ items, label }: { items: FlatItem[]; label?: string }) {
   return (
     <SidebarGroup>
+      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
       <SidebarMenu>
         {items.map((item) => {
           const Icon = item.icon;

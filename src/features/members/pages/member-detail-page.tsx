@@ -12,7 +12,6 @@ import {
   AlertCircle,
   CheckCircle2,
   Pencil,
-  MoreHorizontal,
   ChevronRight,
   StickyNote,
 } from 'lucide-react';
@@ -36,12 +35,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/components/ui/dropdown-menu';
 import { PageHeader } from '@/shared/components/page-header';
 import { ROUTES } from '@/shared/lib/constants';
 import { useMember } from '../hooks/use-members';
@@ -210,21 +203,15 @@ export function MemberDetailPage() {
               onClick={() => navigate(ROUTES.MEMBERS)}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              <span className="hidden sm:inline">Back</span>
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Edit Member
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(true)}
+            >
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
           </div>
         }
       />

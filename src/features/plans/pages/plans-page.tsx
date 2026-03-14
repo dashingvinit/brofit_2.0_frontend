@@ -170,8 +170,8 @@ export function PlansPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Plans Management"
-        description="Manage plan types and their pricing variants"
+        title="Plans"
+        description="Manage membership and training plan types with their pricing options"
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -349,7 +349,7 @@ export function PlansPage() {
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-semibold text-muted-foreground">
-                        Pricing Variants
+                        Durations & Prices
                         {planType.variants && planType.variants.length > 0 && (
                           <span className="ml-1.5 text-xs font-normal">
                             ({planType.variants.length})
@@ -398,9 +398,9 @@ export function PlansPage() {
                     <Settings2 className="h-4 w-4 mr-2" />
                     {planType.variants && planType.variants.length > 0
                       ? planType.variants.length > 3
-                        ? `Manage variants · ${planType.variants.length} total`
-                        : 'Manage variants'
-                      : 'Add pricing variants'}
+                        ? `Manage · ${planType.variants.length} options`
+                        : 'Manage durations & prices'
+                      : 'Add durations & prices'}
                   </Button>
                 </CardContent>
               </Card>

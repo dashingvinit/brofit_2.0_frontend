@@ -10,6 +10,7 @@ import {
   Trash2,
   BarChart3,
   Clock,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -28,6 +29,16 @@ import {
   TableRow,
 } from '@/shared/components/ui/table';
 import { PageHeader } from '@/shared/components/page-header';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/components/ui/alert-dialog';
 import {
   useExpenses,
   useInvestments,
@@ -291,52 +302,54 @@ function TrendsCard({
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="flex items-end gap-1.5 h-28">
-              {trends.map((t) => {
-                const monthKey = `${t.year}-${String(t.month).padStart(2, '0')}`;
-                const isSelected = monthKey === selectedMonth;
-                const revH = Math.round((t.revenue / maxVal) * 100);
-                const expH = Math.round((t.expenses / maxVal) * 100);
-                const shortLabel = new Date(t.year, t.month - 1, 1).toLocaleString('default', { month: 'short' });
-                const fullLabel = new Date(t.year, t.month - 1, 1).toLocaleString('default', { month: 'short', year: 'numeric' });
-                return (
-                  <button
-                    key={monthKey}
-                    type="button"
-                    onClick={() => onMonthSelect(monthKey)}
-                    className="flex-1 flex flex-col items-center gap-1 cursor-pointer"
-                    title={`${fullLabel} — click to select`}
-                  >
-                    <div className="w-full flex items-end gap-0.5 h-24 justify-center">
-                      <div
-                        title={`Revenue: ₹${formatCurrency(t.revenue)}`}
-                        className={`flex-1 rounded-t transition-all ${
-                          isSelected
-                            ? 'bg-emerald-600 dark:bg-emerald-500'
-                            : 'bg-emerald-500/80 dark:bg-emerald-500/60'
-                        }`}
-                        style={{ height: `${revH}%` }}
-                      />
-                      <div
-                        title={`Expenses: ₹${formatCurrency(t.expenses)}`}
-                        className={`flex-1 rounded-t transition-all ${
-                          isSelected
-                            ? 'bg-red-500 dark:bg-red-400'
-                            : 'bg-red-400/80 dark:bg-red-400/60'
-                        }`}
-                        style={{ height: `${expH}%` }}
-                      />
-                    </div>
-                    <span
-                      className={`text-[10px] ${
-                        isSelected ? 'font-semibold text-foreground' : 'text-muted-foreground'
-                      }`}
+            <div className="overflow-x-auto -mx-1 px-1">
+              <div className="flex items-end gap-1.5 h-28 min-w-[200px]">
+                {trends.map((t) => {
+                  const monthKey = `${t.year}-${String(t.month).padStart(2, '0')}`;
+                  const isSelected = monthKey === selectedMonth;
+                  const revH = Math.round((t.revenue / maxVal) * 100);
+                  const expH = Math.round((t.expenses / maxVal) * 100);
+                  const shortLabel = new Date(t.year, t.month - 1, 1).toLocaleString('default', { month: 'short' });
+                  const fullLabel = new Date(t.year, t.month - 1, 1).toLocaleString('default', { month: 'short', year: 'numeric' });
+                  return (
+                    <button
+                      key={monthKey}
+                      type="button"
+                      onClick={() => onMonthSelect(monthKey)}
+                      className="flex-1 flex flex-col items-center gap-1 cursor-pointer"
+                      title={`${fullLabel} — click to select`}
                     >
-                      {shortLabel}
-                    </span>
-                  </button>
-                );
-              })}
+                      <div className="w-full flex items-end gap-0.5 h-24 justify-center">
+                        <div
+                          title={`Revenue: ₹${formatCurrency(t.revenue)}`}
+                          className={`flex-1 rounded-t transition-all ${
+                            isSelected
+                              ? 'bg-emerald-600 dark:bg-emerald-500'
+                              : 'bg-emerald-500/80 dark:bg-emerald-500/60'
+                          }`}
+                          style={{ height: `${revH}%` }}
+                        />
+                        <div
+                          title={`Expenses: ₹${formatCurrency(t.expenses)}`}
+                          className={`flex-1 rounded-t transition-all ${
+                            isSelected
+                              ? 'bg-red-500 dark:bg-red-400'
+                              : 'bg-red-400/80 dark:bg-red-400/60'
+                          }`}
+                          style={{ height: `${expH}%` }}
+                        />
+                      </div>
+                      <span
+                        className={`text-[10px] ${
+                          isSelected ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                        }`}
+                      >
+                        {shortLabel}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
@@ -362,6 +375,7 @@ function ExpensesSection({ month }: { month: string }) {
   const deleteExpense = useDeleteExpense();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | undefined>(undefined);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const expenses = expensesRes?.data ?? [];
 
@@ -454,8 +468,7 @@ function ExpensesSection({ month }: { month: string }) {
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-destructive hover:text-destructive"
-                            disabled={deleteExpense.isPending}
-                            onClick={() => deleteExpense.mutate(expense.id)}
+                            onClick={() => setDeleteTarget(expense.id)}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -501,8 +514,7 @@ function ExpensesSection({ month }: { month: string }) {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-destructive hover:text-destructive"
-                      disabled={deleteExpense.isPending}
-                      onClick={() => deleteExpense.mutate(expense.id)}
+                      onClick={() => setDeleteTarget(expense.id)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -519,6 +531,34 @@ function ExpensesSection({ month }: { month: string }) {
         onOpenChange={setDialogOpen}
         expense={editing}
       />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Expense?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this expense record. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteExpense.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteExpense.isPending}
+              onClick={() => {
+                if (deleteTarget) {
+                  deleteExpense.mutate(deleteTarget, {
+                    onSettled: () => setDeleteTarget(null),
+                  });
+                }
+              }}
+            >
+              {deleteExpense.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
@@ -530,6 +570,7 @@ function InvestmentsSection() {
   const deleteInvestment = useDeleteInvestment();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Investment | undefined>(undefined);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const investments = investmentsRes?.data ?? [];
 
@@ -616,8 +657,7 @@ function InvestmentsSection() {
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-destructive hover:text-destructive"
-                            disabled={deleteInvestment.isPending}
-                            onClick={() => deleteInvestment.mutate(inv.id)}
+                            onClick={() => setDeleteTarget(inv.id)}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -654,8 +694,7 @@ function InvestmentsSection() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-destructive hover:text-destructive"
-                      disabled={deleteInvestment.isPending}
-                      onClick={() => deleteInvestment.mutate(inv.id)}
+                      onClick={() => setDeleteTarget(inv.id)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -672,6 +711,34 @@ function InvestmentsSection() {
         onOpenChange={setDialogOpen}
         investment={editing}
       />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Investment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this investment record. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteInvestment.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteInvestment.isPending}
+              onClick={() => {
+                if (deleteTarget) {
+                  deleteInvestment.mutate(deleteTarget, {
+                    onSettled: () => setDeleteTarget(null),
+                  });
+                }
+              }}
+            >
+              {deleteInvestment.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

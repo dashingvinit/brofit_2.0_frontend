@@ -23,5 +23,7 @@ export const ROUTES = {
   ANALYTICS: "/analytics",
   ATTENDANCE: "/attendance",
   RECEPTION: "/reception",
+  SETTINGS: "/settings",
+  INBOX: "/inbox",
 } as const;
 
