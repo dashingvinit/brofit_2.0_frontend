@@ -16,6 +16,19 @@ import {
 } from '@/shared/components/ui/card';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/shared/components/ui/chart';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
   Table,
   TableBody,
   TableCell,
@@ -174,12 +187,21 @@ function AnalyticsStatCards() {
 
 // ─── Member Growth Chart ───────────────────────────────────────────────────────
 
+const memberGrowthChartConfig = {
+  newMembers: {
+    label: 'New Members',
+    color: 'var(--chart-1)',
+  },
+} satisfies ChartConfig;
+
 function MemberGrowthCard() {
   const { data: growthRes, isLoading } = useMemberGrowth(12);
-  const allPoints = growthRes?.data ?? [];
-  // Show last 6 months on mobile (narrow screens can't fit 12 readable bars)
-  const points = allPoints;
-  const maxVal = Math.max(...points.map((p) => p.newMembers), 1);
+  const points = growthRes?.data ?? [];
+
+  const chartData = points.map((p) => ({
+    month: new Date(p.year, p.month - 1, 1).toLocaleString('default', { month: 'short', year: '2-digit' }),
+    newMembers: p.newMembers,
+  }));
 
   return (
     <Card>
@@ -191,7 +213,7 @@ function MemberGrowthCard() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="flex items-end gap-2 h-28">
+          <div className="flex items-end gap-2 h-40">
             {Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="flex-1 flex flex-col gap-1 items-center">
                 <Skeleton className="w-full" style={{ height: `${20 + i * 4}px` }} />
@@ -200,43 +222,30 @@ function MemberGrowthCard() {
             ))}
           </div>
         ) : (
-          <div className="space-y-3">
-            <div className="overflow-x-auto -mx-1 px-1">
-              <div className="flex items-end gap-1 h-28 min-w-[280px]">
-                {points.map((p) => {
-                  const barH = Math.round((p.newMembers / maxVal) * 100);
-                  const shortLabel = new Date(p.year, p.month - 1, 1).toLocaleString('default', {
-                    month: 'short',
-                  });
-                  return (
-                    <div
-                      key={`${p.year}-${p.month}`}
-                      className="group relative flex-1 flex flex-col items-center gap-1"
-                    >
-                      {/* Tooltip */}
-                      <div className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 z-10 hidden group-hover:flex flex-col items-center">
-                        <div className="rounded bg-foreground px-2 py-1 text-[10px] font-medium text-background whitespace-nowrap shadow-md">
-                          {p.newMembers} joined
-                        </div>
-                        <div className="h-1.5 w-px bg-foreground/40" />
-                      </div>
-                      <div className="w-full flex items-end h-24">
-                        <div
-                          className="w-full rounded-t bg-blue-500/80 transition-all group-hover:bg-blue-500"
-                          style={{ height: `${barH}%` }}
-                        />
-                      </div>
-                      <span className="text-[10px] text-muted-foreground">{shortLabel}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue-500/80" />
-              New members joined
-            </div>
-          </div>
+          <ChartContainer config={memberGrowthChartConfig} className="h-[180px] w-full">
+            <BarChart data={chartData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="month"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={4}
+                tick={{ fontSize: 11 }}
+                allowDecimals={false}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dot" />}
+              />
+              <Bar dataKey="newMembers" fill="var(--color-newMembers)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
         )}
       </CardContent>
     </Card>
@@ -245,10 +254,32 @@ function MemberGrowthCard() {
 
 // ─── Revenue Breakdown Chart ───────────────────────────────────────────────────
 
+const revenueChartConfig = {
+  membership: {
+    label: 'Membership',
+    color: 'var(--chart-1)',
+  },
+  training: {
+    label: 'Training',
+    color: 'var(--chart-2)',
+  },
+} satisfies ChartConfig;
+
 function RevenueBreakdownCard() {
   const { data: revenueRes, isLoading } = useRevenueBreakdown(6);
   const points = revenueRes?.data ?? [];
-  const maxVal = Math.max(...points.map((p) => p.total), 1);
+
+  const chartData = points.map((p) => ({
+    month: new Date(p.year, p.month - 1, 1).toLocaleString('default', { month: 'short', year: '2-digit' }),
+    membership: p.membership,
+    training: p.training,
+  }));
+
+  const formatYTick = (v: number) => {
+    if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`;
+    if (v >= 1000) return `₹${(v / 1000).toFixed(0)}k`;
+    return `₹${v}`;
+  };
 
   return (
     <Card>
@@ -260,7 +291,7 @@ function RevenueBreakdownCard() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="flex items-end gap-2 h-28">
+          <div className="flex items-end gap-2 h-40">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="flex-1 flex flex-col gap-1 items-center">
                 <Skeleton className="w-full" style={{ height: `${30 + i * 6}px` }} />
@@ -269,62 +300,45 @@ function RevenueBreakdownCard() {
             ))}
           </div>
         ) : (
-          <div className="space-y-3">
-            <div className="overflow-x-auto -mx-1 px-1">
-              <div className="flex items-end gap-1.5 h-28 min-w-[200px]">
-                {points.map((p) => {
-                  const totalH = Math.round((p.total / maxVal) * 100);
-                  const membershipRatio = p.total > 0 ? p.membership / p.total : 0;
-                  const shortLabel = new Date(p.year, p.month - 1, 1).toLocaleString('default', {
-                    month: 'short',
-                  });
-                  return (
-                    <div
-                      key={`${p.year}-${p.month}`}
-                      className="group relative flex-1 flex flex-col items-center gap-1"
-                    >
-                      {/* Tooltip */}
-                      <div className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 z-10 hidden group-hover:flex flex-col items-center">
-                        <div className="rounded bg-foreground px-2 py-1 text-[10px] font-medium text-background whitespace-nowrap shadow-md space-y-0.5">
-                          <div>M: ₹{formatCurrency(p.membership)}</div>
-                          <div>T: ₹{formatCurrency(p.training)}</div>
-                        </div>
-                        <div className="h-1.5 w-px bg-foreground/40" />
+          <ChartContainer config={revenueChartConfig} className="h-[180px] w-full">
+            <BarChart data={chartData} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="month"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={4}
+                tick={{ fontSize: 11 }}
+                tickFormatter={formatYTick}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={
+                  <ChartTooltipContent
+                    indicator="dot"
+                    formatter={(value, name) => (
+                      <div className="flex items-center justify-between gap-4 w-full">
+                        <span className="text-muted-foreground">
+                          {revenueChartConfig[name as keyof typeof revenueChartConfig]?.label ?? name}
+                        </span>
+                        <span className="font-mono font-medium tabular-nums text-foreground">
+                          ₹{formatCurrency(Number(value))}
+                        </span>
                       </div>
-                      <div
-                        className="w-full flex flex-col justify-end h-24 overflow-hidden rounded-t"
-                      >
-                        <div
-                          className="w-full flex flex-col"
-                          style={{ height: `${totalH}%` }}
-                        >
-                          <div
-                            className="w-full bg-blue-500/80 group-hover:bg-blue-500 transition-colors"
-                            style={{ flex: membershipRatio }}
-                          />
-                          <div
-                            className="w-full bg-violet-500/80 group-hover:bg-violet-500 transition-colors"
-                            style={{ flex: 1 - membershipRatio }}
-                          />
-                        </div>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground">{shortLabel}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue-500/80" />
-                Membership
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 rounded-sm bg-violet-500/80" />
-                Training
-              </span>
-            </div>
-          </div>
+                    )}
+                  />
+                }
+              />
+              <Bar dataKey="membership" fill="var(--color-membership)" radius={[4, 4, 0, 0]} stackId="a" />
+              <Bar dataKey="training" fill="var(--color-training)" radius={[4, 4, 0, 0]} stackId="a" />
+            </BarChart>
+          </ChartContainer>
         )}
       </CardContent>
     </Card>
