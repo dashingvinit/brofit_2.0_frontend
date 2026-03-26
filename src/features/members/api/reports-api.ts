@@ -75,6 +75,23 @@ export const reportsApi = {
   },
 
   /**
+   * Manually trigger expiration sync for the current org
+   * POST /api/v1/reports/sync-expirations
+   */
+  syncExpirations: async (): Promise<{
+    success: boolean;
+    data: {
+      expiredMemberships: number;
+      expiredTrainings: number;
+      renewedMemberships: number;
+      renewedTrainings: number;
+    };
+  }> => {
+    const response = await apiClient.post('/reports/sync-expirations');
+    return response.data;
+  },
+
+  /**
    * Get dues report for a specific member
    * GET /api/v1/reports/dues?memberId=<id>
    */

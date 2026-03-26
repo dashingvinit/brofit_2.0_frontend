@@ -14,6 +14,7 @@ import {
   IndianRupee,
   ArrowRight,
   Upload,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -42,11 +43,13 @@ import {
   useSearchMembers,
 } from "../hooks/use-members";
 import { useDuesReport } from "../hooks/use-member-detail";
+import { useRecentlyViewed, type RecentMember } from "../hooks/use-recently-viewed";
 import { ROUTES } from "@/shared/lib/constants";
 import { getThisMonthDateRange } from "@/shared/lib/utils";
 import { ImportCsvDialog } from "@/shared/components/import-csv-dialog";
 import { ExportDropdown } from "@/shared/components/export-dropdown";
 import { membersApi } from "../api/members-api";
+import { reportsApi } from "../api/reports-api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRole } from "@/shared/hooks/use-role";
 
@@ -133,6 +136,8 @@ export function MembersListPage() {
   const { isAdmin } = useRole();
   const [searchParams, setSearchParams] = useSearchParams();
   const showDues = searchParams.get("dues") === "true";
+  const { getRecent } = useRecentlyViewed();
+  const [recentMembers] = useState<RecentMember[]>(() => getRecent());
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -144,6 +149,7 @@ export function MembersListPage() {
   const [page, setPage] = useState(1);
   const [duesPage, setDuesPage] = useState(1);
   const [importOpen, setImportOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Reset to page 1 when filter changes
   useEffect(() => {
@@ -214,6 +220,18 @@ export function MembersListPage() {
     }));
   }
 
+  async function handleSyncExpirations() {
+    setIsSyncing(true);
+    try {
+      await reportsApi.syncExpirations();
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      queryClient.invalidateQueries({ queryKey: ["memberships"] });
+      queryClient.invalidateQueries({ queryKey: ["member-stats"] });
+    } finally {
+      setIsSyncing(false);
+    }
+  }
+
   async function handleImportMembers(rows: Record<string, string>[]) {
     const res = await membersApi.importMembers(rows);
     queryClient.invalidateQueries({ queryKey: ["members"] });
@@ -228,6 +246,15 @@ export function MembersListPage() {
         actions={
           isAdmin ? (
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSyncExpirations}
+                disabled={isSyncing}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
+                Sync
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -567,13 +594,37 @@ export function MembersListPage() {
       ) : (
         /* Regular Members Mode */
         <>
+          {/* Recently Viewed */}
+          {recentMembers.length > 0 && !debouncedSearch && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Recently Viewed</p>
+              <div className="flex flex-wrap gap-2">
+                {recentMembers.slice(0, 8).map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => navigate(`/members/${m.id}`)}
+                    className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-sm hover:bg-muted/50 transition-colors"
+                  >
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+                      {m.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="font-medium">{m.name}</span>
+                    {m.phone && (
+                      <span className="text-muted-foreground text-xs hidden sm:inline">{m.phone}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Toolbar */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
                 type="text"
-                placeholder="Search members..."
+                placeholder="Search by name, email, phone, or plan..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 pr-8 h-9"

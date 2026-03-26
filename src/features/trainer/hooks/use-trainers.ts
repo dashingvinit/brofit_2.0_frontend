@@ -50,6 +50,7 @@ export function useUpdateTrainer(trainerId: string) {
       trainersApi.updateTrainer(trainerId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trainers'] });
+      queryClient.invalidateQueries({ queryKey: ['trainers', trainerId, 'clients'] });
       queryClient.invalidateQueries({ queryKey: ['trainers', trainerId, 'payout-schedule'] });
       toast.success('Trainer updated successfully');
     },

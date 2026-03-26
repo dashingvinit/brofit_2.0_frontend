@@ -84,20 +84,33 @@ export function useUpdatePlanVariant() {
 }
 
 /**
- * Hook to delete a variant
+ * Hook to delete a variant — deactivates with 5s undo toast
  */
 export function useDeletePlanVariant() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => planVariantsApi.deleteVariant(id),
-    onSuccess: () => {
+    mutationFn: (variant: PlanVariant) => planVariantsApi.deactivateVariant(variant.id),
+    onSuccess: (_, variant) => {
       queryClient.invalidateQueries({ queryKey: ['plan-variants'] });
       queryClient.invalidateQueries({ queryKey: ['plan-types'] });
-      toast.success('Plan variant deleted successfully');
+      toast(`"${variant.durationLabel}" removed`, {
+        description: 'Plan variant has been deactivated.',
+        duration: 5000,
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            planVariantsApi.updateVariant(variant.id, { isActive: true }).then(() => {
+              queryClient.invalidateQueries({ queryKey: ['plan-variants'] });
+              queryClient.invalidateQueries({ queryKey: ['plan-types'] });
+              toast.success(`"${variant.durationLabel}" restored`);
+            });
+          },
+        },
+      });
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || 'Failed to delete plan variant';
+      const message = error?.response?.data?.message || 'Failed to remove plan variant';
       toast.error(message);
     },
   });

@@ -22,7 +22,7 @@ import {
 } from '@/shared/components/ui/select';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import type { Member } from '@/shared/types/common.types';
-import { useUpdateMember } from '../hooks/use-members';
+import { useUpdateMember, useMembers } from '../hooks/use-members';
 import { useState } from 'react';
 
 const updateMemberSchema = z.object({
@@ -51,8 +51,11 @@ export function EditMemberDialog({
   onOpenChange,
 }: EditMemberDialogProps) {
   const updateMember = useUpdateMember();
+  const { data: membersResponse } = useMembers();
+  const allMembers = (membersResponse?.data ?? []).filter((m) => m.id !== member.id);
   const [gender, setGender] = useState(member.gender);
   const [isActive, setIsActive] = useState(member.isActive);
+  const [referredById, setReferredById] = useState(member.referredById || '');
 
   const {
     register,
@@ -81,6 +84,7 @@ export function EditMemberDialog({
           ...data,
           gender,
           isActive,
+          referredById: referredById || null,
         },
       },
       {
@@ -203,6 +207,25 @@ export function EditMemberDialog({
               rows={3}
             />
           </div>
+
+          {allMembers.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="referredById">Referred By (optional)</Label>
+              <Select value={referredById} onValueChange={(v) => setReferredById(v === "__none__" ? "" : v)}>
+                <SelectTrigger id="referredById">
+                  <SelectValue placeholder="No referrer" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No referrer</SelectItem>
+                  {allMembers.slice(0, 50).map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.firstName} {m.lastName} — {m.phone}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="flex items-center space-x-2">
             <Checkbox

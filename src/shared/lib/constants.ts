@@ -25,5 +25,6 @@ export const ROUTES = {
   RECEPTION: "/reception",
   SETTINGS: "/settings",
   INBOX: "/inbox",
+  OFFERS: "/offers",
 } as const;
 

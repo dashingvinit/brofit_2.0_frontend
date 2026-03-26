@@ -117,8 +117,11 @@ export const membershipsApi = {
    * Freeze a membership
    * PUT /api/v1/memberships/:id/freeze
    */
-  freezeMembership: async (id: string): Promise<ApiResponse<Membership>> => {
-    const response = await apiClient.put(`/memberships/${id}/freeze`);
+  freezeMembership: async (
+    id: string,
+    data?: { reason?: string; freezeStartDate?: string; freezeEndDate?: string }
+  ): Promise<ApiResponse<Membership>> => {
+    const response = await apiClient.put(`/memberships/${id}/freeze`, data);
     return response.data;
   },
 

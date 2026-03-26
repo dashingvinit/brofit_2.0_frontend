@@ -16,6 +16,8 @@ export interface Member {
   joinDate: string; // ISO date string
   notes?: string | null;
   isActive: boolean;
+  referredById?: string | null;
+  referredBy?: Pick<Member, 'id' | 'firstName' | 'lastName'> | null;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
 }
@@ -137,6 +139,7 @@ export interface CreateMemberData {
   joinDate?: string; // ISO date string, defaults to today
   notes?: string;
   clerkUserId?: string;
+  referredById?: string;
 }
 
 /**
@@ -152,6 +155,7 @@ export interface UpdateMemberData {
   joinDate?: string;
   notes?: string;
   isActive?: boolean;
+  referredById?: string | null;
 }
 
 /**
@@ -219,10 +223,15 @@ export interface Membership {
   finalPrice: number;
   autoRenew: boolean;
   notes?: string | null;
+  freezeReason?: string | null;
+  freezeStartDate?: string | null;
+  freezeEndDate?: string | null;
+  offerId?: string | null;
   createdAt: string;
   updatedAt: string;
   member?: Member;
   planVariant?: PlanVariant & { planType?: PlanType };
+  offer?: Offer | null;
   payments?: Payment[];
 }
 
@@ -234,6 +243,7 @@ export interface CreateMembershipData {
   planVariantId: string;
   startDate?: string;
   discountAmount?: number;
+  offerId?: string;
   autoRenew?: boolean;
   notes?: string;
   paymentAmount?: number;
@@ -267,6 +277,7 @@ export interface RecordPaymentData {
   status?: PaymentStatus;
   reference?: string;
   notes?: string;
+  paidAt?: string;
 }
 
 /**
@@ -337,11 +348,13 @@ export interface Training {
   finalPrice: number;
   autoRenew: boolean;
   notes?: string | null;
+  offerId?: string | null;
   createdAt: string;
   updatedAt: string;
   member?: Member;
   planVariant?: PlanVariant & { planType?: PlanType };
   trainer?: Trainer;
+  offer?: Offer | null;
   payments?: Payment[];
 }
 
@@ -354,6 +367,7 @@ export interface CreateTrainingData {
   trainerId: string;
   startDate?: string;
   discountAmount?: number;
+  offerId?: string;
   autoRenew?: boolean;
   notes?: string;
   paymentAmount?: number;
@@ -631,4 +645,51 @@ export interface AttendanceByDate {
 export interface AttendanceTodayStats {
   currentlyInside: number;
   totalToday: number;
+}
+
+// ─── Offers ───────────────────────────────────────────────────────────────────
+
+export type OfferType = 'event' | 'referral' | 'discount' | 'promo';
+export type DiscountType = 'flat' | 'percentage';
+
+export interface Offer {
+  id: string;
+  orgId: string;
+  type: OfferType;
+  title: string;
+  description?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  isActive: boolean;
+  discountType?: DiscountType | null;
+  discountValue?: number | null;
+  code?: string | null;
+  rewardAmount?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateOfferData {
+  type: OfferType;
+  title: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  isActive?: boolean;
+  discountType?: DiscountType;
+  discountValue?: number;
+  code?: string;
+  rewardAmount?: number;
+}
+
+export interface UpdateOfferData {
+  title?: string;
+  description?: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  isActive?: boolean;
+  discountType?: DiscountType | null;
+  discountValue?: number | null;
+  code?: string | null;
+  rewardAmount?: number | null;
 }

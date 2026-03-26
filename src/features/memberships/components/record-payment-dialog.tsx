@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -26,6 +27,7 @@ import type { PaymentMethod } from '@/shared/types/common.types';
 const recordPaymentSchema = z.object({
   amount: z.coerce.number().positive('Amount must be greater than 0'),
   method: z.string().min(1, 'Payment method is required'),
+  paidAt: z.string().optional(),
   reference: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -57,15 +59,30 @@ export function RecordPaymentDialog({
 }: RecordPaymentDialogProps) {
   const recordPayment = useRecordPayment();
 
+  const today = new Date().toISOString().slice(0, 10);
+
   const form = useForm<RecordPaymentFormData>({
     resolver: zodResolver(recordPaymentSchema),
     defaultValues: {
       amount: dueAmount > 0 ? dueAmount : undefined,
       method: '',
+      paidAt: today,
       reference: '',
       notes: '',
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        amount: dueAmount > 0 ? dueAmount : undefined,
+        method: '',
+        paidAt: today,
+        reference: '',
+        notes: '',
+      });
+    }
+  }, [open, dueAmount]);
 
   const onSubmit = (data: RecordPaymentFormData) => {
     recordPayment.mutate(
@@ -74,6 +91,7 @@ export function RecordPaymentDialog({
         membershipId,
         amount: data.amount,
         method: data.method as PaymentMethod,
+        paidAt: data.paidAt,
         reference: data.reference,
         notes: data.notes,
       },
@@ -87,7 +105,7 @@ export function RecordPaymentDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { if (!recordPayment.isPending) onOpenChange(v); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Record Payment</DialogTitle>
@@ -144,6 +162,16 @@ export function RecordPaymentDialog({
                 {form.formState.errors.method.message}
               </p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="paidAt">Payment Date</Label>
+            <Input
+              id="paidAt"
+              type="date"
+              max={today}
+              {...form.register('paidAt')}
+            />
           </div>
 
           <div className="space-y-2">

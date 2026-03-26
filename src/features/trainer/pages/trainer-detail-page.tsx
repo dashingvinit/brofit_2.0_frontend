@@ -554,11 +554,84 @@ function PayoutScheduleSection({
   );
 }
 
+// ─── Edit Trainer Dialog ──────────────────────────────────────────────────────
+
+interface EditTrainerDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  trainer: { id: string; name: string; splitPercent?: number | null };
+}
+
+function EditTrainerDialog({ open, onOpenChange, trainer }: EditTrainerDialogProps) {
+  const [name, setName] = useState(trainer.name);
+  const [splitInput, setSplitInput] = useState(String(trainer.splitPercent ?? 60));
+  const updateTrainer = useUpdateTrainer(trainer.id);
+
+  const handleSave = () => {
+    const split = parseFloat(splitInput);
+    if (!name.trim() || isNaN(split) || split < 0 || split > 100) return;
+    updateTrainer.mutate(
+      { name: name.trim(), splitPercent: split },
+      { onSuccess: () => onOpenChange(false) },
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Edit Trainer</DialogTitle>
+          <DialogDescription>Update trainer name and revenue split.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 py-1">
+          <div className="space-y-1.5">
+            <Label htmlFor="editName">Name</Label>
+            <Input
+              id="editName"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Trainer name"
+              autoFocus
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="editSplitPercent">Trainer's Share of Revenue (%)</Label>
+            <Input
+              id="editSplitPercent"
+              type="number"
+              min={0}
+              max={100}
+              value={splitInput}
+              onChange={(e) => setSplitInput(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Percentage of training revenue paid to the trainer.
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            disabled={!name.trim() || updateTrainer.isPending}
+            onClick={handleSave}
+          >
+            {updateTrainer.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function TrainerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [editTrainerOpen, setEditTrainerOpen] = useState(false);
 
   const { data: trainerResponse, isLoading } = useTrainerWithClients(id!);
   const trainer = trainerResponse?.data;
@@ -620,6 +693,10 @@ export function TrainerDetailPage() {
                 getData={getClientsForExport}
               />
             )}
+            <Button variant="outline" size="sm" onClick={() => setEditTrainerOpen(true)}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
             <Button variant="outline" onClick={() => navigate(ROUTES.TRAINERS)}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
@@ -827,6 +904,13 @@ export function TrainerDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Trainer Dialog */}
+      <EditTrainerDialog
+        open={editTrainerOpen}
+        onOpenChange={setEditTrainerOpen}
+        trainer={trainer}
+      />
     </div>
   );
 }

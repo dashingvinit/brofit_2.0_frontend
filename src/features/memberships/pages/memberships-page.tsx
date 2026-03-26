@@ -13,6 +13,7 @@ import {
   SlidersHorizontal,
   Search,
   X,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -43,6 +44,7 @@ import {
 } from '@/shared/components/ui/table';
 import { PageHeader } from '@/shared/components/page-header';
 import { useMemberships, useMembershipStats } from '../hooks/use-memberships';
+import { RenewMembershipDialog } from '../components/renew-membership-dialog';
 import { ROUTES } from '@/shared/lib/constants';
 import { getThisMonthDateRange } from '@/shared/lib/utils';
 import type { Membership, MembershipStatus } from '@/shared/types/common.types';
@@ -121,9 +123,11 @@ function formatDate(dateStr: string) {
 function MembershipRow({
   membership,
   onClick,
+  onRenew,
 }: {
   membership: Membership;
   onClick: () => void;
+  onRenew: (m: Membership) => void;
 }) {
   const status = statusConfig[membership.status];
   const memberName = membership.member
@@ -131,29 +135,40 @@ function MembershipRow({
     : 'Unknown';
   const planName = membership.planVariant?.planType?.name ?? 'N/A';
   const durationLabel = membership.planVariant?.durationLabel ?? '';
+  const canRenew = membership.status === 'expired' || membership.status === 'cancelled';
 
   return (
-    <TableRow
-      className="cursor-pointer hover:bg-muted/50"
-      onClick={onClick}
-    >
-      <TableCell className="font-medium">{memberName}</TableCell>
-      <TableCell>
+    <TableRow className="hover:bg-muted/50">
+      <TableCell className="font-medium cursor-pointer" onClick={onClick}>{memberName}</TableCell>
+      <TableCell className="cursor-pointer" onClick={onClick}>
         <div>
           <p className="font-medium">{planName}</p>
           <p className="text-xs text-muted-foreground">{durationLabel}</p>
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="cursor-pointer" onClick={onClick}>
         <Badge variant={status.variant}>{status.label}</Badge>
       </TableCell>
-      <TableCell className="hidden md:table-cell">{formatDate(membership.startDate)}</TableCell>
-      <TableCell className="hidden md:table-cell">{formatDate(membership.endDate)}</TableCell>
+      <TableCell className="hidden md:table-cell cursor-pointer" onClick={onClick}>{formatDate(membership.startDate)}</TableCell>
+      <TableCell className="hidden md:table-cell cursor-pointer" onClick={onClick}>{formatDate(membership.endDate)}</TableCell>
       <TableCell className="text-right">
-        <span className="inline-flex items-center font-medium">
-          <IndianRupee className="h-3 w-3" />
-          {membership.finalPrice.toLocaleString()}
-        </span>
+        <div className="flex items-center justify-end gap-2">
+          <span className="inline-flex items-center font-medium">
+            <IndianRupee className="h-3 w-3" />
+            {membership.finalPrice.toLocaleString()}
+          </span>
+          {canRenew && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={(e) => { e.stopPropagation(); onRenew(membership); }}
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Renew
+            </Button>
+          )}
+        </div>
       </TableCell>
     </TableRow>
   );
@@ -162,9 +177,11 @@ function MembershipRow({
 function MembershipCard({
   membership,
   onClick,
+  onRenew,
 }: {
   membership: Membership;
   onClick: () => void;
+  onRenew: (m: Membership) => void;
 }) {
   const status = statusConfig[membership.status];
   const memberName = membership.member
@@ -172,14 +189,12 @@ function MembershipCard({
     : 'Unknown';
   const planName = membership.planVariant?.planType?.name ?? 'N/A';
   const durationLabel = membership.planVariant?.durationLabel ?? '';
+  const canRenew = membership.status === 'expired' || membership.status === 'cancelled';
 
   return (
-    <Card
-      className="cursor-pointer transition-shadow hover:shadow-md"
-      onClick={onClick}
-    >
+    <Card className="transition-shadow hover:shadow-md">
       <CardContent className="p-4">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between cursor-pointer" onClick={onClick}>
           <div className="space-y-1">
             <p className="font-semibold">{memberName}</p>
             <p className="text-sm text-muted-foreground">
@@ -189,14 +204,27 @@ function MembershipCard({
           <Badge variant={status.variant}>{status.label}</Badge>
         </div>
         <div className="mt-3 flex items-center justify-between text-sm">
-          <div className="flex items-center gap-1 text-muted-foreground">
+          <div className="flex items-center gap-1 text-muted-foreground cursor-pointer" onClick={onClick}>
             <CalendarDays className="h-3.5 w-3.5" />
             {formatDate(membership.startDate)} - {formatDate(membership.endDate)}
           </div>
-          <span className="inline-flex items-center font-semibold">
-            <IndianRupee className="h-3 w-3" />
-            {membership.finalPrice.toLocaleString()}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center font-semibold">
+              <IndianRupee className="h-3 w-3" />
+              {membership.finalPrice.toLocaleString()}
+            </span>
+            {canRenew && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs"
+                onClick={() => onRenew(membership)}
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Renew
+              </Button>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -208,6 +236,7 @@ export function MembershipsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [dateRange, setDateRange] = useState<{ from: string; to: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [renewMembership, setRenewMembership] = useState<Membership | null>(null);
   const { data: membershipsResponse, isLoading } = useMemberships(
     1,
     100,
@@ -501,9 +530,8 @@ export function MembershipsPage() {
                     <MembershipRow
                       key={membership.id}
                       membership={membership}
-                      onClick={() =>
-                        navigate(`/memberships/${membership.id}`)
-                      }
+                      onClick={() => navigate(`/memberships/${membership.id}`)}
+                      onRenew={setRenewMembership}
                     />
                   ))}
                 </TableBody>
@@ -517,13 +545,21 @@ export function MembershipsPage() {
               <MembershipCard
                 key={membership.id}
                 membership={membership}
-                onClick={() =>
-                  navigate(`/memberships/${membership.id}`)
-                }
+                onClick={() => navigate(`/memberships/${membership.id}`)}
+                onRenew={setRenewMembership}
               />
             ))}
           </div>
         </>
+      )}
+
+      {/* Renew Dialog (list-level) */}
+      {renewMembership && (
+        <RenewMembershipDialog
+          open={!!renewMembership}
+          onOpenChange={(open) => { if (!open) setRenewMembership(null); }}
+          membership={renewMembership}
+        />
       )}
     </div>
   );

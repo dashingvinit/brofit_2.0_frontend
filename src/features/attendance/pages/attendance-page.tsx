@@ -11,6 +11,8 @@ import {
   ChevronRight,
   RefreshCw,
   CheckCircle2,
+  Hash,
+  Delete,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -339,15 +341,48 @@ export function AttendancePage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState(toDateString(new Date()));
   const [checkOutTarget, setCheckOutTarget] = useState<string | null>(null);
+  const [checkInMode, setCheckInMode] = useState<"search" | "keypad">("search");
+  const [keypadDigits, setKeypadDigits] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   const isToday = selectedDate === toDateString(new Date());
 
-  // Debounce search input
+  // Debounce text search input
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => clearTimeout(t);
   }, [searchQuery]);
+
+  // Keypad: search when we have ≥3 digits
+  useEffect(() => {
+    if (checkInMode !== "keypad") return;
+    if (keypadDigits.length >= 3) {
+      setDebouncedSearch(keypadDigits);
+    } else {
+      setDebouncedSearch("");
+    }
+  }, [keypadDigits, checkInMode]);
+
+  function handleKeypadPress(digit: string) {
+    if (keypadDigits.length >= 10) return;
+    setKeypadDigits((prev) => prev + digit);
+  }
+
+  function handleKeypadDelete() {
+    setKeypadDigits((prev) => prev.slice(0, -1));
+  }
+
+  function handleKeypadClear() {
+    setKeypadDigits("");
+    setDebouncedSearch("");
+  }
+
+  function switchMode(mode: "search" | "keypad") {
+    setCheckInMode(mode);
+    setSearchQuery("");
+    setDebouncedSearch("");
+    setKeypadDigits("");
+  }
 
   // ── data ──
   const { data: statsRes, isLoading: isLoadingStats } = useAttendanceTodayStats();
@@ -526,39 +561,130 @@ export function AttendancePage() {
       {/* ── Check-In Panel ── */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <LogIn className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            Check In a Member
-          </CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <LogIn className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              Check In a Member
+            </CardTitle>
+            {/* Mode toggle */}
+            <div className="flex items-center rounded-lg border p-0.5 bg-muted/50">
+              <button
+                onClick={() => switchMode("search")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  checkInMode === "search"
+                    ? "bg-background shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Search className="h-3.5 w-3.5" />
+                Search
+              </button>
+              <button
+                onClick={() => switchMode("keypad")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  checkInMode === "keypad"
+                    ? "bg-background shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Hash className="h-3.5 w-3.5" />
+                Keypad
+              </button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Search input */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              ref={searchRef}
-              type="text"
-              placeholder="Search by name or phone number..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-9 h-10"
-              autoComplete="off"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => {
-                  setSearchQuery("");
-                  setDebouncedSearch("");
-                  searchRef.current?.focus();
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+          {checkInMode === "search" ? (
+            <>
+              {/* Text search input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  ref={searchRef}
+                  type="text"
+                  placeholder="Search by name or phone number..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-9 h-10"
+                  autoComplete="off"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery("");
+                      setDebouncedSearch("");
+                      searchRef.current?.focus();
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              {!debouncedSearch && (
+                <p className="text-xs text-muted-foreground">
+                  Type a name or phone number to find and check in a member.
+                </p>
+              )}
+            </>
+          ) : (
+            /* Phone Keypad */
+            <div className="space-y-3">
+              {/* Display */}
+              <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3">
+                <span className="text-xl font-mono tracking-widest font-semibold min-w-0 flex-1">
+                  {keypadDigits || (
+                    <span className="text-muted-foreground text-base font-normal font-sans">Enter phone number</span>
+                  )}
+                </span>
+                {keypadDigits && (
+                  <button
+                    onClick={handleKeypadDelete}
+                    className="text-muted-foreground hover:text-foreground transition-colors ml-2"
+                  >
+                    <Delete className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
 
-          {/* Search results dropdown */}
+              {/* Keypad grid */}
+              <div className="grid grid-cols-3 gap-2">
+                {["1","2","3","4","5","6","7","8","9","*","0","#"].map((key) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      if (key !== "*" && key !== "#") handleKeypadPress(key);
+                    }}
+                    disabled={key === "*" || key === "#"}
+                    className={`rounded-lg border py-3.5 text-lg font-semibold transition-colors select-none
+                      ${key === "*" || key === "#"
+                        ? "opacity-0 pointer-events-none"
+                        : "bg-background hover:bg-muted active:scale-95 active:bg-muted"
+                      }`}
+                  >
+                    {key}
+                  </button>
+                ))}
+              </div>
+
+              {keypadDigits && (
+                <button
+                  onClick={handleKeypadClear}
+                  className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+                >
+                  Clear
+                </button>
+              )}
+
+              {!keypadDigits && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Type at least 3 digits to search by phone number.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Search results — shared between both modes */}
           {debouncedSearch && (
             <div className="rounded-lg border bg-background divide-y overflow-hidden shadow-sm">
               {isSearching ? (
@@ -616,7 +742,10 @@ export function AttendancePage() {
                           <Button
                             size="sm"
                             className="h-8 text-xs gap-1.5"
-                            onClick={() => handleCheckIn(member.id)}
+                            onClick={() => {
+                              handleCheckIn(member.id);
+                              if (checkInMode === "keypad") handleKeypadClear();
+                            }}
                             disabled={checkInMutation.isPending}
                           >
                             <LogIn className="h-3.5 w-3.5" />
@@ -629,12 +758,6 @@ export function AttendancePage() {
                 })
               )}
             </div>
-          )}
-
-          {!debouncedSearch && (
-            <p className="text-xs text-muted-foreground">
-              Type a name or phone number to find and check in a member.
-            </p>
           )}
         </CardContent>
       </Card>

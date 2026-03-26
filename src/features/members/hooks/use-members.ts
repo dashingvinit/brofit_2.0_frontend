@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { membersApi, type SearchMembersParams } from '../api/members-api';
-import type { CreateMemberData, UpdateMemberData } from '@/shared/types/common.types';
+import type { CreateMemberData, UpdateMemberData, Member } from '@/shared/types/common.types';
 
 /**
  * Hook to fetch all members with pagination
@@ -90,16 +90,29 @@ export function useUpdateMember() {
 }
 
 /**
- * Hook to delete a member (soft delete)
+ * Hook to delete a member (soft delete) with 5-second undo toast
  */
 export function useDeleteMember() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (memberId: string) => membersApi.deleteMember(memberId),
-    onSuccess: (response) => {
+    mutationFn: (member: Member) => membersApi.deleteMember(member.id),
+    onSuccess: (_, member) => {
       queryClient.invalidateQueries({ queryKey: ['members'] });
-      toast.success(response.message || 'Member deleted successfully');
+      const fullName = `${member.firstName} ${member.lastName}`;
+      toast(`${fullName} deleted`, {
+        description: 'Member has been soft-deleted.',
+        duration: 5000,
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            membersApi.updateMember(member.id, { isActive: true }).then(() => {
+              queryClient.invalidateQueries({ queryKey: ['members'] });
+              toast.success(`${fullName} restored`);
+            });
+          },
+        },
+      });
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete member');

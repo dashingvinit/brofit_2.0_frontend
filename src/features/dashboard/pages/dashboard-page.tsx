@@ -11,6 +11,8 @@ import {
   ArrowRight,
   CalendarDays,
   UserX,
+  Activity,
+  LogIn,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -35,6 +37,10 @@ import {
   useDuesReport,
   useInactiveCandidates,
 } from "@/features/members/hooks/use-member-detail";
+import {
+  useAttendanceTodayStats,
+  useAttendanceInside,
+} from "@/features/attendance/hooks/use-attendance";
 import { ROUTES } from "@/shared/lib/constants";
 import { formatCurrency, daysUntil } from "@/shared/lib/utils";
 import type { Membership, Training } from "@/shared/types/common.types";
@@ -218,10 +224,9 @@ export function DashboardPage() {
   const { data: expiringMembershipsRes } = useExpiringMemberships(7);
   const { data: expiringTrainingsRes } = useExpiringTrainings(7);
   const { data: inactiveSubRes } = useInactiveCandidates(1, 10);
-  const { data: duesReportRes, isLoading: isLoadingDues } = useDuesReport(
-    1,
-    10,
-  );
+  const { data: duesReportRes, isLoading: isLoadingDues } = useDuesReport(1, 10);
+  const { data: attendanceStatsRes, isLoading: isLoadingAttendance } = useAttendanceTodayStats();
+  const { data: attendanceInsideRes } = useAttendanceInside();
 
   const memberStats = memberStatsRes?.data;
   const membershipStats = membershipStatsRes?.data;
@@ -244,6 +249,11 @@ export function DashboardPage() {
     totalMembersWithDues: 0,
     grandTotal: 0,
   };
+
+  const attendanceStats = attendanceStatsRes?.data;
+  const currentlyInside = attendanceInsideRes?.data?.records ?? [];
+  const todayTotal = attendanceStats?.totalToday ?? 0;
+  const insideCount = attendanceStats?.currentlyInside ?? currentlyInside.length;
 
   const expiringItems = [
     ...expiringMemberships.map((m) => ({
@@ -497,6 +507,80 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Today's Attendance Summary */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Activity className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            Today's Attendance
+          </CardTitle>
+          <button
+            className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1"
+            onClick={() => navigate(ROUTES.ATTENDANCE)}
+          >
+            View all
+            <ArrowRight className="h-3 w-3" />
+          </button>
+        </CardHeader>
+        <CardContent>
+          {isLoadingAttendance ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {/* Currently Inside */}
+              <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 p-3 text-center">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
+                  <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Inside Now</p>
+                </div>
+                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{insideCount}</p>
+              </div>
+              {/* Total Today */}
+              <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 p-3 text-center">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <LogIn className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                  <p className="text-xs text-blue-700 dark:text-blue-400 font-medium">Total Today</p>
+                </div>
+                <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{todayTotal}</p>
+              </div>
+              {/* Recent check-ins */}
+              {currentlyInside.length > 0 && (
+                <div className="col-span-2 sm:col-span-1 rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground font-medium mb-2">Currently Inside</p>
+                  <div className="space-y-1.5">
+                    {currentlyInside.slice(0, 3).map((r) => (
+                      <div key={r.id} className="flex items-center gap-2 text-sm">
+                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground shrink-0">
+                          {r.member ? `${r.member.firstName[0]}${r.member.lastName[0]}` : "?"}
+                        </div>
+                        <span className="truncate font-medium">
+                          {r.member ? `${r.member.firstName} ${r.member.lastName}` : "—"}
+                        </span>
+                      </div>
+                    ))}
+                    {currentlyInside.length > 3 && (
+                      <p className="text-xs text-muted-foreground">+{currentlyInside.length - 3} more</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              {currentlyInside.length === 0 && todayTotal === 0 && (
+                <div className="col-span-2 sm:col-span-1 rounded-lg border border-dashed p-3 flex items-center justify-center">
+                  <p className="text-xs text-muted-foreground text-center">No check-ins yet today</p>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Outstanding Dues */}
       <Card>

@@ -32,16 +32,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/components/ui/alert-dialog';
 import { usePlanTypes, useDeletePlanType } from '../hooks/use-plan-types';
 import { PlanTypeDialog } from '../components/plan-type-dialog';
 import { PlanVariantsSheet } from '../components/plan-variants-sheet';
@@ -90,8 +80,7 @@ export function PlansPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingPlanType, setEditingPlanType] = useState<PlanType | null>(null);
   const [selectedPlanType, setSelectedPlanType] = useState<PlanType | null>(null);
-  const [planTypeToDelete, setPlanTypeToDelete] = useState<PlanType | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
+const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [importOpen, setImportOpen] = useState(false);
 
@@ -330,7 +319,7 @@ export function PlansPage() {
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setPlanTypeToDelete(planType)} className="text-destructive focus:text-destructive">
+                        <DropdownMenuItem onClick={() => deleteMutation.mutate(planType)} className="text-destructive focus:text-destructive" disabled={deleteMutation.isPending}>
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
                         </DropdownMenuItem>
@@ -463,33 +452,6 @@ export function PlansPage() {
         }}
       />
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!planTypeToDelete} onOpenChange={(open) => { if (!open) setPlanTypeToDelete(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete "{planTypeToDelete?.name}"?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this plan type and all its variants. If any memberships or trainings are using this plan, the deletion will be blocked.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (planTypeToDelete) {
-                  deleteMutation.mutate(planTypeToDelete.id, {
-                    onSuccess: () => setPlanTypeToDelete(null),
-                    onError: () => setPlanTypeToDelete(null),
-                  });
-                }
-              }}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

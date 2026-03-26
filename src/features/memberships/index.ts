@@ -2,6 +2,8 @@
 export { CreateMembershipForm } from './components/create-membership-form';
 export { RecordPaymentDialog } from './components/record-payment-dialog';
 export { EditMembershipDialog } from './components/edit-membership-dialog';
+export { RenewMembershipDialog } from './components/renew-membership-dialog';
+export { FreezeMembershipDialog } from './components/freeze-membership-dialog';
 
 // Hooks
 export {

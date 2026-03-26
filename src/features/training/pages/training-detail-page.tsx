@@ -14,6 +14,7 @@ import {
   Snowflake,
   Play,
   MoreHorizontal,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -60,6 +61,7 @@ import {
   useUnfreezeTraining,
 } from '../hooks/use-training';
 import { RecordTrainingPaymentDialog } from '../components/record-training-payment-dialog';
+import { RenewTrainingDialog } from '../components/renew-training-dialog';
 import { ROUTES } from '@/shared/lib/constants';
 import type {
   TrainingStatus,
@@ -123,6 +125,7 @@ export function TrainingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [renewDialogOpen, setRenewDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [freezeDialogOpen, setFreezeDialogOpen] = useState(false);
   const [unfreezeDialogOpen, setUnfreezeDialogOpen] = useState(false);
@@ -203,6 +206,13 @@ export function TrainingDetailPage() {
               Back
             </Button>
 
+            {(training.status === 'expired' || training.status === 'cancelled') && (
+              <Button onClick={() => setRenewDialogOpen(true)}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Renew
+              </Button>
+            )}
+
             {isEditable && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -211,6 +221,11 @@ export function TrainingDetailPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setRenewDialogOpen(true)}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Renew Training
+                  </DropdownMenuItem>
+
                   {canFreeze && (
                     <DropdownMenuItem
                       onClick={() => setFreezeDialogOpen(true)}
@@ -353,14 +368,26 @@ export function TrainingDetailPage() {
         {/* Dues Overview */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Payment Status</CardTitle>
-            <CardDescription>
-              {duesLoading
-                ? 'Loading...'
-                : dues?.isFullyPaid
-                  ? 'Fully paid'
-                  : 'Outstanding balance'}
-            </CardDescription>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle className="text-lg">Payment Status</CardTitle>
+                <CardDescription>
+                  {duesLoading
+                    ? 'Loading...'
+                    : dues?.isFullyPaid
+                      ? 'Fully paid'
+                      : dues && dues.payments.filter(p => p.status === 'paid').length > 0
+                        ? `${dues.payments.filter(p => p.status === 'paid').length} payment${dues.payments.filter(p => p.status === 'paid').length !== 1 ? 's' : ''} recorded`
+                        : 'Outstanding balance'}
+                </CardDescription>
+              </div>
+              {training.status !== 'cancelled' && (!dues || !dues.isFullyPaid) && (
+                <Button size="sm" onClick={() => setPaymentDialogOpen(true)}>
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  Pay
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {duesLoading ? (
@@ -398,7 +425,7 @@ export function TrainingDetailPage() {
                       {dues.finalPrice.toLocaleString()}
                     </span>
                   </div>
-                  <div className="flex justify-between text-emerald-600">
+                  <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                     <span>Paid</span>
                     <span className="font-medium">
                       <IndianRupee className="inline h-3 w-3" />
@@ -410,8 +437,8 @@ export function TrainingDetailPage() {
                     <span
                       className={
                         dues.isFullyPaid
-                          ? 'text-emerald-600'
-                          : 'text-amber-600'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-amber-600 dark:text-amber-400'
                       }
                     >
                       {dues.isFullyPaid ? 'Fully Paid' : 'Balance Due'}
@@ -419,8 +446,8 @@ export function TrainingDetailPage() {
                     <span
                       className={
                         dues.isFullyPaid
-                          ? 'text-emerald-600'
-                          : 'text-amber-600'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-amber-600 dark:text-amber-400'
                       }
                     >
                       <IndianRupee className="inline h-3 w-3" />
@@ -428,16 +455,6 @@ export function TrainingDetailPage() {
                     </span>
                   </div>
                 </div>
-
-                {!dues.isFullyPaid && training.status !== 'cancelled' && (
-                  <Button
-                    className="w-full"
-                    onClick={() => setPaymentDialogOpen(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Record Payment
-                  </Button>
-                )}
 
                 {dues.isFullyPaid && (
                   <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-50 p-3 text-sm font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
@@ -454,10 +471,20 @@ export function TrainingDetailPage() {
       {/* Payment History */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Payment History</CardTitle>
-          <CardDescription>
-            All payments recorded against this training
-          </CardDescription>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="text-lg">Payment History</CardTitle>
+              <CardDescription>
+                All payments recorded against this training
+              </CardDescription>
+            </div>
+            {training.status !== 'cancelled' && (!dues || !dues.isFullyPaid) && (
+              <Button size="sm" variant="outline" onClick={() => setPaymentDialogOpen(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Record Payment
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {duesLoading ? (
@@ -516,42 +543,59 @@ export function TrainingDetailPage() {
                 </Table>
               </div>
 
-              <div className="space-y-3 sm:hidden">
-                {dues.payments.map((payment) => {
-                  const pStatus = paymentStatusConfig[payment.status];
-                  return (
-                    <div
-                      key={payment.id}
-                      className="rounded-lg border p-3 space-y-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold inline-flex items-center">
-                          <IndianRupee className="h-3.5 w-3.5" />
-                          {payment.amount.toLocaleString()}
-                        </span>
-                        <Badge variant={pStatus.variant}>
-                          {pStatus.label}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>
-                          {paymentMethodLabels[payment.method] ||
-                            payment.method}
-                        </span>
-                        <span>
-                          {payment.paidAt
-                            ? formatDate(payment.paidAt)
-                            : formatDate(payment.createdAt)}
-                        </span>
-                      </div>
-                      {payment.reference && (
-                        <p className="text-xs text-muted-foreground">
-                          Ref: {payment.reference}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
+              {/* Mobile Timeline */}
+              <div className="sm:hidden">
+                <div className="relative pl-6">
+                  <div className="absolute left-[9px] top-2 bottom-2 w-px bg-border" />
+                  <div className="space-y-4">
+                    {dues.payments.map((payment) => {
+                      const pStatus = paymentStatusConfig[payment.status];
+                      return (
+                        <div key={payment.id} className="relative">
+                          <div className={`absolute -left-6 mt-1 h-4 w-4 rounded-full border-2 border-background flex items-center justify-center ${
+                            payment.status === 'paid'
+                              ? 'bg-emerald-500'
+                              : payment.status === 'pending'
+                                ? 'bg-amber-400'
+                                : 'bg-muted-foreground'
+                          }`} />
+                          <div className="rounded-lg border p-3 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold inline-flex items-center">
+                                <IndianRupee className="h-3.5 w-3.5" />
+                                {payment.amount.toLocaleString()}
+                              </span>
+                              <Badge variant={pStatus.variant} className="text-xs">
+                                {pStatus.label}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span className="font-medium">
+                                {paymentMethodLabels[payment.method] || payment.method}
+                              </span>
+                              <span>·</span>
+                              <span>
+                                {payment.paidAt
+                                  ? formatDate(payment.paidAt)
+                                  : formatDate(payment.createdAt)}
+                              </span>
+                            </div>
+                            {payment.reference && (
+                              <p className="text-xs text-muted-foreground">
+                                Ref: {payment.reference}
+                              </p>
+                            )}
+                            {payment.notes && (
+                              <p className="text-xs text-muted-foreground italic">
+                                {payment.notes}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </>
           ) : (
@@ -565,14 +609,23 @@ export function TrainingDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Renew Training Dialog */}
+      {training && (
+        <RenewTrainingDialog
+          open={renewDialogOpen}
+          onOpenChange={setRenewDialogOpen}
+          training={training}
+        />
+      )}
+
       {/* Record Payment Dialog */}
-      {training && dues && (
+      {training && (
         <RecordTrainingPaymentDialog
           open={paymentDialogOpen}
           onOpenChange={setPaymentDialogOpen}
           memberId={training.memberId}
           trainingId={training.id}
-          dueAmount={dues.dueAmount}
+          dueAmount={dues?.dueAmount ?? 0}
         />
       )}
 

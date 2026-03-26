@@ -349,25 +349,20 @@ function TopPlansCard() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-5">
+          <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-4 w-16" />
-                </div>
-                <Skeleton className="h-1.5 w-full" />
-                <div className="pl-4 space-y-2">
-                  <Skeleton className="h-3 w-48" />
-                  <Skeleton className="h-3 w-40" />
-                </div>
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="h-4 w-4 rounded" />
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-16" />
               </div>
             ))}
           </div>
         ) : plans.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-6">No plan data yet</p>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-3">
             {plans.map((plan, rank) => {
               const barWidth = (plan.totalCount / maxCount) * 100;
               const isMembership = plan.category === 'membership';
@@ -377,68 +372,49 @@ function TopPlansCard() {
                 : 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300';
 
               return (
-                <div key={plan.planName} className="space-y-2">
-                  {/* Plan type row */}
-                  <div className="flex items-center gap-3">
-                    <span className="w-5 text-xs font-medium text-muted-foreground shrink-0">
-                      #{rank + 1}
+                <div key={plan.planName} className="group">
+                  {/* Main row */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="w-5 text-xs text-muted-foreground shrink-0 text-right">
+                      {rank + 1}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1.5 gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-sm font-semibold truncate">{plan.planName}</span>
-                          <span className={`shrink-0 inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium ${badgeColor}`}>
-                            {plan.category}
-                          </span>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <span className="text-xs text-muted-foreground">{plan.totalCount} sold</span>
-                          <span className="mx-1.5 text-border">·</span>
-                          <span className="text-xs font-semibold inline-flex items-center">
-                            <IndianRupee className="h-2.5 w-2.5" />
-                            {formatCurrency(plan.totalRevenue)}
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-sm font-medium truncate">{plan.planName}</span>
+                        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${badgeColor}`}>
+                          {plan.category}
+                        </span>
                       </div>
-                      {/* Total bar */}
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
-                          className={`h-2 rounded-full ${barColor}`}
+                          className={`h-1.5 rounded-full transition-all ${barColor}`}
                           style={{ width: `${barWidth}%` }}
                         />
                       </div>
                     </div>
+                    <div className="shrink-0 text-right space-y-0.5">
+                      <p className="text-sm font-semibold inline-flex items-center justify-end">
+                        <IndianRupee className="h-3 w-3" />
+                        {formatCurrency(plan.totalRevenue)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{plan.totalCount} sold</p>
+                    </div>
                   </div>
 
-                  {/* Variant rows */}
-                  <div className="pl-8 space-y-1.5 border-l-2 border-border ml-2.5">
-                    {plan.variants.map((v) => {
-                      const variantWidth = (v.count / plan.totalCount) * 100;
-                      return (
-                        <div key={v.planVariantId} className="flex items-center gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1 gap-2">
-                              <span className="text-xs text-muted-foreground">{v.durationLabel}</span>
-                              <div className="shrink-0 text-right">
-                                <span className="text-xs text-muted-foreground">{v.count} sold</span>
-                                <span className="mx-1.5 text-border">·</span>
-                                <span className="text-xs inline-flex items-center text-muted-foreground">
-                                  <IndianRupee className="h-2.5 w-2.5" />
-                                  {formatCurrency(v.revenue)}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="h-1 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className={`h-1 rounded-full ${barColor} opacity-60`}
-                                style={{ width: `${variantWidth}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {/* Variants — compact pill row */}
+                  {plan.variants.length > 0 && (
+                    <div className="ml-8 mb-1 flex flex-wrap gap-1.5">
+                      {plan.variants.map((v) => (
+                        <span
+                          key={v.planVariantId}
+                          className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+                        >
+                          {v.durationLabel}
+                          <span className="font-medium text-foreground">{v.count}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}

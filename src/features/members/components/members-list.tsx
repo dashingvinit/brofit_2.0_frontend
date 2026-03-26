@@ -8,6 +8,7 @@ import {
   Phone,
   Calendar,
   MoreHorizontal,
+  Loader2,
 } from "lucide-react";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -24,16 +25,6 @@ import type { Member } from "@/shared/types/common.types";
 import { ROUTES } from "@/shared/lib/constants";
 import { EditMemberDialog } from "./edit-member-dialog";
 import { useDeleteMember } from "../hooks/use-members";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/shared/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -73,16 +64,10 @@ function getAvatarColor(name: string) {
 export function MembersList({ members, isLoading, isAdmin = true }: MembersListProps) {
   const navigate = useNavigate();
   const [editingMember, setEditingMember] = useState<Member | null>(null);
-  const [deletingMember, setDeletingMember] = useState<Member | null>(null);
   const deleteMember = useDeleteMember();
 
-  const handleDeleteMember = () => {
-    if (!deletingMember) return;
-    deleteMember.mutate(deletingMember.id, {
-      onSuccess: () => {
-        setDeletingMember(null);
-      },
-    });
+  const handleDeleteMember = (member: Member) => {
+    deleteMember.mutate(member);
   };
 
   const formatDate = (dateString: string) => {
@@ -301,10 +286,14 @@ export function MembersList({ members, isLoading, isAdmin = true }: MembersListP
                           Edit Member
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => setDeletingMember(member)}
+                          onClick={() => handleDeleteMember(member)}
                           className="text-destructive focus:text-destructive"
+                          disabled={deleteMember.isPending}
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
+                          {deleteMember.isPending && deleteMember.variables?.id === member.id
+                            ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            : <Trash2 className="h-4 w-4 mr-2" />
+                          }
                           Delete Member
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -378,10 +367,14 @@ export function MembersList({ members, isLoading, isAdmin = true }: MembersListP
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => setDeletingMember(member)}
+                            onClick={() => handleDeleteMember(member)}
                             className="text-destructive focus:text-destructive"
+                            disabled={deleteMember.isPending}
                           >
-                            <Trash2 className="h-4 w-4 mr-2" />
+                            {deleteMember.isPending && deleteMember.variables?.id === member.id
+                              ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              : <Trash2 className="h-4 w-4 mr-2" />
+                            }
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -419,37 +412,6 @@ export function MembersList({ members, isLoading, isAdmin = true }: MembersListP
         />
       )}
 
-      {/* Delete Confirmation */}
-      <AlertDialog
-        open={!!deletingMember}
-        onOpenChange={(open: boolean) => !open && setDeletingMember(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Member</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete{" "}
-              <span className="font-medium text-foreground">
-                {deletingMember?.firstName} {deletingMember?.lastName}
-              </span>
-              ? This action will soft delete the member. They can be reactivated
-              later if needed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMember.isPending}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteMember}
-              disabled={deleteMember.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteMember.isPending ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

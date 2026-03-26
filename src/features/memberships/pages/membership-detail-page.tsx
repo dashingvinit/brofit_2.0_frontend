@@ -15,6 +15,7 @@ import {
   Snowflake,
   Play,
   MoreHorizontal,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -57,11 +58,12 @@ import {
   useMembership,
   useMembershipDues,
   useCancelMembership,
-  useFreezeMembership,
   useUnfreezeMembership,
 } from '../hooks/use-memberships';
 import { RecordPaymentDialog } from '../components/record-payment-dialog';
 import { EditMembershipDialog } from '../components/edit-membership-dialog';
+import { RenewMembershipDialog } from '../components/renew-membership-dialog';
+import { FreezeMembershipDialog } from '../components/freeze-membership-dialog';
 import { ROUTES } from '@/shared/lib/constants';
 import type {
   MembershipStatus,
@@ -126,6 +128,7 @@ export function MembershipDetailPage() {
   const navigate = useNavigate();
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [renewDialogOpen, setRenewDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [freezeDialogOpen, setFreezeDialogOpen] = useState(false);
   const [unfreezeDialogOpen, setUnfreezeDialogOpen] = useState(false);
@@ -137,7 +140,6 @@ export function MembershipDetailPage() {
   );
 
   const cancelMembership = useCancelMembership();
-  const freezeMembership = useFreezeMembership();
   const unfreezeMembership = useUnfreezeMembership();
 
   const membership = membershipResponse?.data;
@@ -208,6 +210,14 @@ export function MembershipDetailPage() {
               Back
             </Button>
 
+            {/* Renew button — prominent for expired/cancelled */}
+            {(membership.status === 'expired' || membership.status === 'cancelled') && (
+              <Button onClick={() => setRenewDialogOpen(true)}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Renew
+              </Button>
+            )}
+
             {/* Actions Dropdown */}
             {isEditable && (
               <DropdownMenu>
@@ -220,6 +230,11 @@ export function MembershipDetailPage() {
                   <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
                     <Pencil className="h-4 w-4 mr-2" />
                     Edit Details
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => setRenewDialogOpen(true)}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Renew Membership
                   </DropdownMenuItem>
 
                   {canFreeze && (
@@ -350,20 +365,59 @@ export function MembershipDetailPage() {
                 </div>
               </>
             )}
+
+            {membership.status === 'frozen' && (
+              <>
+                <Separator />
+                <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 p-3 space-y-1">
+                  <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-400">
+                    <Snowflake className="h-4 w-4" />
+                    Membership Frozen
+                  </div>
+                  {membership.freezeReason && (
+                    <p className="text-sm text-blue-600 dark:text-blue-300">
+                      Reason: {membership.freezeReason}
+                    </p>
+                  )}
+                  <div className="text-xs text-blue-600 dark:text-blue-400 space-y-0.5">
+                    {membership.freezeStartDate && (
+                      <p>From: {formatDate(membership.freezeStartDate)}</p>
+                    )}
+                    {membership.freezeEndDate ? (
+                      <p>Auto-resumes: {formatDate(membership.freezeEndDate)}</p>
+                    ) : (
+                      <p>No auto-resume date set</p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
         {/* Dues Overview */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Payment Status</CardTitle>
-            <CardDescription>
-              {duesLoading
-                ? 'Loading...'
-                : dues?.isFullyPaid
-                  ? 'Fully paid'
-                  : 'Outstanding balance'}
-            </CardDescription>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle className="text-lg">Payment Status</CardTitle>
+                <CardDescription>
+                  {duesLoading
+                    ? 'Loading...'
+                    : dues?.isFullyPaid
+                      ? 'Fully paid'
+                      : dues && dues.payments.filter(p => p.status === 'paid').length > 0
+                        ? `${dues.payments.filter(p => p.status === 'paid').length} payment${dues.payments.filter(p => p.status === 'paid').length !== 1 ? 's' : ''} recorded`
+                        : 'Outstanding balance'}
+                </CardDescription>
+              </div>
+              {!duesLoading && dues && !dues.isFullyPaid && membership.status !== 'cancelled' && (
+                <Button size="sm" onClick={() => setPaymentDialogOpen(true)}>
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  Pay
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {duesLoading ? (
@@ -402,7 +456,7 @@ export function MembershipDetailPage() {
                       {dues.finalPrice.toLocaleString()}
                     </span>
                   </div>
-                  <div className="flex justify-between text-emerald-600">
+                  <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                     <span>Paid</span>
                     <span className="font-medium">
                       <IndianRupee className="inline h-3 w-3" />
@@ -414,8 +468,8 @@ export function MembershipDetailPage() {
                     <span
                       className={
                         dues.isFullyPaid
-                          ? 'text-emerald-600'
-                          : 'text-amber-600'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-amber-600 dark:text-amber-400'
                       }
                     >
                       {dues.isFullyPaid ? 'Fully Paid' : 'Balance Due'}
@@ -423,8 +477,8 @@ export function MembershipDetailPage() {
                     <span
                       className={
                         dues.isFullyPaid
-                          ? 'text-emerald-600'
-                          : 'text-amber-600'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-amber-600 dark:text-amber-400'
                       }
                     >
                       <IndianRupee className="inline h-3 w-3" />
@@ -432,16 +486,6 @@ export function MembershipDetailPage() {
                     </span>
                   </div>
                 </div>
-
-                {!dues.isFullyPaid && membership.status !== 'cancelled' && (
-                  <Button
-                    className="w-full"
-                    onClick={() => setPaymentDialogOpen(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Record Payment
-                  </Button>
-                )}
 
                 {dues.isFullyPaid && (
                   <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-50 p-3 text-sm font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
@@ -458,10 +502,20 @@ export function MembershipDetailPage() {
       {/* Payment History */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Payment History</CardTitle>
-          <CardDescription>
-            All payments recorded against this membership
-          </CardDescription>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="text-lg">Payment History</CardTitle>
+              <CardDescription>
+                All payments recorded against this membership
+              </CardDescription>
+            </div>
+            {dues && !dues.isFullyPaid && membership.status !== 'cancelled' && (
+              <Button size="sm" variant="outline" onClick={() => setPaymentDialogOpen(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Record Payment
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {duesLoading ? (
@@ -521,43 +575,61 @@ export function MembershipDetailPage() {
                 </Table>
               </div>
 
-              {/* Mobile Cards */}
-              <div className="space-y-3 sm:hidden">
-                {dues.payments.map((payment) => {
-                  const pStatus = paymentStatusConfig[payment.status];
-                  return (
-                    <div
-                      key={payment.id}
-                      className="rounded-lg border p-3 space-y-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold inline-flex items-center">
-                          <IndianRupee className="h-3.5 w-3.5" />
-                          {payment.amount.toLocaleString()}
-                        </span>
-                        <Badge variant={pStatus.variant}>
-                          {pStatus.label}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>
-                          {paymentMethodLabels[payment.method] ||
-                            payment.method}
-                        </span>
-                        <span>
-                          {payment.paidAt
-                            ? formatDate(payment.paidAt)
-                            : formatDate(payment.createdAt)}
-                        </span>
-                      </div>
-                      {payment.reference && (
-                        <p className="text-xs text-muted-foreground">
-                          Ref: {payment.reference}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
+              {/* Mobile Timeline */}
+              <div className="sm:hidden">
+                <div className="relative pl-6">
+                  {/* Vertical line */}
+                  <div className="absolute left-[9px] top-2 bottom-2 w-px bg-border" />
+                  <div className="space-y-4">
+                    {dues.payments.map((payment) => {
+                      const pStatus = paymentStatusConfig[payment.status];
+                      return (
+                        <div key={payment.id} className="relative">
+                          {/* Dot */}
+                          <div className={`absolute -left-6 mt-1 h-4 w-4 rounded-full border-2 border-background flex items-center justify-center ${
+                            payment.status === 'paid'
+                              ? 'bg-emerald-500'
+                              : payment.status === 'pending'
+                                ? 'bg-amber-400'
+                                : 'bg-muted-foreground'
+                          }`} />
+                          <div className="rounded-lg border p-3 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold inline-flex items-center">
+                                <IndianRupee className="h-3.5 w-3.5" />
+                                {payment.amount.toLocaleString()}
+                              </span>
+                              <Badge variant={pStatus.variant} className="text-xs">
+                                {pStatus.label}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span className="font-medium">
+                                {paymentMethodLabels[payment.method] || payment.method}
+                              </span>
+                              <span>·</span>
+                              <span>
+                                {payment.paidAt
+                                  ? formatDate(payment.paidAt)
+                                  : formatDate(payment.createdAt)}
+                              </span>
+                            </div>
+                            {payment.reference && (
+                              <p className="text-xs text-muted-foreground">
+                                Ref: {payment.reference}
+                              </p>
+                            )}
+                            {payment.notes && (
+                              <p className="text-xs text-muted-foreground italic">
+                                {payment.notes}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </>
           ) : (
@@ -603,6 +675,16 @@ export function MembershipDetailPage() {
         />
       )}
 
+      {/* Renew Membership Dialog */}
+      {membership && (
+        <RenewMembershipDialog
+          open={renewDialogOpen}
+          onOpenChange={setRenewDialogOpen}
+          membership={membership}
+          onRenewSuccess={() => navigate(`${ROUTES.MEMBER_DETAIL}/${membership.memberId}`)}
+        />
+      )}
+
       {/* Cancel Confirmation */}
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
@@ -632,33 +714,15 @@ export function MembershipDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Freeze Confirmation */}
-      <AlertDialog open={freezeDialogOpen} onOpenChange={setFreezeDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Freeze this membership?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Freezing will temporarily pause{' '}
-              <span className="font-medium text-foreground">
-                {memberName}
-              </span>
-              's membership. The member won't have active access until it's
-              unfrozen. You can unfreeze it anytime.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => freezeMembership.mutate(membership.id)}
-              disabled={freezeMembership.isPending}
-            >
-              {freezeMembership.isPending
-                ? 'Freezing...'
-                : 'Yes, Freeze Membership'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Freeze Dialog */}
+      {membership && (
+        <FreezeMembershipDialog
+          open={freezeDialogOpen}
+          onOpenChange={setFreezeDialogOpen}
+          membership={membership}
+          memberName={memberName}
+        />
+      )}
 
       {/* Unfreeze Confirmation */}
       <AlertDialog

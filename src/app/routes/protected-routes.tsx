@@ -17,11 +17,12 @@ import { CreateTrainingPage } from "@/features/training/pages/create-training-pa
 import { TrainingDetailPage } from "@/features/training/pages/training-detail-page";
 import { TrainersPage } from "@/features/trainer/pages/trainers-page";
 import { TrainerDetailPage } from "@/features/trainer/pages/trainer-detail-page";
-import { FinancialsPage } from "@/features/financials";
+import { FinancialsPage, MonthlyExpensesPage } from "@/features/financials";
 import { AnalyticsPage } from "@/features/analytics";
 import { AttendancePage } from "@/features/attendance/pages/attendance-page";
 import { SettingsPage } from "@/features/settings/pages/settings-page";
 import { InboxPage } from "@/features/inbox/pages/inbox-page";
+import { OffersPage } from "@/features/offers";
 
 export const protectedRoutes: RouteObject[] = [
   {
@@ -108,6 +109,10 @@ export const protectedRoutes: RouteObject[] = [
                 element: <FinancialsPage />,
               },
               {
+                path: "/financials/month/:month",
+                element: <MonthlyExpensesPage />,
+              },
+              {
                 path: "/analytics",
                 element: <AnalyticsPage />,
               },
@@ -118,6 +123,10 @@ export const protectedRoutes: RouteObject[] = [
               {
                 path: "/inbox",
                 element: <InboxPage />,
+              },
+              {
+                path: "/offers",
+                element: <OffersPage />,
               },
             ],
           },

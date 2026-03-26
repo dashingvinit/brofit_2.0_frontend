@@ -34,6 +34,7 @@ import { usePlanTypesByCategory } from '@/features/plans/hooks/use-plan-types';
 import { usePlanVariantsByType } from '@/features/plans/hooks/use-plan-variants';
 import { useTrainers } from '@/features/trainer/hooks/use-trainers';
 import { useCreateTraining, useActiveTraining } from '../hooks/use-training';
+import { useOffers } from '@/features/offers/hooks/use-offers';
 import type { CreateTrainingData, PaymentMethod } from '@/shared/types/common.types';
 
 const createTrainingSchema = z
@@ -44,6 +45,7 @@ const createTrainingSchema = z
     trainerId: z.string().min(1, 'Please select a trainer'),
     startDate: z.string().min(1, 'Start date is required'),
     discountAmount: z.coerce.number().min(0, 'Discount cannot be negative').default(0),
+    offerId: z.string().optional(),
     autoRenew: z.boolean().default(false),
     notes: z.string().optional(),
     collectPayment: z.boolean().default(false),
@@ -100,6 +102,8 @@ export function CreateTrainingForm({
   const { data: membersResponse, isLoading: membersLoading } = useMembers();
   const { data: planTypes, isLoading: planTypesLoading } = usePlanTypesByCategory('training');
   const { data: trainersResponse, isLoading: trainersLoading } = useTrainers();
+  const { data: activeOffers } = useOffers(undefined, true);
+  const discountOffers = (activeOffers ?? []).filter((o) => o.type === 'discount' || o.type === 'promo');
   const createTraining = useCreateTraining();
 
   const form = useForm<CreateTrainingFormData>({
@@ -108,6 +112,7 @@ export function CreateTrainingForm({
       memberId: preselectedMemberId || '',
       startDate: new Date().toISOString().split('T')[0],
       discountAmount: 0,
+      offerId: '',
       autoRenew: false,
       collectPayment: false,
       trainerId: '',
@@ -196,6 +201,7 @@ export function CreateTrainingForm({
       trainerId: data.trainerId,
       startDate: data.startDate,
       discountAmount: data.discountAmount || 0,
+      offerId: data.offerId || undefined,
       autoRenew: data.autoRenew,
       notes: data.notes,
     };
@@ -573,6 +579,48 @@ export function CreateTrainingForm({
                 </p>
               </div>
             </div>
+
+            {/* Offer picker */}
+            {discountOffers.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="offerId">Apply Offer (optional)</Label>
+                <Select
+                  value={form.watch('offerId') || 'none'}
+                  onValueChange={(v) => {
+                    const realVal = v === 'none' ? '' : v;
+                    form.setValue('offerId', realVal);
+                    if (realVal && selectedVariant) {
+                      const offer = discountOffers.find((o) => o.id === realVal);
+                      if (offer && offer.discountValue !== null && offer.discountValue !== undefined) {
+                        const computed =
+                          offer.discountType === 'percentage'
+                            ? Math.round((offer.discountValue / 100) * selectedVariant.price)
+                            : offer.discountValue;
+                        form.setValue('discountAmount', Math.min(computed, selectedVariant.price));
+                      }
+                    } else if (!realVal) {
+                      form.setValue('discountAmount', 0);
+                    }
+                  }}
+                >
+                  <SelectTrigger id="offerId">
+                    <SelectValue placeholder="No offer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No offer</SelectItem>
+                    {discountOffers.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.title}
+                        {o.discountType === 'percentage'
+                          ? ` — ${o.discountValue}% off`
+                          : ` — ₹${o.discountValue} off`}
+                        {o.code ? ` (${o.code})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="discountAmount">Discount Amount</Label>

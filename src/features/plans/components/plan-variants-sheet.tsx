@@ -16,16 +16,6 @@ import { Label } from '@/shared/components/ui/label';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Badge } from '@/shared/components/ui/badge';
 import { Separator } from '@/shared/components/ui/separator';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/components/ui/alert-dialog';
 import { LoadingSpinner } from '@/shared/components/loading-spinner';
 import {
   usePlanVariantsByType,
@@ -61,10 +51,7 @@ interface PlanVariantsSheetProps {
 export function PlanVariantsSheet({ planType, open, onOpenChange }: PlanVariantsSheetProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [editingVariant, setEditingVariant] = useState<PlanVariant | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [variantToDelete, setVariantToDelete] = useState<PlanVariant | null>(null);
-
-  const { data: variants, isLoading } = usePlanVariantsByType(planType?.id || '', true);
+const { data: variants, isLoading } = usePlanVariantsByType(planType?.id || '', true);
   const deleteMutation = useDeletePlanVariant();
   const createMutation = useCreatePlanVariant();
   const updateMutation = useUpdatePlanVariant();
@@ -120,12 +107,7 @@ export function PlanVariantsSheet({ planType, open, onOpenChange }: PlanVariants
     setViewMode('edit');
   };
 
-  const handleDelete = (variant: PlanVariant) => {
-    setVariantToDelete(variant);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleCancelForm = () => {
+const handleCancelForm = () => {
     setViewMode('list');
     setEditingVariant(null);
     reset();
@@ -162,22 +144,10 @@ export function PlanVariantsSheet({ planType, open, onOpenChange }: PlanVariants
     }
   };
 
-  const confirmDelete = () => {
-    if (variantToDelete) {
-      deleteMutation.mutate(variantToDelete.id, {
-        onSuccess: () => {
-          setDeleteDialogOpen(false);
-          setVariantToDelete(null);
-        },
-      });
-    }
-  };
-
-  if (!planType) return null;
+if (!planType) return null;
 
   return (
-    <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
             <div className="flex items-center gap-2">
@@ -246,8 +216,9 @@ export function PlanVariantsSheet({ planType, open, onOpenChange }: PlanVariants
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDelete(variant)}
+                              onClick={() => deleteMutation.mutate(variant)}
                               className="text-destructive hover:text-destructive"
+                              disabled={deleteMutation.isPending}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -368,28 +339,5 @@ export function PlanVariantsSheet({ planType, open, onOpenChange }: PlanVariants
           </div>
         </SheetContent>
       </Sheet>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Variant?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the "{variantToDelete?.durationLabel}" variant for{' '}
-              {planType.name}. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
   );
 }

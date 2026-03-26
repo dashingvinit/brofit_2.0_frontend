@@ -13,6 +13,7 @@ import {
   SlidersHorizontal,
   Search,
   X,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -43,6 +44,7 @@ import {
 } from '@/shared/components/ui/table';
 import { PageHeader } from '@/shared/components/page-header';
 import { useTrainings, useTrainingStats } from '../hooks/use-training';
+import { RenewTrainingDialog } from '../components/renew-training-dialog';
 import { ROUTES } from '@/shared/lib/constants';
 import type { Training, TrainingStatus } from '@/shared/types/common.types';
 
@@ -116,9 +118,11 @@ function formatDate(dateStr: string) {
 function TrainingRow({
   training,
   onClick,
+  onRenew,
 }: {
   training: Training;
   onClick: () => void;
+  onRenew: (t: Training) => void;
 }) {
   const status = statusConfig[training.status];
   const memberName = training.member
@@ -126,30 +130,41 @@ function TrainingRow({
     : 'Unknown';
   const planName = training.planVariant?.planType?.name ?? 'N/A';
   const durationLabel = training.planVariant?.durationLabel ?? '';
+  const canRenew = training.status === 'expired' || training.status === 'cancelled';
 
   return (
-    <TableRow
-      className="cursor-pointer hover:bg-muted/50"
-      onClick={onClick}
-    >
-      <TableCell className="font-medium">{memberName}</TableCell>
-      <TableCell>
+    <TableRow className="hover:bg-muted/50">
+      <TableCell className="font-medium cursor-pointer" onClick={onClick}>{memberName}</TableCell>
+      <TableCell className="cursor-pointer" onClick={onClick}>
         <div>
           <p className="font-medium">{planName}</p>
           <p className="text-xs text-muted-foreground">{durationLabel}</p>
         </div>
       </TableCell>
-      <TableCell>{training.trainer?.name ?? '—'}</TableCell>
-      <TableCell>
+      <TableCell className="cursor-pointer" onClick={onClick}>{training.trainer?.name ?? '—'}</TableCell>
+      <TableCell className="cursor-pointer" onClick={onClick}>
         <Badge variant={status.variant}>{status.label}</Badge>
       </TableCell>
-      <TableCell className="hidden md:table-cell">{formatDate(training.startDate)}</TableCell>
-      <TableCell className="hidden md:table-cell">{formatDate(training.endDate)}</TableCell>
+      <TableCell className="hidden md:table-cell cursor-pointer" onClick={onClick}>{formatDate(training.startDate)}</TableCell>
+      <TableCell className="hidden md:table-cell cursor-pointer" onClick={onClick}>{formatDate(training.endDate)}</TableCell>
       <TableCell className="text-right">
-        <span className="inline-flex items-center font-medium">
-          <IndianRupee className="h-3 w-3" />
-          {training.finalPrice.toLocaleString()}
-        </span>
+        <div className="flex items-center justify-end gap-2">
+          <span className="inline-flex items-center font-medium">
+            <IndianRupee className="h-3 w-3" />
+            {training.finalPrice.toLocaleString()}
+          </span>
+          {canRenew && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={(e) => { e.stopPropagation(); onRenew(training); }}
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Renew
+            </Button>
+          )}
+        </div>
       </TableCell>
     </TableRow>
   );
@@ -158,9 +173,11 @@ function TrainingRow({
 function TrainingCard({
   training,
   onClick,
+  onRenew,
 }: {
   training: Training;
   onClick: () => void;
+  onRenew: (t: Training) => void;
 }) {
   const status = statusConfig[training.status];
   const memberName = training.member
@@ -168,14 +185,12 @@ function TrainingCard({
     : 'Unknown';
   const planName = training.planVariant?.planType?.name ?? 'N/A';
   const durationLabel = training.planVariant?.durationLabel ?? '';
+  const canRenew = training.status === 'expired' || training.status === 'cancelled';
 
   return (
-    <Card
-      className="cursor-pointer transition-shadow hover:shadow-md"
-      onClick={onClick}
-    >
+    <Card className="transition-shadow hover:shadow-md">
       <CardContent className="p-4">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between cursor-pointer" onClick={onClick}>
           <div className="space-y-1">
             <p className="font-semibold">{memberName}</p>
             <p className="text-sm text-muted-foreground">
@@ -188,14 +203,27 @@ function TrainingCard({
           <Badge variant={status.variant}>{status.label}</Badge>
         </div>
         <div className="mt-3 flex items-center justify-between text-sm">
-          <div className="flex items-center gap-1 text-muted-foreground">
+          <div className="flex items-center gap-1 text-muted-foreground cursor-pointer" onClick={onClick}>
             <CalendarDays className="h-3.5 w-3.5" />
             {formatDate(training.startDate)} - {formatDate(training.endDate)}
           </div>
-          <span className="inline-flex items-center font-semibold">
-            <IndianRupee className="h-3 w-3" />
-            {training.finalPrice.toLocaleString()}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center font-semibold">
+              <IndianRupee className="h-3 w-3" />
+              {training.finalPrice.toLocaleString()}
+            </span>
+            {canRenew && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs"
+                onClick={() => onRenew(training)}
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Renew
+              </Button>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -206,6 +234,7 @@ export function TrainingsPage() {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [renewTraining, setRenewTraining] = useState<Training | null>(null);
   const { data: trainingsResponse, isLoading } = useTrainings();
   const { data: statsResponse, isLoading: isLoadingStats } = useTrainingStats();
 
@@ -479,9 +508,8 @@ export function TrainingsPage() {
                     <TrainingRow
                       key={training.id}
                       training={training}
-                      onClick={() =>
-                        navigate(`/trainings/${training.id}`)
-                      }
+                      onClick={() => navigate(`/trainings/${training.id}`)}
+                      onRenew={setRenewTraining}
                     />
                   ))}
                 </TableBody>
@@ -495,13 +523,21 @@ export function TrainingsPage() {
               <TrainingCard
                 key={training.id}
                 training={training}
-                onClick={() =>
-                  navigate(`/trainings/${training.id}`)
-                }
+                onClick={() => navigate(`/trainings/${training.id}`)}
+                onRenew={setRenewTraining}
               />
             ))}
           </div>
         </>
+      )}
+
+      {/* Renew Dialog (list-level) */}
+      {renewTraining && (
+        <RenewTrainingDialog
+          open={!!renewTraining}
+          onOpenChange={(open) => { if (!open) setRenewTraining(null); }}
+          training={renewTraining}
+        />
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   IndianRupee,
   TrendingUp,
@@ -11,7 +11,9 @@ import {
   BarChart3,
   Clock,
   Loader2,
+  ChevronRight,
 } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import {
   Card,
@@ -40,53 +42,14 @@ import {
   AlertDialogTitle,
 } from '@/shared/components/ui/alert-dialog';
 import {
-  useExpenses,
   useInvestments,
-  useMonthlySummary,
   useRoi,
   useTrends,
-  useDeleteExpense,
   useDeleteInvestment,
 } from '../hooks/use-financials';
-import { ExpenseDialog } from '../components/expense-dialog';
 import { InvestmentDialog } from '../components/investment-dialog';
 import { formatCurrency } from '@/shared/lib/utils';
-import type { Expense, Investment, ExpenseCategory } from '@/shared/types/common.types';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
-  rent: 'Rent',
-  utilities: 'Utilities',
-  staff: 'Staff',
-  equipment: 'Equipment',
-  marketing: 'Marketing',
-  maintenance: 'Maintenance',
-  other: 'Other',
-};
-
-const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
-  rent: 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
-  utilities: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
-  staff: 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
-  equipment: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
-  marketing: 'bg-pink-50 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300',
-  maintenance: 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300',
-  other: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
-};
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-function currentMonthStr() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
+import type { Investment } from '@/shared/types/common.types';
 
 // ─── ROI Stat Card ────────────────────────────────────────────────────────────
 
@@ -210,356 +173,83 @@ function RoiCard() {
   );
 }
 
-// ─── Monthly P&L Card ─────────────────────────────────────────────────────────
+// ─── Monthly Expenses Grid ────────────────────────────────────────────────────
 
-function MonthlySummaryCard({ month }: { month: string }) {
-  const { data: summaryRes, isLoading } = useMonthlySummary(month);
-  const summary = summaryRes?.data;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Wallet className="h-4 w-4 text-muted-foreground" />
-          Monthly P&amp;L
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-5 w-full" />
-            ))}
-          </div>
-        ) : summary ? (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Revenue</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400 inline-flex items-center">
-                <IndianRupee className="h-3 w-3 mr-0.5" />
-                {formatCurrency(summary.revenue)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Expenses</span>
-              <span className="font-semibold text-red-600 dark:text-red-400 inline-flex items-center">
-                <IndianRupee className="h-3 w-3 mr-0.5" />
-                {formatCurrency(summary.expenses)}
-              </span>
-            </div>
-            <div className="h-px bg-border" />
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Net Profit</span>
-              <span
-                className={`font-bold inline-flex items-center ${
-                  summary.netProfit >= 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-red-600 dark:text-red-400'
-                }`}
-              >
-                <IndianRupee className="h-3 w-3 mr-0.5" />
-                {formatCurrency(summary.netProfit)}
-              </span>
-            </div>
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Trends Card ─────────────────────────────────────────────────────────────
-
-function TrendsCard({
-  selectedMonth,
-  onMonthSelect,
-}: {
-  selectedMonth: string;
-  onMonthSelect: (month: string) => void;
-}) {
-  const { data: trendsRes, isLoading } = useTrends(6);
+function MonthlyExpensesGrid() {
+  const navigate = useNavigate();
+  const { data: trendsRes, isLoading } = useTrends(12);
   const trends = trendsRes?.data ?? [];
 
-  const maxVal = Math.max(...trends.map((t) => Math.max(t.revenue, t.expenses)), 1);
+  if (isLoading) {
+    return (
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-4">
+              <Skeleton className="h-4 w-20 mb-3" />
+              <Skeleton className="h-6 w-24 mb-1" />
+              <Skeleton className="h-3 w-16" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          6-Month Trend
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex items-end gap-2 h-24">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex-1 flex flex-col gap-1 items-center">
-                <Skeleton className="w-full" style={{ height: `${40 + i * 8}px` }} />
-                <Skeleton className="h-3 w-8" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="overflow-x-auto -mx-1 px-1">
-              <div className="flex items-end gap-1.5 h-28 min-w-[200px]">
-                {trends.map((t) => {
-                  const monthKey = `${t.year}-${String(t.month).padStart(2, '0')}`;
-                  const isSelected = monthKey === selectedMonth;
-                  const revH = Math.round((t.revenue / maxVal) * 100);
-                  const expH = Math.round((t.expenses / maxVal) * 100);
-                  const shortLabel = new Date(t.year, t.month - 1, 1).toLocaleString('default', { month: 'short' });
-                  const fullLabel = new Date(t.year, t.month - 1, 1).toLocaleString('default', { month: 'short', year: 'numeric' });
-                  return (
-                    <button
-                      key={monthKey}
-                      type="button"
-                      onClick={() => onMonthSelect(monthKey)}
-                      className="flex-1 flex flex-col items-center gap-1 cursor-pointer"
-                      title={`${fullLabel} — click to select`}
-                    >
-                      <div className="w-full flex items-end gap-0.5 h-24 justify-center">
-                        <div
-                          title={`Revenue: ₹${formatCurrency(t.revenue)}`}
-                          className={`flex-1 rounded-t transition-all ${
-                            isSelected
-                              ? 'bg-emerald-600 dark:bg-emerald-500'
-                              : 'bg-emerald-500/80 dark:bg-emerald-500/60'
-                          }`}
-                          style={{ height: `${revH}%` }}
-                        />
-                        <div
-                          title={`Expenses: ₹${formatCurrency(t.expenses)}`}
-                          className={`flex-1 rounded-t transition-all ${
-                            isSelected
-                              ? 'bg-red-500 dark:bg-red-400'
-                              : 'bg-red-400/80 dark:bg-red-400/60'
-                          }`}
-                          style={{ height: `${expH}%` }}
-                        />
-                      </div>
-                      <span
-                        className={`text-[10px] ${
-                          isSelected ? 'font-semibold text-foreground' : 'text-muted-foreground'
-                        }`}
-                      >
-                        {shortLabel}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 rounded-sm bg-emerald-500/80" />
-                Revenue
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 rounded-sm bg-red-400/80" />
-                Expenses
-              </span>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Expenses Section ─────────────────────────────────────────────────────────
-
-function ExpensesSection({ month }: { month: string }) {
-  const { data: expensesRes, isLoading } = useExpenses(month);
-  const deleteExpense = useDeleteExpense();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Expense | undefined>(undefined);
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-
-  const expenses = expensesRes?.data ?? [];
-
-  const openCreate = () => {
-    setEditing(undefined);
-    setDialogOpen(true);
-  };
-
-  const openEdit = (expense: Expense) => {
-    setEditing(expense);
-    setDialogOpen(true);
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Expenses</CardTitle>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1" />
-            Add
-          </Button>
+  if (trends.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="rounded-full bg-muted p-3 mb-3">
+          <BarChart3 className="h-6 w-6 text-muted-foreground" />
         </div>
-      </CardHeader>
-      <CardContent className="p-0">
-        {isLoading ? (
-          <div className="p-4 space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
-        ) : expenses.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="rounded-full bg-muted p-3 mb-3">
-              <IndianRupee className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground">No expenses this month</p>
-            <Button variant="outline" size="sm" className="mt-3" onClick={openCreate}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add Expense
-            </Button>
-          </div>
-        ) : (
-          <>
-            {/* Desktop */}
-            <div className="hidden md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="w-20" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {expenses.map((expense) => (
-                    <TableRow key={expense.id}>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {formatDate(expense.date)}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${CATEGORY_COLORS[expense.category]}`}
-                        >
-                          {CATEGORY_LABELS[expense.category]}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                        {expense.description || '—'}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold whitespace-nowrap">
-                        <span className="inline-flex items-center">
-                          <IndianRupee className="h-3 w-3" />
-                          {formatCurrency(expense.amount)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => openEdit(expense)}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => setDeleteTarget(expense.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+        <p className="text-sm text-muted-foreground">No expense data yet</p>
+      </div>
+    );
+  }
 
-            {/* Mobile */}
-            <div className="md:hidden divide-y">
-              {expenses.map((expense) => (
-                <div key={expense.id} className="flex items-center justify-between px-4 py-3 gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${CATEGORY_COLORS[expense.category]}`}
-                      >
-                        {CATEGORY_LABELS[expense.category]}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{formatDate(expense.date)}</span>
-                    </div>
-                    {expense.description && (
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">{expense.description}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-semibold text-sm inline-flex items-center">
-                      <IndianRupee className="h-3 w-3" />
-                      {formatCurrency(expense.amount)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => openEdit(expense)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => setDeleteTarget(expense.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+  // Show months in reverse chronological order (most recent first)
+  const sorted = [...trends].reverse();
+
+  return (
+    <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      {sorted.map((t) => {
+        const monthKey = `${t.year}-${String(t.month).padStart(2, '0')}`;
+        const monthLabel = new Date(t.year, t.month - 1, 1).toLocaleString('default', {
+          month: 'long',
+          year: 'numeric',
+        });
+        const isProfit = t.netProfit >= 0;
+
+        return (
+          <button
+            key={monthKey}
+            type="button"
+            onClick={() => navigate(`/financials/month/${monthKey}`)}
+            className="text-left"
+          >
+            <Card className="transition-shadow hover:shadow-md cursor-pointer h-full">
+              <CardContent className="p-4">
+                <p className="text-xs font-medium text-muted-foreground mb-2 truncate">{monthLabel}</p>
+                <p className="text-sm font-semibold text-red-600 dark:text-red-400 inline-flex items-center">
+                  <IndianRupee className="h-3 w-3 mr-0.5" />
+                  {formatCurrency(t.expenses)}
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">expenses</span>
+                </p>
+                <div className={`mt-1 text-xs font-medium inline-flex items-center ${isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {isProfit ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+                  <IndianRupee className="h-3 w-3 mr-0.5" />
+                  {formatCurrency(Math.abs(t.netProfit))} net
                 </div>
-              ))}
-            </div>
-          </>
-        )}
-      </CardContent>
-
-      <ExpenseDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        expense={editing}
-      />
-
-      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Expense?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this expense record. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteExpense.isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteExpense.isPending}
-              onClick={() => {
-                if (deleteTarget) {
-                  deleteExpense.mutate(deleteTarget, {
-                    onSettled: () => setDeleteTarget(null),
-                  });
-                }
-              }}
-            >
-              {deleteExpense.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Card>
+                <div className="mt-2 flex items-center text-xs text-muted-foreground">
+                  <span>View expenses</span>
+                  <ChevronRight className="h-3 w-3 ml-0.5" />
+                </div>
+              </CardContent>
+            </Card>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -631,7 +321,7 @@ function InvestmentsSection() {
                   {investments.map((inv) => (
                     <TableRow key={inv.id}>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {formatDate(inv.date)}
+                        {new Date(inv.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </TableCell>
                       <TableCell className="font-medium">{inv.name}</TableCell>
                       <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
@@ -675,7 +365,9 @@ function InvestmentsSection() {
                 <div key={inv.id} className="flex items-center justify-between px-4 py-3 gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-sm truncate">{inv.name}</p>
-                    <p className="text-xs text-muted-foreground">{formatDate(inv.date)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(inv.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="font-semibold text-sm inline-flex items-center">
@@ -743,30 +435,9 @@ function InvestmentsSection() {
   );
 }
 
-// ─── Month Picker ─────────────────────────────────────────────────────────────
-
-function MonthPicker({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (month: string) => void;
-}) {
-  return (
-    <input
-      type="month"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-    />
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function FinancialsPage() {
-  const [selectedMonth, setSelectedMonth] = useState(currentMonthStr);
-
   return (
     <div className="space-y-4">
       <PageHeader
@@ -777,19 +448,14 @@ export function FinancialsPage() {
       {/* ROI Cards */}
       <RoiCard />
 
-      {/* Month picker + Monthly P&L + Trend chart */}
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Monthly View</h2>
-        <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
+      {/* Monthly Expenses Grid */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+          <Wallet className="h-4 w-4" />
+          Monthly Expenses
+        </h2>
       </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <MonthlySummaryCard month={selectedMonth} />
-        <TrendsCard selectedMonth={selectedMonth} onMonthSelect={setSelectedMonth} />
-      </div>
-
-      {/* Expenses */}
-      <ExpensesSection month={selectedMonth} />
+      <MonthlyExpensesGrid />
 
       {/* Investments */}
       <InvestmentsSection />

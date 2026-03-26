@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { useMemberRegistration } from "../hooks/use-member-registration";
+import { useMembers } from "../hooks/use-members";
 import type { CreateMemberData } from "@/shared/types/common.types";
 
 const memberRegistrationSchema = z.object({
@@ -30,12 +31,13 @@ const memberRegistrationSchema = z.object({
   gender: z.string().min(1, "Gender is required"),
   joinDate: z.string().min(1, "Join date is required"),
   notes: z.string().optional(),
+  referredById: z.string().optional(),
 });
 
 type MemberRegistrationFormData = z.infer<typeof memberRegistrationSchema>;
 
 interface MemberRegistrationFormProps {
-  onSuccess?: () => void;
+  onSuccess?: (memberId: string) => void;
   onCancel?: () => void;
 }
 
@@ -43,7 +45,9 @@ export function MemberRegistrationForm({
   onSuccess,
   onCancel,
 }: MemberRegistrationFormProps) {
-  const { createMember, isLoading } = useMemberRegistration();
+  const { createMemberAsync, isLoading } = useMemberRegistration();
+  const { data: membersResponse } = useMembers();
+  const allMembers = membersResponse?.data ?? [];
   const [gender, setGender] = useState<string>("");
 
   const form = useForm<MemberRegistrationFormData>({
@@ -75,14 +79,13 @@ export function MemberRegistrationForm({
       gender: data.gender,
       joinDate: data.joinDate,
       notes: data.notes,
+      referredById: data.referredById || undefined,
     };
 
-    createMember(memberData, {
-      onSuccess: () => {
-        form.reset();
-        onSuccess?.();
-      },
-    });
+    createMemberAsync(memberData).then((response) => {
+      form.reset();
+      onSuccess?.(response.data.id);
+    }).catch(() => {});
   };
 
   return (
@@ -209,6 +212,30 @@ export function MemberRegistrationForm({
           rows={4}
         />
       </div>
+
+      {allMembers.length > 0 && (
+        <div className="space-y-2">
+          <Label htmlFor="referredById">Referred By (optional)</Label>
+          <Select
+            value={form.watch("referredById") || "none"}
+            onValueChange={(v) => form.setValue("referredById", v === "none" ? "" : v)}
+          >
+            <SelectTrigger id="referredById">
+              <SelectValue placeholder="No referrer" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No referrer</SelectItem>
+              {allMembers
+                .slice(0, 50)
+                .map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.firstName} {m.lastName} — {m.phone}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <div className="flex gap-3 pt-4">
         <Button type="submit" disabled={isLoading}>

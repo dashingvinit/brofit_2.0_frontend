@@ -47,6 +47,7 @@ import {
   LayoutGrid,
   Settings,
   Inbox,
+  Tag,
 } from "lucide-react";
 
 export function DashboardLayout() {
@@ -75,6 +76,7 @@ export function DashboardLayout() {
 
   const adminBusinessItems = [
     { name: "Plans", href: ROUTES.PLANS, icon: LayoutGrid, isActive: isActive(ROUTES.PLANS) },
+    { name: "Offers", href: ROUTES.OFFERS, icon: Tag, isActive: isActive(ROUTES.OFFERS) },
     { name: "Financials", href: ROUTES.FINANCIALS, icon: TrendingUp, isActive: isActive(ROUTES.FINANCIALS) },
     { name: "Analytics", href: ROUTES.ANALYTICS, icon: BarChart2, isActive: isActive(ROUTES.ANALYTICS) },
   ];

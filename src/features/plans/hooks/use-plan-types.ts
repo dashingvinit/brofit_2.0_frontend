@@ -5,7 +5,7 @@ import type {
   PlanType,
   PlanCategory,
   CreatePlanTypeData,
-  UpdatePlanTypeData
+  UpdatePlanTypeData,
 } from '@/shared/types/common.types';
 
 /**
@@ -102,19 +102,31 @@ export function useUpdatePlanType() {
 }
 
 /**
- * Hook to delete a plan type
+ * Hook to delete a plan type — deactivates with 5s undo toast
  */
 export function useDeletePlanType() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => planTypesApi.deletePlanType(id),
-    onSuccess: () => {
+    mutationFn: (planType: PlanType) => planTypesApi.deactivatePlanType(planType.id),
+    onSuccess: (_, planType) => {
       queryClient.invalidateQueries({ queryKey: ['plan-types'] });
-      toast.success('Plan type deleted successfully');
+      toast(`"${planType.name}" removed`, {
+        description: 'Plan type has been deactivated.',
+        duration: 5000,
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            planTypesApi.updatePlanType(planType.id, { isActive: true }).then(() => {
+              queryClient.invalidateQueries({ queryKey: ['plan-types'] });
+              toast.success(`"${planType.name}" restored`);
+            });
+          },
+        },
+      });
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || 'Failed to delete plan type';
+      const message = error?.response?.data?.message || 'Failed to remove plan type';
       toast.error(message);
     },
   });

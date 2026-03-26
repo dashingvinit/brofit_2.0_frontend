@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -14,8 +14,13 @@ import {
   Pencil,
   ChevronRight,
   StickyNote,
+  Check,
+  X,
+  Activity,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
+import { Textarea } from '@/shared/components/ui/textarea';
 import {
   Card,
   CardContent,
@@ -37,10 +42,12 @@ import {
 } from '@/shared/components/ui/table';
 import { PageHeader } from '@/shared/components/page-header';
 import { ROUTES } from '@/shared/lib/constants';
-import { useMember } from '../hooks/use-members';
+import { useMember, useUpdateMember } from '../hooks/use-members';
+import { useRecentlyViewed } from '../hooks/use-recently-viewed';
 import { useMemberMemberships } from '@/features/memberships/hooks/use-memberships';
 import { useMemberTrainings } from '@/features/training/hooks/use-training';
 import { useMemberDues } from '../hooks/use-member-detail';
+import { useAttendanceMemberHistory } from '@/features/attendance/hooks/use-attendance';
 import { EditMemberDialog } from '../components/edit-member-dialog';
 import type {
   MembershipStatus,
@@ -112,6 +119,104 @@ function calculateAge(dateOfBirth: string) {
   return age;
 }
 
+// ─── Inline Edit Field ────────────────────────────────────────────────────────
+
+interface InlineEditFieldProps {
+  value: string;
+  onSave: (value: string) => void;
+  isSaving?: boolean;
+  multiline?: boolean;
+  placeholder?: string;
+}
+
+function InlineEditField({ value, onSave, isSaving, multiline, placeholder }: InlineEditFieldProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (editing) {
+      setDraft(value);
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  }, [editing, value]);
+
+  const handleSave = () => {
+    if (draft.trim() !== value.trim()) {
+      onSave(draft.trim());
+    }
+    setEditing(false);
+  };
+
+  const handleCancel = () => {
+    setDraft(value);
+    setEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !multiline) { e.preventDefault(); handleSave(); }
+    if (e.key === 'Escape') handleCancel();
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-start gap-1.5 mt-0.5">
+        {multiline ? (
+          <Textarea
+            ref={inputRef as React.Ref<HTMLTextAreaElement>}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={3}
+            placeholder={placeholder}
+            className="text-sm py-1 h-auto min-h-[60px] flex-1"
+            disabled={isSaving}
+          />
+        ) : (
+          <Input
+            ref={inputRef as React.Ref<HTMLInputElement>}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            className="h-7 text-sm py-1 flex-1"
+            disabled={isSaving}
+          />
+        )}
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="mt-0.5 rounded p-0.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
+          title="Save"
+        >
+          <Check className="h-4 w-4" />
+        </button>
+        <button
+          onClick={handleCancel}
+          disabled={isSaving}
+          className="mt-0.5 rounded p-0.5 text-muted-foreground hover:bg-muted transition-colors"
+          title="Cancel"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="group flex items-center gap-1.5 cursor-pointer"
+      onClick={() => setEditing(true)}
+      title="Click to edit"
+    >
+      <p className="font-medium text-sm">{value || <span className="text-muted-foreground italic">Not set</span>}</p>
+      <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -123,8 +228,21 @@ export function MemberDetailPage() {
   const { data: trainingsResponse, isLoading: trainingsLoading } =
     useMemberTrainings(id!);
   const { data: duesResponse, isLoading: duesLoading } = useMemberDues(id!);
+  const { data: attendanceResponse, isLoading: attendanceLoading } = useAttendanceMemberHistory(id!, 1, 60);
+  const updateMember = useUpdateMember();
+  const { record: recordRecentlyViewed } = useRecentlyViewed();
 
   const member = memberResponse?.data;
+
+  useEffect(() => {
+    if (member) {
+      recordRecentlyViewed({
+        id: member.id,
+        name: `${member.firstName} ${member.lastName}`,
+        phone: member.phone,
+      });
+    }
+  }, [member?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const memberships = membershipsResponse?.data || [];
   const trainings = trainingsResponse?.data || [];
   const duesData = duesResponse?.data?.[0] || null;
@@ -190,6 +308,10 @@ export function MemberDetailPage() {
   const trainingDuesMap = new Map(
     (duesData?.trainingDues || []).map((d) => [d.id, d])
   );
+
+  const saveField = (field: 'phone' | 'email' | 'notes', value: string) => {
+    updateMember.mutate({ memberId: member.id, data: { [field]: value } });
+  };
 
   return (
     <div className="space-y-4">
@@ -259,22 +381,32 @@ export function MemberDetailPage() {
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex items-start gap-3">
-                <div className="rounded-lg bg-primary/10 p-2">
+                <div className="rounded-lg bg-primary/10 p-2 shrink-0">
                   <Mail className="h-4 w-4 text-primary" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{member.email || 'N/A'}</p>
+                  <InlineEditField
+                    value={member.email || ''}
+                    onSave={(v) => saveField('email', v)}
+                    isSaving={updateMember.isPending}
+                    placeholder="Add email"
+                  />
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="rounded-lg bg-primary/10 p-2">
+                <div className="rounded-lg bg-primary/10 p-2 shrink-0">
                   <Phone className="h-4 w-4 text-primary" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{member.phone || 'N/A'}</p>
+                  <InlineEditField
+                    value={member.phone || ''}
+                    onSave={(v) => saveField('phone', v)}
+                    isSaving={updateMember.isPending}
+                    placeholder="Add phone"
+                  />
                 </div>
               </div>
 
@@ -298,23 +430,33 @@ export function MemberDetailPage() {
                   <p className="text-sm text-muted-foreground">Join Date</p>
                   <p className="font-medium">{formatDate(member.joinDate)}</p>
                 </div>
+                {member.referredBy && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Referred By</p>
+                    <p className="font-medium">
+                      {member.referredBy.firstName} {member.referredBy.lastName}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
-            {member.notes && (
-              <>
-                <Separator />
-                <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-primary/10 p-2">
-                    <StickyNote className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Notes</p>
-                    <p className="text-sm">{member.notes}</p>
-                  </div>
-                </div>
-              </>
-            )}
+            <Separator />
+            <div className="flex items-start gap-3">
+              <div className="rounded-lg bg-primary/10 p-2 shrink-0">
+                <StickyNote className="h-4 w-4 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-muted-foreground mb-0.5">Notes</p>
+                <InlineEditField
+                  value={member.notes || ''}
+                  onSave={(v) => saveField('notes', v)}
+                  isSaving={updateMember.isPending}
+                  multiline
+                  placeholder="Add notes about this member..."
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -688,6 +830,12 @@ export function MemberDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Attendance Trends Section */}
+      <AttendanceTrendsCard
+        records={attendanceResponse?.data ?? []}
+        isLoading={attendanceLoading}
+      />
+
       {/* Edit Member Dialog */}
       {editDialogOpen && (
         <EditMemberDialog
@@ -698,4 +846,162 @@ export function MemberDetailPage() {
       )}
     </div>
   );
+}
+
+// ─── Attendance Trends Card ────────────────────────────────────────────────────
+
+import type { AttendanceRecord } from '@/shared/types/common.types';
+
+function AttendanceTrendsCard({
+  records,
+  isLoading,
+}: {
+  records: AttendanceRecord[];
+  isLoading: boolean;
+}) {
+  // Build last 8 weeks (Mon–Sun) visit counts
+  const weeks = buildWeeklyBuckets(records, 8);
+  const maxVisits = Math.max(...weeks.map((w) => w.count), 1);
+  const totalVisits = records.length;
+  const last30 = records.filter((r) => {
+    const d = new Date(r.date);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    return d >= cutoff;
+  }).length;
+  const recentRecords = [...records]
+    .sort((a, b) => new Date(b.entryTime).getTime() - new Date(a.entryTime).getTime())
+    .slice(0, 8);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              Attendance Trends
+            </CardTitle>
+            <CardDescription>
+              {isLoading ? 'Loading...' : `${totalVisits} total visits · ${last30} in last 30 days`}
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isLoading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-24 w-full" />
+            <div className="grid grid-cols-4 gap-2">
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10" />)}
+            </div>
+          </div>
+        ) : totalVisits === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <CalendarDays className="h-8 w-8 text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">No attendance records yet.</p>
+          </div>
+        ) : (
+          <>
+            {/* Weekly bar chart */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-3 font-medium uppercase tracking-wide">Visits per week (last 8 weeks)</p>
+              <div className="flex items-end gap-1.5 h-20">
+                {weeks.map((week, i) => {
+                  const heightPct = maxVisits > 0 ? (week.count / maxVisits) * 100 : 0;
+                  const isCurrentWeek = i === weeks.length - 1;
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
+                      <div className="w-full flex items-end h-16 relative">
+                        <div
+                          className={`w-full rounded-t transition-all ${
+                            isCurrentWeek
+                              ? 'bg-blue-500 dark:bg-blue-400'
+                              : 'bg-blue-200 dark:bg-blue-800 group-hover:bg-blue-300 dark:group-hover:bg-blue-700'
+                          }`}
+                          style={{ height: week.count === 0 ? '3px' : `${heightPct}%` }}
+                        />
+                        {/* Tooltip */}
+                        <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-popover border rounded px-1.5 py-0.5 text-xs font-medium shadow-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                          {week.count} visit{week.count !== 1 ? 's' : ''}
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground leading-tight">
+                        {isCurrentWeek ? 'This' : week.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Recent visits list */}
+            {recentRecords.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Recent Visits</p>
+                <div className="space-y-1.5">
+                  {recentRecords.map((r) => {
+                    const entry = new Date(r.entryTime);
+                    const durationMins = r.exitTime
+                      ? Math.floor((new Date(r.exitTime).getTime() - entry.getTime()) / 60_000)
+                      : null;
+                    const durationLabel = durationMins !== null
+                      ? durationMins < 60
+                        ? `${durationMins}m`
+                        : `${Math.floor(durationMins / 60)}h ${durationMins % 60}m`
+                      : null;
+
+                    return (
+                      <div key={r.id} className="flex items-center justify-between text-sm py-1.5 border-b last:border-0">
+                        <div className="flex items-center gap-2">
+                          <CalendarDays className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <span className="font-medium">
+                            {entry.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                          </span>
+                          <span className="text-muted-foreground text-xs">
+                            {entry.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                          </span>
+                        </div>
+                        {durationLabel && (
+                          <span className="text-xs text-muted-foreground tabular-nums">{durationLabel}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function buildWeeklyBuckets(records: AttendanceRecord[], numWeeks: number) {
+  const now = new Date();
+  const results: { label: string; count: number }[] = [];
+
+  for (let w = numWeeks - 1; w >= 0; w--) {
+    const weekStart = new Date(now);
+    // go back to Monday of current week, then subtract w weeks
+    const dayOfWeek = now.getDay(); // 0=Sun
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    weekStart.setDate(now.getDate() - daysToMonday - w * 7);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    const count = records.filter((r) => {
+      const d = new Date(r.date);
+      return d >= weekStart && d <= weekEnd;
+    }).length;
+
+    const label = weekStart.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    results.push({ label, count });
+  }
+
+  return results;
 }

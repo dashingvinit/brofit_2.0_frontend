@@ -7,8 +7,8 @@ import { ROUTES } from '@/shared/lib/constants';
 export function RegisterMemberPage() {
   const navigate = useNavigate();
 
-  const handleSuccess = () => {
-    navigate(ROUTES.MEMBERS || '/members');
+  const handleSuccess = (memberId: string) => {
+    navigate(`${ROUTES.CREATE_MEMBERSHIP}?memberId=${memberId}`);
   };
 
   const handleCancel = () => {

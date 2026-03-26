@@ -35,6 +35,8 @@ import { usePlanTypes, usePlanTypesByCategory } from '@/features/plans/hooks/use
 import { usePlanVariantsByType } from '@/features/plans/hooks/use-plan-variants';
 import { useCreateMembership, useActiveMembership } from '../hooks/use-memberships';
 import { useCreateTraining } from '@/features/training/hooks/use-training';
+import { useTrainers } from '@/features/trainer/hooks/use-trainers';
+import { useOffers } from '@/features/offers/hooks/use-offers';
 import type { CreateMembershipData, CreateTrainingData, PaymentMethod } from '@/shared/types/common.types';
 
 const createMembershipSchema = z
@@ -44,6 +46,7 @@ const createMembershipSchema = z
     planVariantId: z.string().min(1, 'Please select a plan variant'),
     startDate: z.string().min(1, 'Start date is required'),
     discountAmount: z.coerce.number().min(0, 'Discount cannot be negative').default(0),
+    offerId: z.string().optional(),
     autoRenew: z.boolean().default(false),
     notes: z.string().optional(),
     collectPayment: z.boolean().default(false),
@@ -56,7 +59,7 @@ const createMembershipSchema = z
     addTraining: z.boolean().default(false),
     trainingPlanTypeId: z.string().optional(),
     trainingPlanVariantId: z.string().optional(),
-    trainerName: z.string().optional(),
+    trainerId: z.string().optional(),
     trainingDiscountAmount: z.coerce.number().min(0).default(0),
     trainingNotes: z.string().optional(),
   })
@@ -75,13 +78,13 @@ const createMembershipSchema = z
   .refine(
     (data) => {
       if (data.addTraining) {
-        return !!data.trainingPlanTypeId && !!data.trainingPlanVariantId && !!data.trainerName;
+        return !!data.trainingPlanTypeId && !!data.trainingPlanVariantId && !!data.trainerId;
       }
       return true;
     },
     {
-      message: 'Training plan, variant, and trainer name are required',
-      path: ['trainerName'],
+      message: 'Training plan, variant, and trainer are required',
+      path: ['trainerId'],
     }
   );
 
@@ -123,6 +126,10 @@ export function CreateMembershipForm({
   const { data: membersResponse, isLoading: membersLoading } = useMembers();
   const { data: planTypes, isLoading: planTypesLoading } = usePlanTypesByCategory('membership');
   const { data: trainingPlanTypes, isLoading: trainingPlanTypesLoading } = usePlanTypesByCategory('training');
+  const { data: activeOffers } = useOffers(undefined, true);
+  const discountOffers = (activeOffers ?? []).filter((o) => o.type === 'discount' || o.type === 'promo');
+  const { data: trainersResponse, isLoading: trainersLoading } = useTrainers();
+  const trainers = trainersResponse?.data ?? [];
   const createMembership = useCreateMembership();
   const createTraining = useCreateTraining();
 
@@ -132,9 +139,11 @@ export function CreateMembershipForm({
       memberId: preselectedMemberId || '',
       startDate: new Date().toISOString().split('T')[0],
       discountAmount: 0,
+      offerId: '',
       autoRenew: false,
       collectPayment: false,
       addTraining: false,
+      trainerId: '',
       trainingDiscountAmount: 0,
       paymentDate: new Date().toISOString().split('T')[0],
     },
@@ -240,7 +249,7 @@ export function CreateMembershipForm({
       case 'details':
         return !!startDate;
       case 'training':
-        return !!trainingPlanTypeId && !!trainingPlanVariantId && !!form.watch('trainerName');
+        return !!trainingPlanTypeId && !!trainingPlanVariantId && !!form.watch('trainerId');
       case 'payment':
         return true;
       default:
@@ -275,7 +284,7 @@ export function CreateMembershipForm({
       // Clear training fields
       form.setValue('trainingPlanTypeId', '');
       form.setValue('trainingPlanVariantId', '');
-      form.setValue('trainerName', '');
+      form.setValue('trainerId', '');
       form.setValue('trainingDiscountAmount', 0);
       form.setValue('trainingNotes', '');
       setTrainingDiscountPercentage('');
@@ -290,6 +299,7 @@ export function CreateMembershipForm({
       planVariantId: data.planVariantId,
       startDate: data.startDate,
       discountAmount: data.discountAmount || 0,
+      offerId: data.offerId || undefined,
       autoRenew: data.autoRenew,
       notes: data.notes,
     };
@@ -305,11 +315,11 @@ export function CreateMembershipForm({
     createMembership.mutate(payload, {
       onSuccess: () => {
         // If training is enabled, create it after membership
-        if (data.addTraining && data.trainingPlanVariantId && data.trainerName) {
+        if (data.addTraining && data.trainingPlanVariantId && data.trainerId) {
           const trainingPayload: CreateTrainingData = {
             memberId: data.memberId,
             planVariantId: data.trainingPlanVariantId,
-            trainerName: data.trainerName,
+            trainerId: data.trainerId,
             startDate: data.startDate,
             discountAmount: data.trainingDiscountAmount || 0,
             notes: data.trainingNotes,
@@ -647,6 +657,51 @@ export function CreateMembershipForm({
               </div>
             </div>
 
+            {/* Offer picker */}
+            {discountOffers.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="offerId">Apply Offer (optional)</Label>
+                <Select
+                  value={form.watch('offerId') || 'none'}
+                  onValueChange={(v) => {
+                    const realVal = v === 'none' ? '' : v;
+                    form.setValue('offerId', realVal);
+                    // Auto-fill discount from selected offer
+                    if (realVal && selectedVariant) {
+                      const offer = discountOffers.find((o) => o.id === realVal);
+                      if (offer && offer.discountValue !== null && offer.discountValue !== undefined) {
+                        const computed =
+                          offer.discountType === 'percentage'
+                            ? Math.round((offer.discountValue / 100) * selectedVariant.price)
+                            : offer.discountValue;
+                        form.setValue('discountAmount', Math.min(computed, selectedVariant.price));
+                        setDiscountPercentage('');
+                      }
+                    } else if (!realVal) {
+                      form.setValue('discountAmount', 0);
+                      setDiscountPercentage('');
+                    }
+                  }}
+                >
+                  <SelectTrigger id="offerId">
+                    <SelectValue placeholder="No offer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No offer</SelectItem>
+                    {discountOffers.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.title}
+                        {o.discountType === 'percentage'
+                          ? ` — ${o.discountValue}% off`
+                          : ` — ₹${o.discountValue} off`}
+                        {o.code ? ` (${o.code})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Discount</Label>
               {/* Preset percentage chips */}
@@ -804,15 +859,37 @@ export function CreateMembershipForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="trainerName">Trainer Name *</Label>
-              <Input
-                id="trainerName"
-                placeholder="Enter trainer name"
-                {...form.register('trainerName')}
-              />
-              {form.formState.errors.trainerName && (
+              <Label htmlFor="trainerId">Trainer *</Label>
+              {trainersLoading ? (
+                <div className="flex items-center gap-2 h-10">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Loading trainers...</span>
+                </div>
+              ) : (
+                <Select
+                  value={form.watch('trainerId') || ''}
+                  onValueChange={(value) => form.setValue('trainerId', value)}
+                >
+                  <SelectTrigger id="trainerId">
+                    <SelectValue placeholder="Select a trainer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {trainers.filter((t) => t.isActive).map((trainer) => (
+                      <SelectItem key={trainer.id} value={trainer.id}>
+                        {trainer.name}
+                      </SelectItem>
+                    ))}
+                    {trainers.filter((t) => t.isActive).length === 0 && (
+                      <SelectItem value="_none" disabled>
+                        No active trainers available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+              {form.formState.errors.trainerId && (
                 <p className="text-sm text-destructive">
-                  {form.formState.errors.trainerName.message}
+                  {form.formState.errors.trainerId.message}
                 </p>
               )}
             </div>
