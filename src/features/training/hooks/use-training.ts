@@ -84,6 +84,24 @@ export function useUpdateTraining() {
   });
 }
 
+export function useDeleteTraining() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => trainingApi.deleteTraining(id),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['trainings'] });
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      toast.success(response.message || 'Training deleted successfully');
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || 'Failed to delete training'
+      );
+    },
+  });
+}
+
 export function useCancelTraining() {
   const queryClient = useQueryClient();
 

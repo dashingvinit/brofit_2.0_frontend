@@ -6,7 +6,13 @@ export type NotificationSettings = {
   digestEnabled: boolean;
   memberReminderEnabled: boolean;
   reminderDaysBefore: number;
+  welcomeEnabled: boolean;
+  welcomeMessage: string | null;
+  duesReminderEnabled: boolean;
+  duesReminderDaysOld: number;
 };
+
+export type BroadcastFilter = 'all' | 'active' | 'expiring';
 
 type ApiResponse<T> = { success: boolean; data: T };
 
@@ -20,6 +26,29 @@ export const settingsApi = {
     data: Partial<Omit<NotificationSettings, 'orgId'>>
   ): Promise<ApiResponse<NotificationSettings>> => {
     const response = await apiClient.patch('/notifications/settings', data);
+    return response.data;
+  },
+
+  sendTestMessage: async (): Promise<ApiResponse<{ sent: boolean }>> => {
+    const response = await apiClient.post('/notifications/test');
+    return response.data;
+  },
+
+  broadcast: async (data: {
+    message: string;
+    filter: BroadcastFilter;
+  }): Promise<ApiResponse<{ sent: number; failed: number; total: number }>> => {
+    const response = await apiClient.post('/notifications/broadcast', data);
+    return response.data;
+  },
+
+  runDigest: async (): Promise<ApiResponse<{ message: string }>> => {
+    const response = await apiClient.post('/notifications/run-digest');
+    return response.data;
+  },
+
+  getDefaultWelcomeMessage: async (): Promise<ApiResponse<string>> => {
+    const response = await apiClient.get('/notifications/default-welcome');
     return response.data;
   },
 };

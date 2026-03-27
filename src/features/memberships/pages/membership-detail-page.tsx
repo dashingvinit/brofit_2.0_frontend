@@ -16,6 +16,7 @@ import {
   Play,
   MoreHorizontal,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -59,6 +60,7 @@ import {
   useMembershipDues,
   useCancelMembership,
   useUnfreezeMembership,
+  useDeleteMembership,
 } from '../hooks/use-memberships';
 import { RecordPaymentDialog } from '../components/record-payment-dialog';
 import { EditMembershipDialog } from '../components/edit-membership-dialog';
@@ -132,6 +134,7 @@ export function MembershipDetailPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [freezeDialogOpen, setFreezeDialogOpen] = useState(false);
   const [unfreezeDialogOpen, setUnfreezeDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data: membershipResponse, isLoading: membershipLoading } =
     useMembership(id!);
@@ -141,6 +144,7 @@ export function MembershipDetailPage() {
 
   const cancelMembership = useCancelMembership();
   const unfreezeMembership = useUnfreezeMembership();
+  const deleteMembership = useDeleteMembership();
 
   const membership = membershipResponse?.data;
   const dues = duesResponse?.data;
@@ -195,6 +199,7 @@ export function MembershipDetailPage() {
   const canUnfreeze = membership.status === 'frozen';
   const canCancel =
     membership.status === 'active' || membership.status === 'frozen';
+  const canDelete = dues?.payments?.length === 0;
 
   return (
     <div className="space-y-4">
@@ -219,7 +224,7 @@ export function MembershipDetailPage() {
             )}
 
             {/* Actions Dropdown */}
-            {isEditable && (
+            {(isEditable || canDelete) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon">
@@ -227,43 +232,60 @@ export function MembershipDetailPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit Details
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem onClick={() => setRenewDialogOpen(true)}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Renew Membership
-                  </DropdownMenuItem>
-
-                  {canFreeze && (
-                    <DropdownMenuItem
-                      onClick={() => setFreezeDialogOpen(true)}
-                    >
-                      <Snowflake className="h-4 w-4 mr-2" />
-                      Freeze Membership
-                    </DropdownMenuItem>
-                  )}
-
-                  {canUnfreeze && (
-                    <DropdownMenuItem
-                      onClick={() => setUnfreezeDialogOpen(true)}
-                    >
-                      <Play className="h-4 w-4 mr-2" />
-                      Unfreeze Membership
-                    </DropdownMenuItem>
-                  )}
-
-                  {canCancel && (
+                  {isEditable && (
                     <>
-                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit Details
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem onClick={() => setRenewDialogOpen(true)}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Renew Membership
+                      </DropdownMenuItem>
+
+                      {canFreeze && (
+                        <DropdownMenuItem
+                          onClick={() => setFreezeDialogOpen(true)}
+                        >
+                          <Snowflake className="h-4 w-4 mr-2" />
+                          Freeze Membership
+                        </DropdownMenuItem>
+                      )}
+
+                      {canUnfreeze && (
+                        <DropdownMenuItem
+                          onClick={() => setUnfreezeDialogOpen(true)}
+                        >
+                          <Play className="h-4 w-4 mr-2" />
+                          Unfreeze Membership
+                        </DropdownMenuItem>
+                      )}
+
+                      {canCancel && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setCancelDialogOpen(true)}
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Cancel Membership
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </>
+                  )}
+
+                  {canDelete && (
+                    <>
+                      {isEditable && <DropdownMenuSeparator />}
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
-                        onClick={() => setCancelDialogOpen(true)}
+                        onClick={() => setDeleteDialogOpen(true)}
                       >
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Cancel Membership
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Membership
                       </DropdownMenuItem>
                     </>
                   )}
@@ -749,6 +771,35 @@ export function MembershipDetailPage() {
               {unfreezeMembership.isPending
                 ? 'Unfreezing...'
                 : 'Yes, Unfreeze Membership'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this membership?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete{' '}
+              <span className="font-medium text-foreground">
+                {memberName}
+              </span>
+              's {planName} membership. This cannot be undone. Only memberships with no payments can be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Membership</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() =>
+                deleteMembership.mutate(membership.id, {
+                  onSuccess: () => navigate(ROUTES.MEMBERSHIPS),
+                })
+              }
+              disabled={deleteMembership.isPending}
+            >
+              {deleteMembership.isPending ? 'Deleting...' : 'Yes, Delete Membership'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

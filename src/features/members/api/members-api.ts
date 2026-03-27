@@ -115,6 +115,29 @@ export const membersApi = {
   },
 
   /**
+   * Batch update members (e.g. bulk deactivate/reactivate)
+   * PATCH /api/v1/members/batch
+   */
+  batchUpdateMembers: async (
+    ids: string[],
+    data: UpdateMemberData,
+  ): Promise<{ success: boolean; message: string; data: { succeeded: number; failed: number; total: number } }> => {
+    const response = await apiClient.patch('/members/batch', { ids, ...data });
+    return response.data;
+  },
+
+  /**
+   * Batch delete members
+   * DELETE /api/v1/members/batch
+   */
+  batchDeleteMembers: async (
+    ids: string[],
+  ): Promise<{ success: boolean; message: string; data: { succeeded: number; failed: number; total: number } }> => {
+    const response = await apiClient.delete('/members/batch', { data: { ids } });
+    return response.data;
+  },
+
+  /**
    * Bulk import members from CSV rows
    * POST /api/v1/members/import
    */

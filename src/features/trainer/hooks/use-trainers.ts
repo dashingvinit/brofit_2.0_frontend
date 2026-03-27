@@ -118,3 +118,14 @@ export function useTrainerOutstandingSummary() {
     queryFn: () => trainersApi.getOutstandingSummary(),
   });
 }
+
+/**
+ * Hook to fetch all training assignment history for a trainer
+ */
+export function useTrainerAssignmentHistory(trainerId: string) {
+  return useQuery({
+    queryKey: ['trainers', trainerId, 'history'],
+    queryFn: () => trainersApi.getAssignmentHistory(trainerId),
+    enabled: !!trainerId,
+  });
+}

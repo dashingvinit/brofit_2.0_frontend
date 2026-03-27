@@ -90,6 +90,43 @@ export function useUpdateMember() {
 }
 
 /**
+ * Hook to batch update members (e.g. bulk deactivate/reactivate)
+ */
+export function useBatchUpdateMembers() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ids, data }: { ids: string[]; data: UpdateMemberData }) =>
+      membersApi.batchUpdateMembers(ids, data),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      toast.success(response.message || 'Members updated');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update members');
+    },
+  });
+}
+
+/**
+ * Hook to batch delete members
+ */
+export function useBatchDeleteMembers() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => membersApi.batchDeleteMembers(ids),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      toast.success(response.message || 'Members deleted');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete members');
+    },
+  });
+}
+
+/**
  * Hook to delete a member (soft delete) with 5-second undo toast
  */
 export function useDeleteMember() {

@@ -5,9 +5,6 @@ import {
   AlertCircle,
   Loader2,
   Users,
-  Dumbbell,
-  Phone,
-  Mail,
   CalendarDays,
   ChevronRight,
   Wallet,
@@ -15,6 +12,7 @@ import {
   Circle,
   IndianRupee,
   Pencil,
+  History,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -52,8 +50,8 @@ import {
   useTrainerPayoutSchedule,
   useRecordTrainerPayout,
   useUpdateTrainer,
+  useTrainerAssignmentHistory,
 } from '../hooks/use-trainers';
-import { ExportDropdown } from '@/shared/components/export-dropdown';
 import type { TrainerPayoutMonthSlot, TrainerPayoutRow } from '@/shared/types/common.types';
 
 function formatDate(dateStr: string) {
@@ -89,17 +87,6 @@ function getAvatarColor(name: string) {
     colors.length;
   return colors[index];
 }
-
-const TRAINER_CLIENTS_CSV_HEADERS = [
-  { key: 'memberName', label: 'Member Name' },
-  { key: 'phone', label: 'Phone' },
-  { key: 'email', label: 'Email' },
-  { key: 'planName', label: 'Plan Name' },
-  { key: 'durationLabel', label: 'Duration' },
-  { key: 'startDate', label: 'Start Date' },
-  { key: 'endDate', label: 'End Date' },
-  { key: 'status', label: 'Status' },
-];
 
 // ─── Confirm Payout Dialog ────────────────────────────────────────────────────
 
@@ -634,7 +621,9 @@ export function TrainerDetailPage() {
   const [editTrainerOpen, setEditTrainerOpen] = useState(false);
 
   const { data: trainerResponse, isLoading } = useTrainerWithClients(id!);
+  const { data: historyResponse } = useTrainerAssignmentHistory(id!);
   const trainer = trainerResponse?.data;
+  const assignmentHistory = historyResponse?.data ?? [];
 
   if (isLoading) {
     return (
@@ -664,35 +653,15 @@ export function TrainerDetailPage() {
   }
 
   const activeClients = trainer.trainings ?? [];
-
-  function getClientsForExport() {
-    return activeClients.map((t) => ({
-      memberName: `${t.member.firstName} ${t.member.lastName}`,
-      phone: t.member.phone ?? '',
-      email: t.member.email ?? '',
-      planName: t.planVariant?.planType?.name ?? '',
-      durationLabel: t.planVariant?.durationLabel ?? '',
-      startDate: new Date(t.startDate).toISOString().slice(0, 10),
-      endDate: new Date(t.endDate).toISOString().slice(0, 10),
-      status: t.status,
-    }));
-  }
+  const pastTrainings = assignmentHistory.filter((t) => t.status !== 'active');
 
   return (
     <div className="space-y-4">
       <PageHeader
         title={trainer.name}
-        description="Trainer profile, active clients, and payout tracking."
+        description="Trainer profile, payout tracking, and history."
         actions={
           <div className="flex items-center gap-2">
-            {activeClients.length > 0 && (
-              <ExportDropdown
-                title={`${trainer.name} – Active Clients`}
-                filename={`${trainer.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_clients_${new Date().toISOString().slice(0, 10)}`}
-                headers={TRAINER_CLIENTS_CSV_HEADERS}
-                getData={getClientsForExport}
-              />
-            )}
             <Button variant="outline" size="sm" onClick={() => setEditTrainerOpen(true)}>
               <Pencil className="h-4 w-4 mr-2" />
               Edit
@@ -748,21 +717,22 @@ export function TrainerDetailPage() {
         currentSplitPercent={trainer.splitPercent ?? 60}
       />
 
-      {/* Active Clients */}
+      {/* Past Clients (Assignment History) */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Active Clients</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">
+            <History className="h-4 w-4 text-muted-foreground" />
+            Past Clients
+          </CardTitle>
           <CardDescription>
-            Members currently training with {trainer.name}.
+            Expired, cancelled, or frozen trainings with {trainer.name}.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {activeClients.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10">
-              <Dumbbell className="h-8 w-8 text-muted-foreground mb-3" />
-              <p className="text-sm text-muted-foreground">
-                No active clients at the moment.
-              </p>
+          {pastTrainings.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <History className="h-7 w-7 text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground">No past assignments yet.</p>
             </div>
           ) : (
             <>
@@ -774,27 +744,31 @@ export function TrainerDetailPage() {
                       <TableHead>Member</TableHead>
                       <TableHead>Plan</TableHead>
                       <TableHead>Period</TableHead>
-                      <TableHead>Contact</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead className="w-8" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {activeClients.map((training) => {
-                      const fullName = `${training.member.firstName} ${training.member.lastName}`;
+                    {pastTrainings.map((training) => {
+                      const fullName = training.member
+                        ? `${training.member.firstName} ${training.member.lastName}`
+                        : '—';
+                      const statusVariant =
+                        training.status === 'expired' ? 'secondary'
+                        : training.status === 'frozen' ? 'outline'
+                        : 'destructive';
                       return (
                         <TableRow
                           key={training.id}
                           className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => navigate(`/members/${training.member.id}`)}
+                          onClick={() => training.member && navigate(`/members/${training.member.id}`)}
                         >
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar className="h-8 w-8">
-                                <AvatarFallback
-                                  className={`text-xs font-semibold ${getAvatarColor(fullName)}`}
-                                >
-                                  {training.member.firstName[0].toUpperCase()}
-                                  {training.member.lastName[0].toUpperCase()}
+                                <AvatarFallback className={`text-xs font-semibold ${getAvatarColor(fullName)}`}>
+                                  {training.member?.firstName?.[0]?.toUpperCase() ?? '?'}
+                                  {training.member?.lastName?.[0]?.toUpperCase() ?? ''}
                                 </AvatarFallback>
                               </Avatar>
                               <span className="font-medium">{fullName}</span>
@@ -802,36 +776,18 @@ export function TrainerDetailPage() {
                           </TableCell>
                           <TableCell>
                             <div>
-                              <p className="font-medium text-sm">
-                                {training.planVariant?.planType?.name ?? '—'}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {training.planVariant?.durationLabel ?? ''}
-                              </p>
+                              <p className="font-medium text-sm">{training.planVariant?.planType?.name ?? '—'}</p>
+                              <p className="text-xs text-muted-foreground">{training.planVariant?.durationLabel ?? ''}</p>
                             </div>
                           </TableCell>
                           <TableCell className="text-sm">
                             <div className="flex items-center gap-1.5 text-muted-foreground">
                               <CalendarDays className="h-3.5 w-3.5" />
-                              {formatDate(training.startDate)} –{' '}
-                              {formatDate(training.endDate)}
+                              {formatDate(training.startDate)} – {formatDate(training.endDate)}
                             </div>
                           </TableCell>
-                          <TableCell className="text-sm">
-                            <div className="space-y-0.5">
-                              {training.member.phone && (
-                                <div className="flex items-center gap-1.5 text-muted-foreground">
-                                  <Phone className="h-3 w-3" />
-                                  {training.member.phone}
-                                </div>
-                              )}
-                              {training.member.email && (
-                                <div className="flex items-center gap-1.5 text-muted-foreground">
-                                  <Mail className="h-3 w-3" />
-                                  {training.member.email}
-                                </div>
-                              )}
-                            </div>
+                          <TableCell>
+                            <Badge variant={statusVariant} className="capitalize">{training.status}</Badge>
                           </TableCell>
                           <TableCell>
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -845,57 +801,42 @@ export function TrainerDetailPage() {
 
               {/* Mobile Cards */}
               <div className="space-y-3 sm:hidden">
-                {activeClients.map((training) => {
-                  const fullName = `${training.member.firstName} ${training.member.lastName}`;
+                {pastTrainings.map((training) => {
+                  const fullName = training.member
+                    ? `${training.member.firstName} ${training.member.lastName}`
+                    : '—';
+                  const statusVariant =
+                    training.status === 'expired' ? 'secondary'
+                    : training.status === 'frozen' ? 'outline'
+                    : 'destructive';
                   return (
                     <div
                       key={training.id}
                       className="rounded-lg border p-3 space-y-2 cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => navigate(`/members/${training.member.id}`)}
+                      onClick={() => training.member && navigate(`/members/${training.member.id}`)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
                           <Avatar className="h-8 w-8">
-                            <AvatarFallback
-                              className={`text-xs font-semibold ${getAvatarColor(fullName)}`}
-                            >
-                              {training.member.firstName[0].toUpperCase()}
-                              {training.member.lastName[0].toUpperCase()}
+                            <AvatarFallback className={`text-xs font-semibold ${getAvatarColor(fullName)}`}>
+                              {training.member?.firstName?.[0]?.toUpperCase() ?? '?'}
+                              {training.member?.lastName?.[0]?.toUpperCase() ?? ''}
                             </AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="font-medium text-sm">{fullName}</p>
                             <p className="text-xs text-muted-foreground">
                               {training.planVariant?.planType?.name ?? '—'}
-                              {training.planVariant?.durationLabel
-                                ? ` · ${training.planVariant.durationLabel}`
-                                : ''}
+                              {training.planVariant?.durationLabel ? ` · ${training.planVariant.durationLabel}` : ''}
                             </p>
                           </div>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        <Badge variant={statusVariant} className="capitalize text-xs">{training.status}</Badge>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <CalendarDays className="h-3 w-3" />
-                        {formatDate(training.startDate)} –{' '}
-                        {formatDate(training.endDate)}
+                        {formatDate(training.startDate)} – {formatDate(training.endDate)}
                       </div>
-                      {(training.member.phone || training.member.email) && (
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          {training.member.phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="h-3 w-3" />
-                              {training.member.phone}
-                            </span>
-                          )}
-                          {training.member.email && (
-                            <span className="flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {training.member.email}
-                            </span>
-                          )}
-                        </div>
-                      )}
                     </div>
                   );
                 })}

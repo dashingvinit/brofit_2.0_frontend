@@ -15,6 +15,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
+import { Checkbox } from "@/shared/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +39,9 @@ interface MembersListProps {
   members?: Member[];
   isLoading?: boolean;
   isAdmin?: boolean;
+  selectedIds?: Set<string>;
+  onSelectOne?: (id: string, checked: boolean) => void;
+  onSelectAll?: (checked: boolean) => void;
 }
 
 function getInitials(firstName: string, lastName: string) {
@@ -61,7 +65,7 @@ function getAvatarColor(name: string) {
   return colors[index];
 }
 
-export function MembersList({ members, isLoading, isAdmin = true }: MembersListProps) {
+export function MembersList({ members, isLoading, isAdmin = true, selectedIds, onSelectOne, onSelectAll }: MembersListProps) {
   const navigate = useNavigate();
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const deleteMember = useDeleteMember();
@@ -101,6 +105,7 @@ export function MembersList({ members, isLoading, isAdmin = true }: MembersListP
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10 pr-0" />
                 <TableHead>Member</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Age/Gender</TableHead>
@@ -112,6 +117,9 @@ export function MembersList({ members, isLoading, isAdmin = true }: MembersListP
             <TableBody>
               {Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
+                  <TableCell className="w-10 pr-0">
+                    <Skeleton className="h-4 w-4 rounded" />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Skeleton className="h-9 w-9 rounded-full" />
@@ -192,6 +200,21 @@ export function MembersList({ members, isLoading, isAdmin = true }: MembersListP
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
+              {onSelectAll && (
+                <TableHead className="w-10 pr-0">
+                  <Checkbox
+                    checked={
+                      members.length > 0 && members.every((m) => selectedIds?.has(m.id))
+                        ? true
+                        : members.some((m) => selectedIds?.has(m.id))
+                          ? 'indeterminate'
+                          : false
+                    }
+                    onCheckedChange={onSelectAll}
+                    aria-label="Select all"
+                  />
+                </TableHead>
+              )}
               <TableHead>Member</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Age / Gender</TableHead>
@@ -201,12 +224,23 @@ export function MembersList({ members, isLoading, isAdmin = true }: MembersListP
             </TableRow>
           </TableHeader>
           <TableBody>
-            {members.map((member) => (
+            {members.map((member) => {
+              const isSelected = selectedIds?.has(member.id) ?? false;
+              return (
               <TableRow
                 key={member.id}
-                className="group transition-colors cursor-pointer"
+                className={`group transition-colors cursor-pointer ${isSelected ? 'bg-muted/30' : ''}`}
                 onClick={() => navigate(`/members/${member.id}`)}
               >
+                {onSelectOne && (
+                  <TableCell className="w-10 pr-0" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(checked) => onSelectOne(member.id, !!checked)}
+                      aria-label={`Select ${member.firstName}`}
+                    />
+                  </TableCell>
+                )}
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9">
@@ -301,20 +335,31 @@ export function MembersList({ members, isLoading, isAdmin = true }: MembersListP
                   </TableCell>
                 )}
               </TableRow>
-            ))}
+            );})}
           </TableBody>
         </Table>
       </Card>
 
       {/* Mobile Card View */}
       <div className="grid gap-3 md:hidden">
-        {members.map((member) => (
+        {members.map((member) => {
+          const isSelected = selectedIds?.has(member.id) ?? false;
+          return (
           <Card
             key={member.id}
-            className="p-4 transition-shadow hover:shadow-md cursor-pointer"
+            className={`p-4 transition-shadow hover:shadow-md cursor-pointer ${isSelected ? 'ring-2 ring-primary' : ''}`}
             onClick={() => navigate(`/members/${member.id}`)}
           >
             <div className="flex items-start gap-3">
+              {onSelectOne && (
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={(checked) => onSelectOne(member.id, !!checked)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-0.5 shrink-0"
+                  aria-label={`Select ${member.firstName}`}
+                />
+              )}
               <Avatar className="h-10 w-10 shrink-0">
                 <AvatarFallback
                   className={`text-sm font-semibold ${getAvatarColor(member.firstName + member.lastName)}`}
@@ -400,7 +445,7 @@ export function MembersList({ members, isLoading, isAdmin = true }: MembersListP
               </div>
             </div>
           </Card>
-        ))}
+        );})}
       </div>
 
       {/* Edit Dialog */}

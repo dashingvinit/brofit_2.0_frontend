@@ -15,6 +15,7 @@ import {
   Play,
   MoreHorizontal,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -59,6 +60,7 @@ import {
   useCancelTraining,
   useFreezeTraining,
   useUnfreezeTraining,
+  useDeleteTraining,
 } from '../hooks/use-training';
 import { RecordTrainingPaymentDialog } from '../components/record-training-payment-dialog';
 import { RenewTrainingDialog } from '../components/renew-training-dialog';
@@ -129,6 +131,7 @@ export function TrainingDetailPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [freezeDialogOpen, setFreezeDialogOpen] = useState(false);
   const [unfreezeDialogOpen, setUnfreezeDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data: trainingResponse, isLoading: trainingLoading } =
     useTraining(id!);
@@ -137,6 +140,7 @@ export function TrainingDetailPage() {
   const cancelTraining = useCancelTraining();
   const freezeTraining = useFreezeTraining();
   const unfreezeTraining = useUnfreezeTraining();
+  const deleteTraining = useDeleteTraining();
 
   const training = trainingResponse?.data;
   const dues = duesResponse?.data;
@@ -191,6 +195,7 @@ export function TrainingDetailPage() {
   const canUnfreeze = training.status === 'frozen';
   const canCancel =
     training.status === 'active' || training.status === 'frozen';
+  const canDelete = dues?.payments?.length === 0;
 
   return (
     <div className="space-y-4">
@@ -213,7 +218,7 @@ export function TrainingDetailPage() {
               </Button>
             )}
 
-            {isEditable && (
+            {(isEditable || canDelete) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon">
@@ -221,38 +226,55 @@ export function TrainingDetailPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setRenewDialogOpen(true)}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Renew Training
-                  </DropdownMenuItem>
-
-                  {canFreeze && (
-                    <DropdownMenuItem
-                      onClick={() => setFreezeDialogOpen(true)}
-                    >
-                      <Snowflake className="h-4 w-4 mr-2" />
-                      Freeze Training
-                    </DropdownMenuItem>
-                  )}
-
-                  {canUnfreeze && (
-                    <DropdownMenuItem
-                      onClick={() => setUnfreezeDialogOpen(true)}
-                    >
-                      <Play className="h-4 w-4 mr-2" />
-                      Unfreeze Training
-                    </DropdownMenuItem>
-                  )}
-
-                  {canCancel && (
+                  {isEditable && (
                     <>
-                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setRenewDialogOpen(true)}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Renew Training
+                      </DropdownMenuItem>
+
+                      {canFreeze && (
+                        <DropdownMenuItem
+                          onClick={() => setFreezeDialogOpen(true)}
+                        >
+                          <Snowflake className="h-4 w-4 mr-2" />
+                          Freeze Training
+                        </DropdownMenuItem>
+                      )}
+
+                      {canUnfreeze && (
+                        <DropdownMenuItem
+                          onClick={() => setUnfreezeDialogOpen(true)}
+                        >
+                          <Play className="h-4 w-4 mr-2" />
+                          Unfreeze Training
+                        </DropdownMenuItem>
+                      )}
+
+                      {canCancel && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setCancelDialogOpen(true)}
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Cancel Training
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </>
+                  )}
+
+                  {canDelete && (
+                    <>
+                      {isEditable && <DropdownMenuSeparator />}
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
-                        onClick={() => setCancelDialogOpen(true)}
+                        onClick={() => setDeleteDialogOpen(true)}
                       >
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Cancel Training
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Training
                       </DropdownMenuItem>
                     </>
                   )}
@@ -709,6 +731,35 @@ export function TrainingDetailPage() {
               {unfreezeTraining.isPending
                 ? 'Unfreezing...'
                 : 'Yes, Unfreeze Training'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this training?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete{' '}
+              <span className="font-medium text-foreground">
+                {memberName}
+              </span>
+              's {planName} training with {training.trainer?.name}. This cannot be undone. Only trainings with no payments can be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Training</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() =>
+                deleteTraining.mutate(training.id, {
+                  onSuccess: () => navigate(ROUTES.TRAININGS),
+                })
+              }
+              disabled={deleteTraining.isPending}
+            >
+              {deleteTraining.isPending ? 'Deleting...' : 'Yes, Delete Training'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

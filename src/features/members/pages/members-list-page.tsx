@@ -15,6 +15,7 @@ import {
   ArrowRight,
   Upload,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -41,6 +42,8 @@ import {
   useMembers,
   useMemberStats,
   useSearchMembers,
+  useBatchUpdateMembers,
+  useBatchDeleteMembers,
 } from "../hooks/use-members";
 import { useDuesReport } from "../hooks/use-member-detail";
 import { useRecentlyViewed, type RecentMember } from "../hooks/use-recently-viewed";
@@ -150,6 +153,29 @@ export function MembersListPage() {
   const [duesPage, setDuesPage] = useState(1);
   const [importOpen, setImportOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const batchUpdate = useBatchUpdateMembers();
+  const batchDelete = useBatchDeleteMembers();
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked && members) {
+      setSelectedIds(new Set(members.map((m) => m.id)));
+    } else {
+      clearSelection();
+    }
+  };
 
   // Reset to page 1 when filter changes
   useEffect(() => {
@@ -733,11 +759,77 @@ export function MembersListPage() {
             )}
           </div>
 
+          {/* Bulk Action Toolbar */}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2">
+              <span className="text-sm font-medium">
+                {selectedIds.size} selected
+              </span>
+              <div className="h-4 w-px bg-border mx-1" />
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 gap-1.5 text-xs"
+                onClick={() =>
+                  batchUpdate.mutate(
+                    { ids: Array.from(selectedIds), data: { isActive: true } },
+                    { onSuccess: clearSelection }
+                  )
+                }
+                disabled={batchUpdate.isPending || batchDelete.isPending}
+              >
+                <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
+                Activate
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 gap-1.5 text-xs"
+                onClick={() =>
+                  batchUpdate.mutate(
+                    { ids: Array.from(selectedIds), data: { isActive: false } },
+                    { onSuccess: clearSelection }
+                  )
+                }
+                disabled={batchUpdate.isPending || batchDelete.isPending}
+              >
+                <UserX className="h-3.5 w-3.5 text-amber-500" />
+                Deactivate
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 gap-1.5 text-xs text-destructive hover:text-destructive"
+                onClick={() =>
+                  batchDelete.mutate(Array.from(selectedIds), {
+                    onSuccess: clearSelection,
+                  })
+                }
+                disabled={batchDelete.isPending || batchUpdate.isPending}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs text-muted-foreground ml-auto"
+                onClick={clearSelection}
+              >
+                <X className="h-3.5 w-3.5 mr-1" />
+                Clear
+              </Button>
+            </div>
+          )}
+
           {/* Members List */}
           <MembersList
             members={members}
             isLoading={isLoading}
             isAdmin={isAdmin}
+            selectedIds={selectedIds}
+            onSelectOne={handleSelectOne}
+            onSelectAll={handleSelectAll}
           />
 
           {/* Pagination */}

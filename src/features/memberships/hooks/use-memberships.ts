@@ -112,6 +112,27 @@ export function useUpdateMembership() {
 }
 
 /**
+ * Hook to permanently delete a membership (only if no payments recorded)
+ */
+export function useDeleteMembership() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => membershipsApi.deleteMembership(id),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['memberships'] });
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      toast.success(response.message || 'Membership deleted successfully');
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || 'Failed to delete membership'
+      );
+    },
+  });
+}
+
+/**
  * Hook to cancel a membership
  */
 export function useCancelMembership() {
@@ -207,6 +228,61 @@ export function useRecordPayment() {
       toast.error(
         error.response?.data?.message || 'Failed to record payment'
       );
+    },
+  });
+}
+
+/**
+ * Hook to batch cancel memberships
+ */
+export function useBatchCancelMemberships() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => membershipsApi.batchCancelMemberships(ids),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['memberships'] });
+      toast.success(response.message || 'Memberships cancelled');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to cancel memberships');
+    },
+  });
+}
+
+/**
+ * Hook to batch freeze memberships
+ */
+export function useBatchFreezeMemberships() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ids, reason, freezeStartDate, freezeEndDate }: { ids: string[]; reason?: string; freezeStartDate?: string; freezeEndDate?: string }) =>
+      membershipsApi.batchFreezeMemberships(ids, { reason, freezeStartDate, freezeEndDate }),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['memberships'] });
+      toast.success(response.message || 'Memberships frozen');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to freeze memberships');
+    },
+  });
+}
+
+/**
+ * Hook to batch unfreeze memberships
+ */
+export function useBatchUnfreezeMemberships() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => membershipsApi.batchUnfreezeMemberships(ids),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['memberships'] });
+      toast.success(response.message || 'Memberships unfrozen');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to unfreeze memberships');
     },
   });
 }

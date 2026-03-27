@@ -66,6 +66,11 @@ export const trainingApi = {
     return response.data;
   },
 
+  deleteTraining: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete(`/trainings/${id}`);
+    return response.data;
+  },
+
   cancelTraining: async (id: string): Promise<ApiResponse<Training>> => {
     const response = await apiClient.put(`/trainings/${id}/cancel`);
     return response.data;

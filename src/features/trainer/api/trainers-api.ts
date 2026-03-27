@@ -2,6 +2,7 @@ import { apiClient } from '@/shared/lib/api-client';
 import type {
   Trainer,
   TrainerWithClients,
+  Training,
   ApiResponse,
   TrainerPayoutSchedule,
   TrainerPayoutRecord,
@@ -87,6 +88,15 @@ export const trainersApi = {
    */
   getOutstandingSummary: async (): Promise<ApiResponse<TrainerOutstandingSummary>> => {
     const response = await apiClient.get('/trainers/payout-summary');
+    return response.data;
+  },
+
+  /**
+   * Get all trainings (assignment history) for a trainer
+   * GET /api/v1/trainers/:id/history
+   */
+  getAssignmentHistory: async (trainerId: string): Promise<ApiResponse<Training[]>> => {
+    const response = await apiClient.get(`/trainers/${trainerId}/history`);
     return response.data;
   },
 };

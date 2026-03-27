@@ -14,9 +14,12 @@ import {
   Search,
   X,
   RefreshCw,
+  Ban,
+  Flame,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
+import { Checkbox } from '@/shared/components/ui/checkbox';
 import {
   Card,
   CardContent,
@@ -43,8 +46,14 @@ import {
   TableRow,
 } from '@/shared/components/ui/table';
 import { PageHeader } from '@/shared/components/page-header';
-import { useMemberships, useMembershipStats } from '../hooks/use-memberships';
+import {
+  useMemberships,
+  useMembershipStats,
+  useBatchCancelMemberships,
+  useBatchUnfreezeMemberships,
+} from '../hooks/use-memberships';
 import { RenewMembershipDialog } from '../components/renew-membership-dialog';
+import { BulkFreezeDialog } from '../components/bulk-freeze-dialog';
 import { ROUTES } from '@/shared/lib/constants';
 import { getThisMonthDateRange } from '@/shared/lib/utils';
 import type { Membership, MembershipStatus } from '@/shared/types/common.types';
@@ -124,10 +133,14 @@ function MembershipRow({
   membership,
   onClick,
   onRenew,
+  selected,
+  onSelect,
 }: {
   membership: Membership;
   onClick: () => void;
   onRenew: (m: Membership) => void;
+  selected: boolean;
+  onSelect: (id: string, checked: boolean) => void;
 }) {
   const status = statusConfig[membership.status];
   const memberName = membership.member
@@ -138,7 +151,15 @@ function MembershipRow({
   const canRenew = membership.status === 'expired' || membership.status === 'cancelled';
 
   return (
-    <TableRow className="hover:bg-muted/50">
+    <TableRow className={`hover:bg-muted/50 ${selected ? 'bg-muted/30' : ''}`}>
+      <TableCell className="w-10 pr-0">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={(checked) => onSelect(membership.id, !!checked)}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={`Select ${memberName}`}
+        />
+      </TableCell>
       <TableCell className="font-medium cursor-pointer" onClick={onClick}>{memberName}</TableCell>
       <TableCell className="cursor-pointer" onClick={onClick}>
         <div>
@@ -178,10 +199,14 @@ function MembershipCard({
   membership,
   onClick,
   onRenew,
+  selected,
+  onSelect,
 }: {
   membership: Membership;
   onClick: () => void;
   onRenew: (m: Membership) => void;
+  selected: boolean;
+  onSelect: (id: string, checked: boolean) => void;
 }) {
   const status = statusConfig[membership.status];
   const memberName = membership.member
@@ -192,38 +217,48 @@ function MembershipCard({
   const canRenew = membership.status === 'expired' || membership.status === 'cancelled';
 
   return (
-    <Card className="transition-shadow hover:shadow-md">
+    <Card className={`transition-shadow hover:shadow-md ${selected ? 'ring-2 ring-primary' : ''}`}>
       <CardContent className="p-4">
-        <div className="flex items-start justify-between cursor-pointer" onClick={onClick}>
-          <div className="space-y-1">
-            <p className="font-semibold">{memberName}</p>
-            <p className="text-sm text-muted-foreground">
-              {planName} - {durationLabel}
-            </p>
-          </div>
-          <Badge variant={status.variant}>{status.label}</Badge>
-        </div>
-        <div className="mt-3 flex items-center justify-between text-sm">
-          <div className="flex items-center gap-1 text-muted-foreground cursor-pointer" onClick={onClick}>
-            <CalendarDays className="h-3.5 w-3.5" />
-            {formatDate(membership.startDate)} - {formatDate(membership.endDate)}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center font-semibold">
-              <IndianRupee className="h-3 w-3" />
-              {membership.finalPrice.toLocaleString()}
-            </span>
-            {canRenew && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 px-2 text-xs"
-                onClick={() => onRenew(membership)}
-              >
-                <RefreshCw className="h-3 w-3 mr-1" />
-                Renew
-              </Button>
-            )}
+        <div className="flex items-start gap-3">
+          <Checkbox
+            checked={selected}
+            onCheckedChange={(checked) => onSelect(membership.id, !!checked)}
+            className="mt-0.5 shrink-0"
+            aria-label={`Select ${memberName}`}
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between cursor-pointer" onClick={onClick}>
+              <div className="space-y-1">
+                <p className="font-semibold">{memberName}</p>
+                <p className="text-sm text-muted-foreground">
+                  {planName} - {durationLabel}
+                </p>
+              </div>
+              <Badge variant={status.variant}>{status.label}</Badge>
+            </div>
+            <div className="mt-3 flex items-center justify-between text-sm">
+              <div className="flex items-center gap-1 text-muted-foreground cursor-pointer" onClick={onClick}>
+                <CalendarDays className="h-3.5 w-3.5" />
+                {formatDate(membership.startDate)} - {formatDate(membership.endDate)}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center font-semibold">
+                  <IndianRupee className="h-3 w-3" />
+                  {membership.finalPrice.toLocaleString()}
+                </span>
+                {canRenew && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => onRenew(membership)}
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Renew
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </CardContent>
@@ -237,6 +272,9 @@ export function MembershipsPage() {
   const [dateRange, setDateRange] = useState<{ from: string; to: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [renewMembership, setRenewMembership] = useState<Membership | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkFreezeOpen, setBulkFreezeOpen] = useState(false);
+
   const { data: membershipsResponse, isLoading } = useMemberships(
     1,
     100,
@@ -245,6 +283,8 @@ export function MembershipsPage() {
     dateRange?.to ?? null,
   );
   const { data: statsResponse, isLoading: isLoadingStats } = useMembershipStats();
+  const batchCancel = useBatchCancelMemberships();
+  const batchUnfreeze = useBatchUnfreezeMemberships();
 
   const allMemberships = membershipsResponse?.data ?? [];
   const stats = statsResponse?.data;
@@ -262,6 +302,54 @@ export function MembershipsPage() {
   const hasActiveFilters = statusFilter !== 'all' || !!searchQuery || !!dateRange;
   const filterLabel =
     statusOptions.find((o) => o.value === statusFilter)?.label ?? 'Filter';
+
+  // Selection helpers
+  const allVisibleIds = memberships.map((m) => m.id);
+  const allSelected = allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedIds.has(id));
+  const someSelected = allVisibleIds.some((id) => selectedIds.has(id)) && !allSelected;
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(allVisibleIds));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const selectedArray = Array.from(selectedIds);
+  const selectedMemberships = memberships.filter((m) => selectedIds.has(m.id));
+
+  // Determine which bulk actions are valid for the selection
+  const canBulkCancel = selectedMemberships.some(
+    (m) => m.status === 'active' || m.status === 'expired'
+  );
+  const canBulkFreeze = selectedMemberships.some((m) => m.status === 'active');
+  const canBulkUnfreeze = selectedMemberships.some((m) => m.status === 'frozen');
+
+  const handleBulkCancel = () => {
+    const ids = selectedMemberships
+      .filter((m) => m.status === 'active' || m.status === 'expired')
+      .map((m) => m.id);
+    batchCancel.mutate(ids, { onSuccess: clearSelection });
+  };
+
+  const handleBulkUnfreeze = () => {
+    const ids = selectedMemberships
+      .filter((m) => m.status === 'frozen')
+      .map((m) => m.id);
+    batchUnfreeze.mutate(ids, { onSuccess: clearSelection });
+  };
 
   return (
     <div className="space-y-4">
@@ -469,6 +557,61 @@ export function MembershipsPage() {
         )}
       </div>
 
+      {/* Bulk Action Toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2">
+          <span className="text-sm font-medium">
+            {selectedIds.size} selected
+          </span>
+          <div className="h-4 w-px bg-border mx-1" />
+          {canBulkFreeze && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 text-xs"
+              onClick={() => setBulkFreezeOpen(true)}
+              disabled={batchCancel.isPending || batchUnfreeze.isPending}
+            >
+              <Snowflake className="h-3.5 w-3.5 text-blue-500" />
+              Freeze
+            </Button>
+          )}
+          {canBulkUnfreeze && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 text-xs"
+              onClick={handleBulkUnfreeze}
+              disabled={batchUnfreeze.isPending || batchCancel.isPending}
+            >
+              <Flame className="h-3.5 w-3.5 text-orange-500" />
+              Unfreeze
+            </Button>
+          )}
+          {canBulkCancel && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 text-xs text-destructive hover:text-destructive"
+              onClick={handleBulkCancel}
+              disabled={batchCancel.isPending || batchUnfreeze.isPending}
+            >
+              <Ban className="h-3.5 w-3.5" />
+              Cancel
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs text-muted-foreground ml-auto"
+            onClick={clearSelection}
+          >
+            <X className="h-3.5 w-3.5 mr-1" />
+            Clear
+          </Button>
+        </div>
+      )}
+
       {/* Memberships List */}
       {isLoading ? (
         <div className="space-y-3">
@@ -517,6 +660,13 @@ export function MembershipsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10 pr-0">
+                      <Checkbox
+                        checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
                     <TableHead>Member</TableHead>
                     <TableHead>Plan</TableHead>
                     <TableHead>Status</TableHead>
@@ -532,6 +682,8 @@ export function MembershipsPage() {
                       membership={membership}
                       onClick={() => navigate(`/memberships/${membership.id}`)}
                       onRenew={setRenewMembership}
+                      selected={selectedIds.has(membership.id)}
+                      onSelect={handleSelectOne}
                     />
                   ))}
                 </TableBody>
@@ -547,6 +699,8 @@ export function MembershipsPage() {
                 membership={membership}
                 onClick={() => navigate(`/memberships/${membership.id}`)}
                 onRenew={setRenewMembership}
+                selected={selectedIds.has(membership.id)}
+                onSelect={handleSelectOne}
               />
             ))}
           </div>
@@ -561,6 +715,14 @@ export function MembershipsPage() {
           membership={renewMembership}
         />
       )}
+
+      {/* Bulk Freeze Dialog */}
+      <BulkFreezeDialog
+        open={bulkFreezeOpen}
+        onOpenChange={setBulkFreezeOpen}
+        ids={selectedMemberships.filter((m) => m.status === 'active').map((m) => m.id)}
+        onSuccess={clearSelection}
+      />
     </div>
   );
 }

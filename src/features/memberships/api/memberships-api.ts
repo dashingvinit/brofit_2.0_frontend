@@ -105,6 +105,15 @@ export const membershipsApi = {
   },
 
   /**
+   * Delete a membership (only if no payments recorded)
+   * DELETE /api/v1/memberships/:id
+   */
+  deleteMembership: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete(`/memberships/${id}`);
+    return response.data;
+  },
+
+  /**
    * Cancel a membership
    * PUT /api/v1/memberships/:id/cancel
    */
@@ -153,6 +162,36 @@ export const membershipsApi = {
     data: RecordPaymentData
   ): Promise<ApiResponse<Payment>> => {
     const response = await apiClient.post('/memberships/payments', data);
+    return response.data;
+  },
+
+  /**
+   * Batch cancel memberships
+   * PUT /api/v1/memberships/batch/cancel
+   */
+  batchCancelMemberships: async (ids: string[]): Promise<ApiResponse<{ succeeded: number; failed: number; total: number }>> => {
+    const response = await apiClient.put('/memberships/batch/cancel', { ids });
+    return response.data;
+  },
+
+  /**
+   * Batch freeze memberships
+   * PUT /api/v1/memberships/batch/freeze
+   */
+  batchFreezeMemberships: async (
+    ids: string[],
+    data?: { reason?: string; freezeStartDate?: string; freezeEndDate?: string }
+  ): Promise<ApiResponse<{ succeeded: number; failed: number; total: number }>> => {
+    const response = await apiClient.put('/memberships/batch/freeze', { ids, ...data });
+    return response.data;
+  },
+
+  /**
+   * Batch unfreeze memberships
+   * PUT /api/v1/memberships/batch/unfreeze
+   */
+  batchUnfreezeMemberships: async (ids: string[]): Promise<ApiResponse<{ succeeded: number; failed: number; total: number }>> => {
+    const response = await apiClient.put('/memberships/batch/unfreeze', { ids });
     return response.data;
   },
 
