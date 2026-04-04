@@ -1,5 +1,5 @@
 import type { RouteObject } from "react-router-dom";
-import { ProtectedRoute, AdminRoute, StaffRoute, SuperAdminRoute } from "./route-guards";
+import { ProtectedRoute, AdminRoute, StaffRoute, StaffPermissionRoute, SuperAdminRoute } from "./route-guards";
 import { DashboardLayout } from "../layouts/dashboard-layout";
 import { PlatformLayout } from "../layouts/platform-layout";
 import { PlatformPage, OrgDetailPage } from "@/features/platform";
@@ -93,70 +93,44 @@ export const protectedRoutes: RouteObject[] = [
           {
             element: <AdminRoute />,
             children: [
-              {
-                path: "/dashboard",
-                element: <DashboardPage />,
-              },
-              {
-                path: "/members",
-                element: <MembersListPage />,
-              },
-              {
-                path: "/members/register",
-                element: <RegisterMemberPage />,
-              },
-              {
-                path: "/plans",
-                element: <PlansPage />,
-              },
-              {
-                path: "/memberships",
-                element: <MembershipsPage />,
-              },
-              {
-                path: "/memberships/create",
-                element: <CreateMembershipPage />,
-              },
-              {
-                path: "/trainings",
-                element: <TrainingsPage />,
-              },
-              {
-                path: "/trainings/create",
-                element: <CreateTrainingPage />,
-              },
-              {
-                path: "/trainers",
-                element: <TrainersPage />,
-              },
-              {
-                path: "/trainers/:id",
-                element: <TrainerDetailPage />,
-              },
-              {
-                path: "/financials",
-                element: <FinancialsPage />,
-              },
-              {
-                path: "/financials/month/:month",
-                element: <MonthlyExpensesPage />,
-              },
-              {
-                path: "/analytics",
-                element: <AnalyticsPage />,
-              },
-              {
-                path: "/settings",
-                element: <SettingsPage />,
-              },
-              {
-                path: "/inbox",
-                element: <InboxPage />,
-              },
-              {
-                path: "/offers",
-                element: <OffersPage />,
-              },
+              { path: "/dashboard",              element: <DashboardPage /> },
+              { path: "/plans",                  element: <PlansPage /> },
+              { path: "/trainers",               element: <TrainersPage /> },
+              { path: "/trainers/:id",           element: <TrainerDetailPage /> },
+              { path: "/financials",             element: <FinancialsPage /> },
+              { path: "/financials/month/:month",element: <MonthlyExpensesPage /> },
+              { path: "/analytics",              element: <AnalyticsPage /> },
+              { path: "/settings",               element: <SettingsPage /> },
+              { path: "/inbox",                  element: <InboxPage /> },
+              { path: "/offers",                 element: <OffersPage /> },
+            ],
+          },
+
+          // ── Permission-gated routes (admin always, staff if permission granted) ──
+          {
+            element: <StaffPermissionRoute permission="canViewMembers" />,
+            children: [
+              { path: "/members", element: <MembersListPage /> },
+            ],
+          },
+          {
+            element: <StaffPermissionRoute permission="canRegisterMember" />,
+            children: [
+              { path: "/members/register", element: <RegisterMemberPage /> },
+            ],
+          },
+          {
+            element: <StaffPermissionRoute permission="canCreateMembership" />,
+            children: [
+              { path: "/memberships",        element: <MembershipsPage /> },
+              { path: "/memberships/create", element: <CreateMembershipPage /> },
+            ],
+          },
+          {
+            element: <StaffPermissionRoute permission="canCreateTraining" />,
+            children: [
+              { path: "/trainings",        element: <TrainingsPage /> },
+              { path: "/trainings/create", element: <CreateTrainingPage /> },
             ],
           },
         ],

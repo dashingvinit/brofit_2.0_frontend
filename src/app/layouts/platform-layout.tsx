@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import brandLogo from "@/assets/brand_logo.png";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { Building2, LogOut, ChevronUp, User } from "lucide-react";
+import { ViewSwitcher } from "@/shared/components/view-switcher";
 import {
   Sidebar,
   SidebarContent,
@@ -51,15 +51,7 @@ export function PlatformLayout() {
       <div className="flex h-screen w-full overflow-hidden">
         <Sidebar collapsible="icon">
           <SidebarHeader>
-            <div className="flex items-center gap-2">
-              <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg overflow-hidden">
-                <img src={brandLogo} alt="Brofit logo" className="size-8 object-contain" />
-              </div>
-              <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
-                <span className="font-semibold">Brofit 2.0</span>
-                <span className="text-xs text-muted-foreground">Platform Admin</span>
-              </div>
-            </div>
+            <ViewSwitcher />
           </SidebarHeader>
 
           <SidebarContent>

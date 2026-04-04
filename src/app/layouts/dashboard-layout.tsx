@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import brandLogo from "@/assets/brand_logo.png";
 import { useClerk, useUser, OrganizationSwitcher } from "@clerk/clerk-react";
+
 import {
   Avatar,
   AvatarFallback,
@@ -29,8 +29,11 @@ import {
 import { Separator } from "@/shared/components/ui/separator";
 import { ThemeToggle } from "@/shared/components/theme-toggle";
 import { NavFlat } from "@/shared/components/nav-flat";
+import { ViewSwitcher } from "@/shared/components/view-switcher";
 import { ROUTES } from "@/shared/lib/constants";
 import { useRole } from "@/shared/hooks/use-role";
+import { useView } from "@/shared/hooks/use-view";
+import { useStaffPermissions } from "@/features/settings/hooks/use-staff-permissions";
 import {
   LayoutDashboard,
   Users,
@@ -54,7 +57,12 @@ export function DashboardLayout() {
   const { signOut } = useClerk();
   const { user } = useUser();
   const { isAdmin } = useRole();
+  const { view } = useView();
+  const { resolvedPermissions: staffPerms } = useStaffPermissions();
   const location = useLocation();
+
+  // Show admin nav when view is "admin" (includes super_admin users who switched to admin view)
+  const showAdminNav = view === "admin";
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -83,10 +91,21 @@ export function DashboardLayout() {
 
   const staffFlatItems = [
     { name: "Reception", href: ROUTES.RECEPTION, icon: ConciergeBell, isActive: isActive(ROUTES.RECEPTION) },
-    { name: "Attendance", href: ROUTES.ATTENDANCE, icon: ScanLine, isActive: isActive(ROUTES.ATTENDANCE) },
+    ...(staffPerms.canTakeAttendance
+      ? [{ name: "Attendance", href: ROUTES.ATTENDANCE, icon: ScanLine, isActive: isActive(ROUTES.ATTENDANCE) }]
+      : []),
+    ...(staffPerms.canViewMembers
+      ? [{ name: "Members", href: ROUTES.MEMBERS, icon: Users, isActive: isActive(ROUTES.MEMBERS) }]
+      : []),
+    ...(staffPerms.canCreateMembership
+      ? [{ name: "Memberships", href: ROUTES.MEMBERSHIPS, icon: CreditCard, isActive: isActive(ROUTES.MEMBERSHIPS) }]
+      : []),
+    ...(staffPerms.canCreateTraining
+      ? [{ name: "Trainings", href: ROUTES.TRAININGS, icon: Dumbbell, isActive: isActive(ROUTES.TRAININGS) }]
+      : []),
   ];
 
-  const allFlatItems = isAdmin
+  const allFlatItems = showAdminNav
     ? [...adminTopItems, ...adminPeopleItems, ...adminOperationsItems, ...adminBusinessItems]
     : staffFlatItems;
 
@@ -118,21 +137,11 @@ export function DashboardLayout() {
       <div className="flex h-screen w-full overflow-hidden">
         <Sidebar collapsible="icon">
           <SidebarHeader>
-            <div className="flex items-center gap-2">
-              <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg overflow-hidden">
-                <img src={brandLogo} alt="Brofit logo" className="size-8 object-contain" />
-              </div>
-              <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
-                <span className="font-semibold">Brofit 2.0</span>
-                <span className="text-xs text-muted-foreground">
-                  Fitness Management
-                </span>
-              </div>
-            </div>
+            <ViewSwitcher />
           </SidebarHeader>
 
           <SidebarContent>
-            {isAdmin ? (
+            {showAdminNav ? (
               <>
                 <NavFlat items={adminTopItems} />
                 <NavFlat items={adminPeopleItems} label="People" />
