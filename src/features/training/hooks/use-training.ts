@@ -156,6 +156,23 @@ export function useUnfreezeTraining() {
   });
 }
 
+export function useDeleteTrainingPayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => trainingApi.deletePayment(id),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['trainings'] });
+      toast.success(response.message || 'Payment deleted successfully');
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || 'Failed to delete payment'
+      );
+    },
+  });
+}
+
 export function useTrainingDues(trainingId: string) {
   return useQuery({
     queryKey: ['trainings', trainingId, 'dues'],

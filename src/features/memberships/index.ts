@@ -18,6 +18,7 @@ export {
   useUpdateMembership,
   useCancelMembership,
   useDeleteMembership,
+  useDeletePayment,
   useFreezeMembership,
   useUnfreezeMembership,
   useExpiringMemberships,

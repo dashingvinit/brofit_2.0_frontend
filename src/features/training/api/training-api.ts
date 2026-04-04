@@ -100,6 +100,11 @@ export const trainingApi = {
     return response.data;
   },
 
+  deletePayment: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete(`/trainings/payments/${id}`);
+    return response.data;
+  },
+
   getExpiringTrainings: async (
     days = 7
   ): Promise<ApiResponse<Training[]>> => {

@@ -61,6 +61,7 @@ import {
   useCancelMembership,
   useUnfreezeMembership,
   useDeleteMembership,
+  useDeletePayment,
 } from '../hooks/use-memberships';
 import { RecordPaymentDialog } from '../components/record-payment-dialog';
 import { EditMembershipDialog } from '../components/edit-membership-dialog';
@@ -135,6 +136,7 @@ export function MembershipDetailPage() {
   const [freezeDialogOpen, setFreezeDialogOpen] = useState(false);
   const [unfreezeDialogOpen, setUnfreezeDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
 
   const { data: membershipResponse, isLoading: membershipLoading } =
     useMembership(id!);
@@ -145,6 +147,7 @@ export function MembershipDetailPage() {
   const cancelMembership = useCancelMembership();
   const unfreezeMembership = useUnfreezeMembership();
   const deleteMembership = useDeleteMembership();
+  const deletePayment = useDeletePayment();
 
   const membership = membershipResponse?.data;
   const dues = duesResponse?.data;
@@ -199,7 +202,7 @@ export function MembershipDetailPage() {
   const canUnfreeze = membership.status === 'frozen';
   const canCancel =
     membership.status === 'active' || membership.status === 'frozen';
-  const canDelete = dues?.payments?.length === 0;
+  const canDelete = true;
 
   return (
     <div className="space-y-4">
@@ -559,6 +562,7 @@ export function MembershipDetailPage() {
                       <TableHead>Status</TableHead>
                       <TableHead>Reference</TableHead>
                       <TableHead>Notes</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -589,6 +593,16 @@ export function MembershipDetailPage() {
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">
                             {payment.notes || '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              onClick={() => setDeletePaymentId(payment.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       );
@@ -621,9 +635,19 @@ export function MembershipDetailPage() {
                                 <IndianRupee className="h-3.5 w-3.5" />
                                 {payment.amount.toLocaleString()}
                               </span>
-                              <Badge variant={pStatus.variant} className="text-xs">
-                                {pStatus.label}
-                              </Badge>
+                              <div className="flex items-center gap-1.5">
+                                <Badge variant={pStatus.variant} className="text-xs">
+                                  {pStatus.label}
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                  onClick={() => setDeletePaymentId(payment.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
                               <span className="font-medium">
@@ -775,7 +799,7 @@ export function MembershipDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {/* Delete Confirmation */}
+      {/* Delete Membership Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -785,7 +809,11 @@ export function MembershipDetailPage() {
               <span className="font-medium text-foreground">
                 {memberName}
               </span>
-              's {planName} membership. This cannot be undone. Only memberships with no payments can be deleted.
+              's {planName} membership
+              {dues && dues.payments.length > 0
+                ? ` along with ${dues.payments.length} payment record${dues.payments.length !== 1 ? 's' : ''} (${'\u20B9'}${dues.totalPaid.toLocaleString()} total). This will affect revenue totals.`
+                : '.'}{' '}
+              This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -800,6 +828,37 @@ export function MembershipDetailPage() {
               disabled={deleteMembership.isPending}
             >
               {deleteMembership.isPending ? 'Deleting...' : 'Yes, Delete Membership'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Payment Confirmation */}
+      <AlertDialog
+        open={!!deletePaymentId}
+        onOpenChange={(open) => { if (!open) setDeletePaymentId(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this payment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this payment record. The balance due on this membership will be recalculated. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletePaymentId) {
+                  deletePayment.mutate(deletePaymentId, {
+                    onSuccess: () => setDeletePaymentId(null),
+                  });
+                }
+              }}
+              disabled={deletePayment.isPending}
+            >
+              {deletePayment.isPending ? 'Deleting...' : 'Yes, Delete Payment'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -166,6 +166,15 @@ export const membershipsApi = {
   },
 
   /**
+   * Delete a payment
+   * DELETE /api/v1/memberships/payments/:id
+   */
+  deletePayment: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete(`/memberships/payments/${id}`);
+    return response.data;
+  },
+
+  /**
    * Batch cancel memberships
    * PUT /api/v1/memberships/batch/cancel
    */

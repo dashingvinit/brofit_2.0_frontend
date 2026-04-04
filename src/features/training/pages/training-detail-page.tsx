@@ -61,6 +61,7 @@ import {
   useFreezeTraining,
   useUnfreezeTraining,
   useDeleteTraining,
+  useDeleteTrainingPayment,
 } from '../hooks/use-training';
 import { RecordTrainingPaymentDialog } from '../components/record-training-payment-dialog';
 import { RenewTrainingDialog } from '../components/renew-training-dialog';
@@ -132,6 +133,7 @@ export function TrainingDetailPage() {
   const [freezeDialogOpen, setFreezeDialogOpen] = useState(false);
   const [unfreezeDialogOpen, setUnfreezeDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
 
   const { data: trainingResponse, isLoading: trainingLoading } =
     useTraining(id!);
@@ -141,6 +143,7 @@ export function TrainingDetailPage() {
   const freezeTraining = useFreezeTraining();
   const unfreezeTraining = useUnfreezeTraining();
   const deleteTraining = useDeleteTraining();
+  const deletePayment = useDeleteTrainingPayment();
 
   const training = trainingResponse?.data;
   const dues = duesResponse?.data;
@@ -195,7 +198,7 @@ export function TrainingDetailPage() {
   const canUnfreeze = training.status === 'frozen';
   const canCancel =
     training.status === 'active' || training.status === 'frozen';
-  const canDelete = dues?.payments?.length === 0;
+  const canDelete = true;
 
   return (
     <div className="space-y-4">
@@ -527,6 +530,7 @@ export function TrainingDetailPage() {
                       <TableHead>Status</TableHead>
                       <TableHead>Reference</TableHead>
                       <TableHead>Notes</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -558,6 +562,16 @@ export function TrainingDetailPage() {
                           <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">
                             {payment.notes || '-'}
                           </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              onClick={() => setDeletePaymentId(payment.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       );
                     })}
@@ -587,9 +601,19 @@ export function TrainingDetailPage() {
                                 <IndianRupee className="h-3.5 w-3.5" />
                                 {payment.amount.toLocaleString()}
                               </span>
-                              <Badge variant={pStatus.variant} className="text-xs">
-                                {pStatus.label}
-                              </Badge>
+                              <div className="flex items-center gap-1.5">
+                                <Badge variant={pStatus.variant} className="text-xs">
+                                  {pStatus.label}
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                  onClick={() => setDeletePaymentId(payment.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
                               <span className="font-medium">
@@ -735,7 +759,7 @@ export function TrainingDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {/* Delete Confirmation */}
+      {/* Delete Training Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -745,7 +769,11 @@ export function TrainingDetailPage() {
               <span className="font-medium text-foreground">
                 {memberName}
               </span>
-              's {planName} training with {training.trainer?.name}. This cannot be undone. Only trainings with no payments can be deleted.
+              's {planName} training with {training.trainer?.name}
+              {dues && dues.payments.length > 0
+                ? ` along with ${dues.payments.length} payment record${dues.payments.length !== 1 ? 's' : ''} (${'\u20B9'}${dues.totalPaid.toLocaleString()} total). This will affect revenue totals.`
+                : '.'}{' '}
+              This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -760,6 +788,37 @@ export function TrainingDetailPage() {
               disabled={deleteTraining.isPending}
             >
               {deleteTraining.isPending ? 'Deleting...' : 'Yes, Delete Training'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Payment Confirmation */}
+      <AlertDialog
+        open={!!deletePaymentId}
+        onOpenChange={(open) => { if (!open) setDeletePaymentId(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this payment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this payment record. The balance due on this training will be recalculated. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletePaymentId) {
+                  deletePayment.mutate(deletePaymentId, {
+                    onSuccess: () => setDeletePaymentId(null),
+                  });
+                }
+              }}
+              disabled={deletePayment.isPending}
+            >
+              {deletePayment.isPending ? 'Deleting...' : 'Yes, Delete Payment'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

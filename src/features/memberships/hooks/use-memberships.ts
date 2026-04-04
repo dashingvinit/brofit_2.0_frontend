@@ -233,6 +233,26 @@ export function useRecordPayment() {
 }
 
 /**
+ * Hook to delete a payment
+ */
+export function useDeletePayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => membershipsApi.deletePayment(id),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['memberships'] });
+      toast.success(response.message || 'Payment deleted successfully');
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || 'Failed to delete payment'
+      );
+    },
+  });
+}
+
+/**
  * Hook to batch cancel memberships
  */
 export function useBatchCancelMemberships() {
