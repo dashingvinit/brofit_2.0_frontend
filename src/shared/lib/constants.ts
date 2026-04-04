@@ -26,5 +26,8 @@ export const ROUTES = {
   SETTINGS: "/settings",
   INBOX: "/inbox",
   OFFERS: "/offers",
+  // Super admin platform
+  PLATFORM: "/platform",
+  PLATFORM_ORG_DETAIL: "/platform/orgs",
 } as const;
 

@@ -18,7 +18,7 @@ export function ProtectedRoute() {
   return <Outlet />;
 }
 
-/** Only admins can access — everyone else is sent to /reception */
+/** org:admin only — gym owners. Everyone else → /reception */
 export function AdminRoute() {
   const { isAdmin, isLoaded } = useRole();
 
@@ -28,6 +28,36 @@ export function AdminRoute() {
 
   if (!isAdmin) {
     return <Navigate to={ROUTES.RECEPTION} replace />;
+  }
+
+  return <Outlet />;
+}
+
+/** org:admin or org:staff — blocks future org:member (gym customers) */
+export function StaffRoute() {
+  const { isAdmin, isStaff, isLoaded } = useRole();
+
+  if (!isLoaded) {
+    return <LoadingSpinner />;
+  }
+
+  if (!isAdmin && !isStaff) {
+    return <Navigate to={ROUTES.SIGN_IN} replace />;
+  }
+
+  return <Outlet />;
+}
+
+/** Super admin only (platform owner). publicMetadata.role === "super_admin" */
+export function SuperAdminRoute() {
+  const { isSuperAdmin, isLoaded } = useRole();
+
+  if (!isLoaded) {
+    return <LoadingSpinner />;
+  }
+
+  if (!isSuperAdmin) {
+    return <Navigate to={ROUTES.SIGN_IN} replace />;
   }
 
   return <Outlet />;

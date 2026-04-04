@@ -693,3 +693,45 @@ export interface UpdateOfferData {
   code?: string | null;
   rewardAmount?: number | null;
 }
+
+// ── Platform (Super Admin) ───────────────────────────────────────────────────
+
+export interface Organization {
+  id: string;
+  name: string;
+  ownerUserId: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    members: number;
+    trainers: number;
+    planTypes: number;
+  };
+  stats?: {
+    totalMembers: number;
+    activeMembers: number;
+    totalRevenue: number;
+  };
+}
+
+export interface ClerkOrgMember {
+  id: string;
+  role: string;
+  createdAt: number;
+  publicUserData: {
+    userId: string;
+    firstName: string | null;
+    lastName: string | null;
+    identifier: string;
+    imageUrl: string;
+  };
+}
+
+export interface ClerkOrgInvitation {
+  id: string;
+  emailAddress: string;
+  role: string;
+  status: string;
+  createdAt: number;
+}

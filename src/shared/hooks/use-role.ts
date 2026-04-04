@@ -1,12 +1,29 @@
-import { useOrganization } from "@clerk/clerk-react";
+import { useOrganization, useUser } from "@clerk/clerk-react";
 
-export function useRole(): { role: string | null; isAdmin: boolean; isLoaded: boolean } {
-  const { membership, isLoaded } = useOrganization();
-  const role = membership?.role ?? null;
+export type OrgRole = "org:admin" | "org:staff" | "org:member" | null;
+
+export interface RoleState {
+  role: OrgRole;
+  isAdmin: boolean;    // org:admin — gym owner, full access
+  isStaff: boolean;    // org:staff — receptionist, limited access
+  isMember: boolean;   // org:member — gym customer (future member portal)
+  isSuperAdmin: boolean; // platform owner (you), set via Clerk publicMetadata
+  isLoaded: boolean;
+}
+
+export function useRole(): RoleState {
+  const { membership, isLoaded: orgLoaded } = useOrganization();
+  const { user, isLoaded: userLoaded } = useUser();
+
+  const role = (membership?.role ?? null) as OrgRole;
+  const isSuperAdmin = user?.publicMetadata?.role === "super_admin";
+
   return {
     role,
-    // Clerk's default admin role key is "org:admin"
     isAdmin: role === "org:admin",
-    isLoaded,
+    isStaff: role === "org:staff",
+    isMember: role === "org:member",
+    isSuperAdmin,
+    isLoaded: orgLoaded && userLoaded,
   };
 }

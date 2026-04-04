@@ -1,6 +1,8 @@
 import type { RouteObject } from "react-router-dom";
-import { ProtectedRoute, AdminRoute } from "./route-guards";
+import { ProtectedRoute, AdminRoute, StaffRoute, SuperAdminRoute } from "./route-guards";
 import { DashboardLayout } from "../layouts/dashboard-layout";
+import { PlatformLayout } from "../layouts/platform-layout";
+import { PlatformPage, OrgDetailPage } from "@/features/platform";
 import { RouteErrorBoundary } from "@/shared/components/route-error-boundary";
 import { DashboardPage } from "@/features/dashboard/pages/dashboard-page";
 import { ReceptionPage } from "@/features/dashboard/pages/reception-page";
@@ -25,6 +27,27 @@ import { InboxPage } from "@/features/inbox/pages/inbox-page";
 import { OffersPage } from "@/features/offers";
 
 export const protectedRoutes: RouteObject[] = [
+  // ── Super admin platform ─────────────────────────────────────────────────
+  {
+    element: <ProtectedRoute />,
+    children: [
+      {
+        element: <SuperAdminRoute />,
+        children: [
+          {
+            element: <PlatformLayout />,
+            errorElement: <RouteErrorBoundary />,
+            children: [
+              { path: "/platform", element: <PlatformPage /> },
+              { path: "/platform/orgs/:id", element: <OrgDetailPage /> },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  // ── Gym dashboard ────────────────────────────────────────────────────────
   {
     element: <ProtectedRoute />,
     children: [
@@ -32,35 +55,41 @@ export const protectedRoutes: RouteObject[] = [
         element: <DashboardLayout />,
         errorElement: <RouteErrorBoundary />,
         children: [
-          // ── Staff-accessible routes ──────────────────────────────────
+          // ── Staff-accessible routes (org:admin + org:staff) ─────────
+          // Blocked for future org:member (gym customers)
           {
-            path: "/reception",
-            element: <ReceptionPage />,
-          },
-          {
-            path: "/attendance",
-            element: <AttendancePage />,
-          },
-          {
-            path: "/profile",
-            element: <ProfilePage />,
-          },
-          // Member detail is readable by staff (read-only, edit/delete hidden)
-          {
-            path: "/members/:id",
-            element: <MemberDetailPage />,
-          },
-          // Membership & training detail readable by staff (for the expiring links)
-          {
-            path: "/memberships/:id",
-            element: <MembershipDetailPage />,
-          },
-          {
-            path: "/trainings/:id",
-            element: <TrainingDetailPage />,
+            element: <StaffRoute />,
+            children: [
+              {
+                path: "/reception",
+                element: <ReceptionPage />,
+              },
+              {
+                path: "/attendance",
+                element: <AttendancePage />,
+              },
+              {
+                path: "/profile",
+                element: <ProfilePage />,
+              },
+              // Member detail: readable by staff (edit/delete hidden via isAdmin check)
+              {
+                path: "/members/:id",
+                element: <MemberDetailPage />,
+              },
+              // Membership & training detail: readable by staff (for expiring-soon links)
+              {
+                path: "/memberships/:id",
+                element: <MembershipDetailPage />,
+              },
+              {
+                path: "/trainings/:id",
+                element: <TrainingDetailPage />,
+              },
+            ],
           },
 
-          // ── Admin-only routes ────────────────────────────────────────
+          // ── Admin-only routes (org:admin) ────────────────────────────
           {
             element: <AdminRoute />,
             children: [
