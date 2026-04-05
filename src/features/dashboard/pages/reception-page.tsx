@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import {
-  AlertTriangle,
   CalendarDays,
   UserX,
   IndianRupee,
@@ -16,6 +15,8 @@ import {
 import { Badge } from "@/shared/components/ui/badge";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { PageHeader } from "@/shared/components/page-header";
+import { ExpiringItem } from "@/shared/components/expiring-item";
+import { EmptyState } from "@/shared/components/empty-state";
 import {
   useExpiringMemberships,
 } from "@/features/memberships/hooks/use-memberships";
@@ -29,68 +30,6 @@ import {
 import { formatCurrency, daysUntil } from "@/shared/lib/utils";
 import type { Membership, Training } from "@/shared/types/common.types";
 
-function ExpiringItem({
-  name,
-  plan,
-  endDate,
-  type,
-  onClick,
-}: {
-  name: string;
-  plan: string;
-  endDate: string;
-  type: "membership" | "training";
-  onClick: () => void;
-}) {
-  const days = daysUntil(endDate);
-  const urgent = days <= 2;
-
-  return (
-    <div
-      className="flex items-center justify-between py-3 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors"
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3 min-w-0">
-        <div
-          className={`rounded-full p-1.5 shrink-0 ${
-            urgent
-              ? "bg-red-100 dark:bg-red-950/50"
-              : "bg-amber-100 dark:bg-amber-950/50"
-          }`}
-        >
-          <AlertTriangle
-            className={`h-3.5 w-3.5 ${
-              urgent
-                ? "text-red-600 dark:text-red-400"
-                : "text-amber-600 dark:text-amber-400"
-            }`}
-          />
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-medium truncate">{name}</p>
-          <p className="text-xs text-muted-foreground truncate">{plan}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 shrink-0 ml-2">
-        <Badge
-          variant={type === "membership" ? "default" : "secondary"}
-          className="text-[10px] px-1.5 hidden sm:inline-flex"
-        >
-          {type === "membership" ? "Membership" : "Training"}
-        </Badge>
-        <span
-          className={`text-xs font-medium whitespace-nowrap ${
-            urgent
-              ? "text-red-600 dark:text-red-400"
-              : "text-amber-600 dark:text-amber-400"
-          }`}
-        >
-          {days <= 0 ? "Today" : days === 1 ? "Tomorrow" : `${days} days`}
-        </span>
-      </div>
-    </div>
-  );
-}
 
 export function ReceptionPage() {
   const { user } = useUser();
@@ -154,9 +93,7 @@ export function ReceptionPage() {
           </CardHeader>
           <CardContent>
             {expiringItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
-                No memberships or trainings expiring in the next 7 days.
-              </p>
+              <EmptyState message="No memberships or trainings expiring in the next 7 days." />
             ) : (
               <div className="divide-y">
                 {expiringItems.slice(0, 10).map((item) => (
@@ -187,9 +124,7 @@ export function ReceptionPage() {
           </CardHeader>
           <CardContent>
             {inactiveSubMembers.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
-                All active members have a membership.
-              </p>
+              <EmptyState message="All active members have a membership." />
             ) : (
               <div className="divide-y">
                 {inactiveSubMembers.map((member) => {
@@ -252,9 +187,7 @@ export function ReceptionPage() {
               ))}
             </div>
           ) : duesMembers.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">
-              No outstanding dues. All payments are up to date!
-            </p>
+            <EmptyState message="No outstanding dues. All payments are up to date!" />
           ) : (
             <>
               {/* Desktop Table */}

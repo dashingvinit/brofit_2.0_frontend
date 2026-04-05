@@ -7,7 +7,6 @@ import {
   Dumbbell,
   IndianRupee,
   TrendingUp,
-  AlertTriangle,
   ArrowRight,
   CalendarDays,
   UserX,
@@ -43,173 +42,12 @@ import {
 } from "@/features/attendance/hooks/use-attendance";
 import { ROUTES } from "@/shared/lib/constants";
 import { formatCurrency, daysUntil } from "@/shared/lib/utils";
+import { StatCard } from "@/shared/components/stat-card";
+import { ExpiringItem } from "@/shared/components/expiring-item";
+import { EmptyState } from "@/shared/components/empty-state";
 import type { Membership, Training } from "@/shared/types/common.types";
 
-function StatCard({
-  label,
-  shortLabel,
-  value,
-  subtext,
-  icon: Icon,
-  colorClass,
-  bgClass,
-  isLoading,
-  isCurrency,
-}: {
-  label: string;
-  shortLabel: string;
-  value: number | undefined;
-  subtext?: string;
-  icon: typeof Users;
-  colorClass: string;
-  bgClass: string;
-  isLoading: boolean;
-  isCurrency?: boolean;
-}) {
-  if (isLoading) {
-    return (
-      <Card className="overflow-hidden">
-        <div className="p-3 lg:hidden">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
-            <div className="space-y-1.5 flex-1">
-              <Skeleton className="h-3 w-14" />
-              <Skeleton className="h-5 w-10" />
-            </div>
-          </div>
-        </div>
-        <div className="hidden lg:block">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-8 rounded-lg" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-8 w-20 mb-1" />
-            <Skeleton className="h-3 w-16" />
-          </CardContent>
-        </div>
-      </Card>
-    );
-  }
 
-  return (
-    <Card className="overflow-hidden transition-shadow hover:shadow-md">
-      {/* Compact layout on mobile */}
-      <div className="p-3 lg:hidden">
-        <div className="flex items-center gap-2.5">
-          <div className={`rounded-lg p-2 shrink-0 ${bgClass}`}>
-            <Icon className={`h-4 w-4 ${colorClass}`} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-medium text-muted-foreground leading-tight truncate">
-              {shortLabel}
-            </p>
-            <p className="text-lg font-bold leading-tight tracking-tight">
-              {isCurrency ? (
-                <span className="inline-flex items-center">
-                  <IndianRupee className="h-3.5 w-3.5" />
-                  {formatCurrency(value ?? 0)}
-                </span>
-              ) : (
-                (value ?? 0)
-              )}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Full layout on desktop */}
-      <div className="hidden lg:block">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            {label}
-          </CardTitle>
-          <div className={`rounded-lg p-2 ${bgClass}`}>
-            <Icon className={`h-4 w-4 ${colorClass}`} />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold tracking-tight">
-            {isCurrency ? (
-              <span className="inline-flex items-center">
-                <IndianRupee className="h-5 w-5" />
-                {formatCurrency(value ?? 0)}
-              </span>
-            ) : (
-              (value ?? 0)
-            )}
-          </div>
-          {subtext && (
-            <p className="text-xs text-muted-foreground mt-1">{subtext}</p>
-          )}
-        </CardContent>
-      </div>
-    </Card>
-  );
-}
-
-function ExpiringItem({
-  name,
-  plan,
-  endDate,
-  type,
-  onClick,
-}: {
-  name: string;
-  plan: string;
-  endDate: string;
-  type: "membership" | "training";
-  onClick: () => void;
-}) {
-  const days = daysUntil(endDate);
-  const urgent = days <= 2;
-
-  return (
-    <div
-      className="flex items-center justify-between py-3 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors"
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3 min-w-0">
-        <div
-          className={`rounded-full p-1.5 shrink-0 ${
-            urgent
-              ? "bg-red-100 dark:bg-red-950/50"
-              : "bg-amber-100 dark:bg-amber-950/50"
-          }`}
-        >
-          <AlertTriangle
-            className={`h-3.5 w-3.5 ${
-              urgent
-                ? "text-red-600 dark:text-red-400"
-                : "text-amber-600 dark:text-amber-400"
-            }`}
-          />
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-medium truncate">{name}</p>
-          <p className="text-xs text-muted-foreground truncate">{plan}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 shrink-0 ml-2">
-        <Badge
-          variant={type === "membership" ? "default" : "secondary"}
-          className="text-[10px] px-1.5 hidden sm:inline-flex"
-        >
-          {type === "membership" ? "Membership" : "Training"}
-        </Badge>
-        <span
-          className={`text-xs font-medium whitespace-nowrap ${
-            urgent
-              ? "text-red-600 dark:text-red-400"
-              : "text-amber-600 dark:text-amber-400"
-          }`}
-        >
-          {days <= 0 ? "Today" : days === 1 ? "Tomorrow" : `${days} days`}
-        </span>
-      </div>
-    </div>
-  );
-}
 
 export function DashboardPage() {
   const { user } = useUser();
@@ -322,6 +160,7 @@ export function DashboardPage() {
           colorClass="text-blue-600 dark:text-blue-400"
           bgClass="bg-blue-50 dark:bg-blue-950/50"
           isLoading={isLoadingMembers}
+          animationDelay={0}
         />
         <StatCard
           label="Active Memberships"
@@ -336,6 +175,7 @@ export function DashboardPage() {
           colorClass="text-emerald-600 dark:text-emerald-400"
           bgClass="bg-emerald-50 dark:bg-emerald-950/50"
           isLoading={isLoadingMemberships}
+          animationDelay={75}
         />
         <StatCard
           label="Active Trainings"
@@ -350,6 +190,7 @@ export function DashboardPage() {
           colorClass="text-violet-600 dark:text-violet-400"
           bgClass="bg-violet-50 dark:bg-violet-950/50"
           isLoading={isLoadingTrainings}
+          animationDelay={150}
         />
         <StatCard
           label="Total Revenue"
@@ -365,6 +206,7 @@ export function DashboardPage() {
           bgClass="bg-amber-50 dark:bg-amber-950/50"
           isLoading={isLoadingMemberships || isLoadingTrainings}
           isCurrency
+          animationDelay={225}
         />
       </div>
 
@@ -432,9 +274,7 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent>
             {expiringItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
-                No memberships or trainings expiring in the next 7 days.
-              </p>
+              <EmptyState message="No memberships or trainings expiring in the next 7 days." />
             ) : (
               <div className="divide-y">
                 {expiringItems.slice(0, 10).map((item) => (
@@ -465,9 +305,7 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent>
             {inactiveSubMembers.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
-                All active members have a membership.
-              </p>
+              <EmptyState message="All active members have a membership." />
             ) : (
               <div className="divide-y">
                 {inactiveSubMembers.map((member) => {
@@ -541,7 +379,7 @@ export function DashboardPage() {
                   </span>
                   <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Inside Now</p>
                 </div>
-                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{insideCount}</p>
+                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 font-display">{insideCount}</p>
               </div>
               {/* Total Today */}
               <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 p-3 text-center">
@@ -549,7 +387,7 @@ export function DashboardPage() {
                   <LogIn className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                   <p className="text-xs text-blue-700 dark:text-blue-400 font-medium">Total Today</p>
                 </div>
-                <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{todayTotal}</p>
+                <p className="text-2xl font-bold text-blue-700 dark:text-blue-400 font-display">{todayTotal}</p>
               </div>
               {/* Recent check-ins */}
               {currentlyInside.length > 0 && (
@@ -615,9 +453,7 @@ export function DashboardPage() {
               ))}
             </div>
           ) : duesMembers.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">
-              No outstanding dues. All payments are up to date!
-            </p>
+            <EmptyState message="No outstanding dues. All payments are up to date!" />
           ) : (
             <>
               {/* Desktop Table */}

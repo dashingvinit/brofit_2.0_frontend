@@ -113,7 +113,7 @@ function MonthlySummaryStrip({ month }: { month: string }) {
       <Card>
         <CardContent className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-1">Revenue</p>
-          <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center">
+          <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center font-display">
             <IndianRupee className="h-4 w-4 mr-0.5" />
             {formatCurrency(summary.revenue)}
           </p>
@@ -122,7 +122,7 @@ function MonthlySummaryStrip({ month }: { month: string }) {
       <Card>
         <CardContent className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-1">Expenses</p>
-          <p className="text-lg font-bold text-red-600 dark:text-red-400 inline-flex items-center">
+          <p className="text-lg font-bold text-red-600 dark:text-red-400 inline-flex items-center font-display">
             <IndianRupee className="h-4 w-4 mr-0.5" />
             {formatCurrency(summary.expenses)}
           </p>
@@ -132,7 +132,7 @@ function MonthlySummaryStrip({ month }: { month: string }) {
         <CardContent className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-1">Net Profit</p>
           <p
-            className={`text-lg font-bold inline-flex items-center ${
+            className={`text-lg font-bold inline-flex items-center font-display ${
               summary.netProfit >= 0
                 ? 'text-emerald-600 dark:text-emerald-400'
                 : 'text-red-600 dark:text-red-400'
@@ -248,6 +248,7 @@ function ExpensesSection({ month }: { month: string }) {
                             size="icon"
                             className="h-7 w-7"
                             onClick={() => openEdit(expense)}
+                            aria-label="Edit expense"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
@@ -256,6 +257,7 @@ function ExpensesSection({ month }: { month: string }) {
                             size="icon"
                             className="h-7 w-7 text-destructive hover:text-destructive"
                             onClick={() => setDeleteTarget(expense.id)}
+                            aria-label="Delete expense"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>

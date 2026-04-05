@@ -37,6 +37,7 @@ import {
 } from "@/shared/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 import { PageHeader } from "@/shared/components/page-header";
+import { EmptyState } from "@/shared/components/empty-state";
 import { formatCurrency } from "@/shared/lib/utils";
 import { ROUTES } from "@/shared/lib/constants";
 import { useOrg, useOrgMembers, useOrgInvitations, useSetOrgStatus, useDeleteOrg } from "../hooks/use-platform";
@@ -90,7 +91,7 @@ function MembersTable({ members, isLoading }: { members: ClerkOrgMember[] | unde
     );
   }
   if (!members?.length) {
-    return <p className="text-sm text-muted-foreground py-4 text-center">No members yet</p>;
+    return <EmptyState message="No members yet" className="py-4" />;
   }
   return (
     <Table>
@@ -142,7 +143,7 @@ function InvitationsTable({ invitations, isLoading }: { invitations: ClerkOrgInv
   }
   const pending = invitations?.filter((i) => i.status === "pending") ?? [];
   if (!pending.length) {
-    return <p className="text-sm text-muted-foreground py-4 text-center">No pending invitations</p>;
+    return <EmptyState message="No pending invitations" className="py-4" />;
   }
   return (
     <Table>

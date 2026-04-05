@@ -324,7 +324,7 @@ export function TrainingsPage() {
                             <p className="text-[11px] font-medium text-muted-foreground leading-tight truncate">
                               {shortLabel}
                             </p>
-                            <p className="text-lg font-bold leading-tight tracking-tight">
+                            <p className="text-lg font-bold leading-tight tracking-tight font-display">
                               {value}
                             </p>
                           </div>
@@ -340,7 +340,7 @@ export function TrainingsPage() {
                           </div>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-bold tracking-tight">
+                          <div className="text-2xl font-bold tracking-tight font-display">
                             {value}
                           </div>
                           {percentage !== null && (

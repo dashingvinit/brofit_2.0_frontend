@@ -37,6 +37,7 @@ import {
   TableRow,
 } from '@/shared/components/ui/table';
 import { PageHeader } from '@/shared/components/page-header';
+import { EmptyState } from '@/shared/components/empty-state';
 import {
   useRetention,
   useRevenueBreakdown,
@@ -161,7 +162,7 @@ function AnalyticsStatCards() {
                 <p className="text-[11px] font-medium text-muted-foreground leading-tight truncate">
                   {shortLabel}
                 </p>
-                <p className="text-base font-bold leading-tight tracking-tight truncate">
+                <p className="text-base font-bold leading-tight tracking-tight truncate font-display">
                   {value}
                 </p>
               </div>
@@ -176,7 +177,7 @@ function AnalyticsStatCards() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold tracking-tight">{value}</div>
+              <div className="text-2xl font-bold tracking-tight font-display">{value}</div>
             </CardContent>
           </div>
         </Card>
@@ -374,7 +375,7 @@ function TopPlansCard() {
             ))}
           </div>
         ) : plans.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">No plan data yet</p>
+          <EmptyState message="No plan data yet" />
         ) : (
           <div className="space-y-3">
             {plans.map((plan, rank) => {
@@ -558,7 +559,7 @@ function PaymentMethodsCard() {
             ))}
           </div>
         ) : methods.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">No payment data yet</p>
+          <EmptyState message="No payment data yet" />
         ) : (
           <div className="space-y-4">
             {methods.map((m) => (
@@ -734,7 +735,7 @@ function DemographicsCard() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-6">No data yet</p>
+            <EmptyState message="No data yet" />
           )}
         </CardContent>
       </Card>
@@ -775,7 +776,7 @@ function DemographicsCard() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-6">No data yet</p>
+            <EmptyState message="No data yet" />
           )}
         </CardContent>
       </Card>

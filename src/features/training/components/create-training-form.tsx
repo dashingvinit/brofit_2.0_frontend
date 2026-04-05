@@ -557,9 +557,11 @@ export function CreateTrainingForm({
                   id="startDate"
                   type="date"
                   {...form.register('startDate')}
+                  aria-invalid={!!form.formState.errors.startDate}
+                  aria-describedby={form.formState.errors.startDate ? "startDate-error" : undefined}
                 />
                 {form.formState.errors.startDate && (
-                  <p className="text-sm text-destructive">
+                  <p id="startDate-error" className="text-sm text-destructive">
                     {form.formState.errors.startDate.message}
                   </p>
                 )}
@@ -776,10 +778,12 @@ export function CreateTrainingForm({
                         className="pl-9"
                         defaultValue={finalPrice}
                         {...form.register('paymentAmount')}
+                        aria-invalid={!!form.formState.errors.paymentAmount}
+                        aria-describedby={form.formState.errors.paymentAmount ? "paymentAmount-error" : undefined}
                       />
                     </div>
                     {form.formState.errors.paymentAmount && (
-                      <p className="text-sm text-destructive">
+                      <p id="paymentAmount-error" className="text-sm text-destructive">
                         {form.formState.errors.paymentAmount.message}
                       </p>
                     )}

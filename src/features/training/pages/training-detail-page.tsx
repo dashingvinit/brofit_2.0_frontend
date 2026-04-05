@@ -224,7 +224,7 @@ export function TrainingDetailPage() {
             {(isEditable || canDelete) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon">
+                  <Button variant="outline" size="icon" aria-label="More options">
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -568,6 +568,7 @@ export function TrainingDetailPage() {
                               size="icon"
                               className="h-7 w-7 text-muted-foreground hover:text-destructive"
                               onClick={() => setDeletePaymentId(payment.id)}
+                              aria-label="Delete payment"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>

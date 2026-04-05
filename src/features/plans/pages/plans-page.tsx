@@ -20,6 +20,7 @@ import { Input } from '@/shared/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { PageHeader } from '@/shared/components/page-header';
+import { EmptyState } from '@/shared/components/empty-state';
 import { LoadingSpinner } from '@/shared/components/loading-spinner';
 import { Separator } from '@/shared/components/ui/separator';
 import {
@@ -310,7 +311,7 @@ const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Plan options">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -371,9 +372,7 @@ const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        No pricing variants yet
-                      </p>
+                      <EmptyState message="No pricing variants yet" className="py-4" />
                     )}
                   </div>
 

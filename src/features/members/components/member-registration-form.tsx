@@ -97,9 +97,11 @@ export function MemberRegistrationForm({
             id="firstName"
             {...form.register("firstName")}
             placeholder="John"
+            aria-invalid={!!form.formState.errors.firstName}
+            aria-describedby={form.formState.errors.firstName ? "firstName-error" : undefined}
           />
           {form.formState.errors.firstName && (
-            <p className="text-sm text-destructive">
+            <p id="firstName-error" className="text-sm text-destructive">
               {form.formState.errors.firstName.message}
             </p>
           )}
@@ -111,9 +113,11 @@ export function MemberRegistrationForm({
             id="lastName"
             {...form.register("lastName")}
             placeholder="Doe"
+            aria-invalid={!!form.formState.errors.lastName}
+            aria-describedby={form.formState.errors.lastName ? "lastName-error" : undefined}
           />
           {form.formState.errors.lastName && (
-            <p className="text-sm text-destructive">
+            <p id="lastName-error" className="text-sm text-destructive">
               {form.formState.errors.lastName.message}
             </p>
           )}
@@ -143,9 +147,11 @@ export function MemberRegistrationForm({
           type="tel"
           {...form.register("phone")}
           placeholder="+1 (555) 123-4567"
+          aria-invalid={!!form.formState.errors.phone}
+          aria-describedby={form.formState.errors.phone ? "phone-error" : undefined}
         />
         {form.formState.errors.phone && (
-          <p className="text-sm text-destructive">
+          <p id="phone-error" className="text-sm text-destructive">
             {form.formState.errors.phone.message}
           </p>
         )}
@@ -159,9 +165,11 @@ export function MemberRegistrationForm({
             type="date"
             {...form.register("dateOfBirth")}
             max={new Date().toISOString().split("T")[0]}
+            aria-invalid={!!form.formState.errors.dateOfBirth}
+            aria-describedby={form.formState.errors.dateOfBirth ? "dateOfBirth-error" : undefined}
           />
           {form.formState.errors.dateOfBirth && (
-            <p className="text-sm text-destructive">
+            <p id="dateOfBirth-error" className="text-sm text-destructive">
               {form.formState.errors.dateOfBirth.message}
             </p>
           )}
@@ -195,9 +203,15 @@ export function MemberRegistrationForm({
 
       <div className="space-y-2">
         <Label htmlFor="joinDate">Join Date *</Label>
-        <Input id="joinDate" type="date" {...form.register("joinDate")} />
+        <Input
+          id="joinDate"
+          type="date"
+          {...form.register("joinDate")}
+          aria-invalid={!!form.formState.errors.joinDate}
+          aria-describedby={form.formState.errors.joinDate ? "joinDate-error" : undefined}
+        />
         {form.formState.errors.joinDate && (
-          <p className="text-sm text-destructive">
+          <p id="joinDate-error" className="text-sm text-destructive">
             {form.formState.errors.joinDate.message}
           </p>
         )}

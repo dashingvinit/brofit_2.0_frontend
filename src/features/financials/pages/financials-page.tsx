@@ -164,7 +164,7 @@ function RoiCard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold tracking-tight">{value}</div>
+              <div className="text-2xl font-bold tracking-tight font-display">{value}</div>
             </CardContent>
           </div>
         </Card>
@@ -340,6 +340,7 @@ function InvestmentsSection() {
                             size="icon"
                             className="h-7 w-7"
                             onClick={() => openEdit(inv)}
+                            aria-label="Edit investment"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
@@ -348,6 +349,7 @@ function InvestmentsSection() {
                             size="icon"
                             className="h-7 w-7 text-destructive hover:text-destructive"
                             onClick={() => setDeleteTarget(inv.id)}
+                            aria-label="Delete investment"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>

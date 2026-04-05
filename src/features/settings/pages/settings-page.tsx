@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { PageHeader } from "@/shared/components/page-header";
+import { EmptyState } from "@/shared/components/empty-state";
 import {
   useNotificationSettings,
   useUpdateNotificationSettings,
@@ -261,7 +262,7 @@ export function SettingsPage() {
                 <span className="text-sm text-muted-foreground">Loading staff…</span>
               </div>
             ) : !staffList || staffList.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-2">No staff members in this organization.</p>
+              <EmptyState message="No staff members in this organization." className="py-2 text-left" />
             ) : (
               <div className="space-y-2">
                 {staffList.map((member) => {

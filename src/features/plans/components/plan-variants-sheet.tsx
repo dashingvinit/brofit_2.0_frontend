@@ -157,6 +157,7 @@ if (!planType) return null;
                   size="icon"
                   onClick={handleCancelForm}
                   className="h-8 w-8"
+                  aria-label="Back to list"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
@@ -210,6 +211,7 @@ if (!planType) return null;
                               variant="ghost"
                               size="icon"
                               onClick={() => handleEdit(variant)}
+                              aria-label="Edit variant"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -219,6 +221,7 @@ if (!planType) return null;
                               onClick={() => deleteMutation.mutate(variant)}
                               className="text-destructive hover:text-destructive"
                               disabled={deleteMutation.isPending}
+                              aria-label="Delete variant"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
