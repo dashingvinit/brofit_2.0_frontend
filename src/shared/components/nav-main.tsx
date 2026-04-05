@@ -1,9 +1,11 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight, type LucideIcon } from "lucide-react";
-import { cn } from "@/shared/lib/utils";
 import {
-  SidebarGroup,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/shared/components/ui/collapsible";
+import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -12,64 +14,62 @@ import {
   SidebarMenuSubItem,
 } from "@/shared/components/ui/sidebar";
 
+type NavSubItem = {
+  name: string;
+  href: string;
+  icon?: LucideIcon;
+  isActive?: boolean;
+};
+
 type NavGroup = {
   label: string;
   icon: LucideIcon;
-  items: { name: string; href: string; isActive?: boolean }[];
+  defaultOpen?: boolean;
+  items: NavSubItem[];
 };
 
 export function NavMain({ groups }: { groups: NavGroup[] }) {
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(groups.map((g) => [g.label, g.items.some((i) => i.isActive)]))
-  );
-
-  const toggle = (label: string) =>
-    setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
-
   return (
-    <>
+    <SidebarMenu>
       {groups.map((group) => {
         const Icon = group.icon;
-        const isOpen = openGroups[group.label];
         const hasActiveChild = group.items.some((i) => i.isActive);
 
         return (
-          <SidebarGroup key={group.label}>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  tooltip={group.label}
-                  isActive={hasActiveChild}
-                  onClick={() => toggle(group.label)}
-                >
+          <Collapsible
+            key={group.label}
+            defaultOpen={group.defaultOpen ?? hasActiveChild}
+            className="group/navgroup"
+          >
+            <SidebarMenuItem>
+              <CollapsibleTrigger asChild>
+                <SidebarMenuButton isActive={hasActiveChild} tooltip={group.label}>
                   <Icon />
                   <span>{group.label}</span>
-                  <ChevronRight
-                    className={cn(
-                      "ml-auto size-4 transition-transform duration-200",
-                      isOpen && "rotate-90"
-                    )}
-                  />
+                  <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/navgroup:rotate-90" />
                 </SidebarMenuButton>
-
-                {isOpen && (
-                  <SidebarMenuSub>
-                    {group.items.map((item) => (
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarMenuSub>
+                  {group.items.map((item) => {
+                    const SubIcon = item.icon;
+                    return (
                       <SidebarMenuSubItem key={item.name}>
                         <SidebarMenuSubButton asChild isActive={item.isActive}>
                           <Link to={item.href}>
+                            {SubIcon && <SubIcon className="size-3" />}
                             <span>{item.name}</span>
                           </Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
-                    ))}
-                  </SidebarMenuSub>
-                )}
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
+                    );
+                  })}
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            </SidebarMenuItem>
+          </Collapsible>
         );
       })}
-    </>
+    </SidebarMenu>
   );
 }

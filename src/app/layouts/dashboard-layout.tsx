@@ -19,6 +19,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -30,28 +31,18 @@ import {
 import { Separator } from "@/shared/components/ui/separator";
 import { ThemeToggle } from "@/shared/components/theme-toggle";
 import { NavFlat } from "@/shared/components/nav-flat";
+import { NavMain } from "@/shared/components/nav-main";
 import { ViewSwitcher } from "@/shared/components/view-switcher";
 import { ROUTES } from "@/shared/lib/constants";
 import { useRole } from "@/shared/hooks/use-role";
 import { useView } from "@/shared/hooks/use-view";
 import { useStaffPermissions } from "@/features/settings/hooks/use-staff-permissions";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/shared/components/ui/collapsible";
-import {
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
-} from "@/shared/components/ui/sidebar";
-import {
   LayoutDashboard,
   Users,
   User,
   LogOut,
   ChevronUp,
-  ChevronRight,
   TrendingUp,
   BarChart2,
   ScanLine,
@@ -163,55 +154,28 @@ export function DashboardLayout() {
                 <NavFlat items={adminPeopleItems} label="People" />
                 <NavFlat items={adminOperationsItems} label="Operations" />
                 <NavFlat items={adminBusinessItems} label="Business" />
-                <NavFlat items={[{ name: "Inbox", href: ROUTES.INBOX, icon: Inbox, isActive: isActive(ROUTES.INBOX) }]} label="System" />
                 <SidebarGroup>
-                  <SidebarMenu>
-                    <Collapsible
-                      defaultOpen={location.pathname.startsWith(ROUTES.SETTINGS)}
-                      className="group/settings"
-                    >
-                      <SidebarMenuItem>
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuButton
-                            isActive={location.pathname.startsWith(ROUTES.SETTINGS)}
-                            tooltip="Settings"
-                          >
-                            <Settings />
-                            <span>Settings</span>
-                            <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/settings:rotate-90" />
-                          </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <SidebarMenuSub>
-                            <SidebarMenuSubItem>
-                              <SidebarMenuSubButton asChild isActive={isActive(ROUTES.SETTINGS_STAFF)}>
-                                <Link to={ROUTES.SETTINGS_STAFF}>
-                                  <Users className="size-3" />
-                                  <span>Staff Access</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                            <SidebarMenuSubItem>
-                              <SidebarMenuSubButton asChild isActive={isActive(ROUTES.SETTINGS_WHATSAPP)}>
-                                <Link to={ROUTES.SETTINGS_WHATSAPP}>
-                                  <MessageCircle className="size-3" />
-                                  <span>WhatsApp</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                            <SidebarMenuSubItem>
-                              <SidebarMenuSubButton asChild isActive={isActive(ROUTES.SETTINGS_BROADCAST)}>
-                                <Link to={ROUTES.SETTINGS_BROADCAST}>
-                                  <Radio className="size-3" />
-                                  <span>Broadcast</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
-                      </SidebarMenuItem>
-                    </Collapsible>
-                  </SidebarMenu>
+                  <SidebarGroupLabel>System</SidebarGroupLabel>
+                  <NavMain groups={[
+                    {
+                      label: "Settings",
+                      icon: Settings,
+                      defaultOpen: location.pathname.startsWith(ROUTES.SETTINGS),
+                      items: [
+                        { name: "Staff Access", href: ROUTES.SETTINGS_STAFF, icon: Users, isActive: isActive(ROUTES.SETTINGS_STAFF) },
+                        { name: "WhatsApp", href: ROUTES.SETTINGS_WHATSAPP, icon: MessageCircle, isActive: isActive(ROUTES.SETTINGS_WHATSAPP) },
+                        { name: "Broadcast", href: ROUTES.SETTINGS_BROADCAST, icon: Radio, isActive: isActive(ROUTES.SETTINGS_BROADCAST) },
+                      ],
+                    },
+                  ]} />
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive(ROUTES.INBOX)} tooltip="Inbox">
+                      <Link to={ROUTES.INBOX}>
+                        <Inbox />
+                        <span>Inbox</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarGroup>
               </>
             ) : (
