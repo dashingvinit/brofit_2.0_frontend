@@ -2,36 +2,18 @@ import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import {
-  CalendarDays,
-  CreditCard,
-  IndianRupee,
-  User,
-  Dumbbell,
-  ChevronRight,
-  ChevronLeft,
-  Check,
-  Loader2,
-  AlertTriangle,
-} from 'lucide-react';
+import { CalendarDays, CreditCard, Dumbbell, User, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
-import { Input } from '@/shared/components/ui/input';
-import { Label } from '@/shared/components/ui/label';
-import { Textarea } from '@/shared/components/ui/textarea';
-import { Checkbox } from '@/shared/components/ui/checkbox';
-import { Card, CardContent } from '@/shared/components/ui/card';
-import { Badge } from '@/shared/components/ui/badge';
 import { Separator } from '@/shared/components/ui/separator';
-import { Switch } from '@/shared/components/ui/switch';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select';
+import { FormStepIndicator } from '@/shared/components/form-step-indicator';
+import { MemberPicker } from '@/shared/components/member-picker';
+import { PlanTypePicker } from '@/shared/components/plan-type-picker';
+import { PlanVariantPicker } from '@/shared/components/plan-variant-picker';
+import { MembershipDetailsStep } from './membership-details-step';
+import { TrainingStep } from './training-step';
+import { MembershipPaymentStep } from './membership-payment-step';
 import { useMembers } from '@/features/members/hooks/use-members';
-import { usePlanTypes, usePlanTypesByCategory } from '@/features/plans/hooks/use-plan-types';
+import { usePlanTypesByCategory } from '@/features/plans/hooks/use-plan-types';
 import { usePlanVariantsByType } from '@/features/plans/hooks/use-plan-variants';
 import { useCreateMembership, useActiveMembership } from '../hooks/use-memberships';
 import { useCreateTraining } from '@/features/training/hooks/use-training';
@@ -55,7 +37,6 @@ const createMembershipSchema = z
     paymentReference: z.string().optional(),
     paymentNotes: z.string().optional(),
     paymentDate: z.string().optional(),
-    // Training fields
     addTraining: z.boolean().default(false),
     trainingPlanTypeId: z.string().optional(),
     trainingPlanVariantId: z.string().optional(),
@@ -70,10 +51,7 @@ const createMembershipSchema = z
       }
       return true;
     },
-    {
-      message: 'Payment amount and method are required when collecting payment',
-      path: ['paymentAmount'],
-    }
+    { message: 'Payment amount and method are required when collecting payment', path: ['paymentAmount'] }
   )
   .refine(
     (data) => {
@@ -82,10 +60,7 @@ const createMembershipSchema = z
       }
       return true;
     },
-    {
-      message: 'Training plan, variant, and trainer are required',
-      path: ['trainerId'],
-    }
+    { message: 'Training plan, variant, and trainer are required', path: ['trainerId'] }
   );
 
 type CreateMembershipFormData = z.infer<typeof createMembershipSchema>;
@@ -105,19 +80,7 @@ const BASE_STEPS = [
 
 const TRAINING_STEP = { id: 'training' as const, label: 'Training', icon: Dumbbell };
 
-const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'card', label: 'Card' },
-  { value: 'upi', label: 'UPI' },
-  { value: 'bank_transfer', label: 'Bank Transfer' },
-  { value: 'other', label: 'Other' },
-];
-
-export function CreateMembershipForm({
-  onSuccess,
-  onCancel,
-  preselectedMemberId,
-}: CreateMembershipFormProps) {
+export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId }: CreateMembershipFormProps) {
   const [currentStep, setCurrentStep] = useState(preselectedMemberId ? 1 : 0);
   const [memberSearch, setMemberSearch] = useState('');
   const [discountPercentage, setDiscountPercentage] = useState<number | ''>('');
@@ -127,11 +90,13 @@ export function CreateMembershipForm({
   const { data: planTypes, isLoading: planTypesLoading } = usePlanTypesByCategory('membership');
   const { data: trainingPlanTypes, isLoading: trainingPlanTypesLoading } = usePlanTypesByCategory('training');
   const { data: activeOffers } = useOffers(undefined, true);
-  const discountOffers = (activeOffers ?? []).filter((o) => o.type === 'discount' || o.type === 'promo');
   const { data: trainersResponse, isLoading: trainersLoading } = useTrainers();
-  const trainers = trainersResponse?.data ?? [];
   const createMembership = useCreateMembership();
   const createTraining = useCreateTraining();
+
+  const discountOffers = (activeOffers ?? []).filter((o) => o.type === 'discount' || o.type === 'promo');
+  const trainers = trainersResponse?.data ?? [];
+  const members = membersResponse?.data ?? [];
 
   const form = useForm<CreateMembershipFormData>({
     resolver: zodResolver(createMembershipSchema),
@@ -153,33 +118,23 @@ export function CreateMembershipForm({
   const selectedPlanVariantId = form.watch('planVariantId');
   const selectedMemberId = form.watch('memberId');
   const discountAmount = form.watch('discountAmount') || 0;
-  const collectPayment = form.watch('collectPayment');
   const startDate = form.watch('startDate');
   const addTraining = form.watch('addTraining');
-  const trainingPlanTypeId = form.watch('trainingPlanTypeId');
-  const trainingPlanVariantId = form.watch('trainingPlanVariantId');
+  const trainingPlanTypeId = form.watch('trainingPlanTypeId') ?? '';
+  const trainingPlanVariantId = form.watch('trainingPlanVariantId') ?? '';
+  const trainingDiscountAmount = form.watch('trainingDiscountAmount') || 0;
 
-  // Dynamic steps based on addTraining toggle
   const steps = useMemo(() => {
-    if (addTraining) {
-      // Insert training step before payment (index 3)
-      return [...BASE_STEPS.slice(0, 3), TRAINING_STEP, BASE_STEPS[3]];
-    }
+    if (addTraining) return [...BASE_STEPS.slice(0, 3), TRAINING_STEP, BASE_STEPS[3]];
     return [...BASE_STEPS];
   }, [addTraining]);
 
-  const { data: planVariants, isLoading: variantsLoading } =
-    usePlanVariantsByType(selectedPlanTypeId, false);
+  const currentStepId = steps[currentStep]?.id;
 
-  const { data: trainingPlanVariants, isLoading: trainingVariantsLoading } =
-    usePlanVariantsByType(trainingPlanTypeId || '', false);
+  const { data: planVariants, isLoading: variantsLoading } = usePlanVariantsByType(selectedPlanTypeId, false);
+  const { data: trainingPlanVariants, isLoading: trainingVariantsLoading } = usePlanVariantsByType(trainingPlanTypeId, false);
+  const { data: activeMembershipResponse } = useActiveMembership(selectedMemberId || '');
 
-  const { data: activeMembershipResponse } = useActiveMembership(
-    selectedMemberId || ''
-  );
-  const existingActiveMembership = activeMembershipResponse?.data;
-
-  const members = membersResponse?.data ?? [];
   const filteredMembers = useMemo(() => {
     if (!memberSearch.trim()) return members;
     const q = memberSearch.toLowerCase();
@@ -194,16 +149,12 @@ export function CreateMembershipForm({
 
   const selectedMember = members.find((m) => m.id === selectedMemberId);
   const selectedPlanType = planTypes?.find((p) => p.id === selectedPlanTypeId);
-  const selectedVariant = planVariants?.find(
-    (v) => v.id === selectedPlanVariantId
-  );
-  const finalPrice = selectedVariant
-    ? Math.max(0, selectedVariant.price - discountAmount)
+  const selectedVariant = planVariants?.find((v) => v.id === selectedPlanVariantId);
+  const selectedTrainingVariant = trainingPlanVariants?.find((v) => v.id === trainingPlanVariantId);
+  const finalPrice = selectedVariant ? Math.max(0, selectedVariant.price - discountAmount) : 0;
+  const trainingFinalPrice = selectedTrainingVariant
+    ? Math.max(0, selectedTrainingVariant.price - trainingDiscountAmount)
     : 0;
-
-  const selectedTrainingVariant = trainingPlanVariants?.find(
-    (v) => v.id === trainingPlanVariantId
-  );
 
   const endDate = useMemo(() => {
     if (!startDate || !selectedVariant) return null;
@@ -212,21 +163,21 @@ export function CreateMembershipForm({
     return start.toISOString().split('T')[0];
   }, [startDate, selectedVariant]);
 
-  // Sync percentage → discountAmount for membership
+  // Sync % → discountAmount for membership
   useEffect(() => {
     if (discountPercentage === '' || !selectedVariant) return;
     const calculated = Math.round((discountPercentage / 100) * selectedVariant.price);
     form.setValue('discountAmount', Math.min(calculated, selectedVariant.price));
   }, [discountPercentage, selectedVariant, form]);
 
-  // Sync percentage → trainingDiscountAmount for training
+  // Sync % → trainingDiscountAmount for training
   useEffect(() => {
     if (trainingDiscountPercentage === '' || !selectedTrainingVariant) return;
     const calculated = Math.round((trainingDiscountPercentage / 100) * selectedTrainingVariant.price);
     form.setValue('trainingDiscountAmount', Math.min(calculated, selectedTrainingVariant.price));
   }, [trainingDiscountPercentage, selectedTrainingVariant, form]);
 
-  // Reset percentage when plan variant changes
+  // Reset discount when variant changes
   useEffect(() => {
     setDiscountPercentage('');
     form.setValue('discountAmount', 0);
@@ -237,51 +188,30 @@ export function CreateMembershipForm({
     form.setValue('trainingDiscountAmount', 0);
   }, [trainingPlanVariantId, form]);
 
-  // Get the current step ID
-  const currentStepId = steps[currentStep]?.id;
-
   const canProceed = () => {
     switch (currentStepId) {
-      case 'member':
-        return !!selectedMemberId;
-      case 'plan':
-        return !!selectedPlanTypeId && !!selectedPlanVariantId;
-      case 'details':
-        return !!startDate;
-      case 'training':
-        return !!trainingPlanTypeId && !!trainingPlanVariantId && !!form.watch('trainerId');
-      case 'payment':
-        return true;
-      default:
-        return false;
+      case 'member': return !!selectedMemberId;
+      case 'plan': return !!selectedPlanTypeId && !!selectedPlanVariantId;
+      case 'details': return !!startDate;
+      case 'training': return !!trainingPlanTypeId && !!trainingPlanVariantId && !!form.watch('trainerId');
+      case 'payment': return true;
+      default: return false;
     }
   };
 
   const handleNext = () => {
-    if (currentStep < steps.length - 1 && canProceed()) {
-      setCurrentStep((s) => s + 1);
-    }
+    if (currentStep < steps.length - 1 && canProceed()) setCurrentStep((s) => s + 1);
   };
 
   const handleBack = () => {
-    if (currentStep > 0) {
-      setCurrentStep((s) => s - 1);
-    }
+    if (currentStep > 0) setCurrentStep((s) => s - 1);
   };
 
-  // When toggling addTraining, adjust currentStep if needed
   const handleToggleTraining = (checked: boolean) => {
     form.setValue('addTraining', checked);
     if (!checked) {
-      // If we're currently on the training step, go back
-      if (currentStepId === 'training') {
-        setCurrentStep((s) => s - 1);
-      }
-      // If we're on payment and training was on (payment was at index 4), adjust
-      if (currentStepId === 'payment' && currentStep === 4) {
-        setCurrentStep(3);
-      }
-      // Clear training fields
+      if (currentStepId === 'training') setCurrentStep((s) => s - 1);
+      if (currentStepId === 'payment') setCurrentStep(steps.length - 2);
       form.setValue('trainingPlanTypeId', '');
       form.setValue('trainingPlanVariantId', '');
       form.setValue('trainerId', '');
@@ -314,7 +244,6 @@ export function CreateMembershipForm({
 
     createMembership.mutate(payload, {
       onSuccess: () => {
-        // If training is enabled, create it after membership
         if (data.addTraining && data.trainingPlanVariantId && data.trainerId) {
           const trainingPayload: CreateTrainingData = {
             memberId: data.memberId,
@@ -324,9 +253,11 @@ export function CreateMembershipForm({
             discountAmount: data.trainingDiscountAmount || 0,
             notes: data.trainingNotes,
           };
-
           createTraining.mutate(trainingPayload, {
-            onSuccess: () => {
+            onSuccess: () => { form.reset(); onSuccess?.(); },
+            onError: () => {
+              // Membership was created successfully; training failed.
+              // Reset and surface via the mutation's error state.
               form.reset();
               onSuccess?.();
             },
@@ -339,163 +270,28 @@ export function CreateMembershipForm({
     });
   };
 
+  const existingActiveMembership = activeMembershipResponse?.data;
+
   return (
     <div className="space-y-6">
-      {/* Step Indicator */}
-      <nav aria-label="Progress" className="px-6 pt-6">
-        <ol className="flex items-center">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            const isCompleted = index < currentStep;
-            const isCurrent = index === currentStep;
-            return (
-              <li
-                key={step.id}
-                className={`flex items-center ${index < steps.length - 1 ? 'flex-1' : ''}`}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (index < currentStep) setCurrentStep(index);
-                  }}
-                  disabled={index > currentStep}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    isCurrent
-                      ? 'bg-primary text-primary-foreground'
-                      : isCompleted
-                        ? 'bg-primary/10 text-primary hover:bg-primary/20'
-                        : 'text-muted-foreground'
-                  }`}
-                >
-                  <span
-                    className={`flex h-7 w-7 items-center justify-center rounded-full ${
-                      isCurrent
-                        ? 'bg-primary-foreground/20'
-                        : isCompleted
-                          ? 'bg-primary/20'
-                          : 'bg-muted'
-                    }`}
-                  >
-                    {isCompleted ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Icon className="h-4 w-4" />
-                    )}
-                  </span>
-                  <span className="hidden sm:inline">{step.label}</span>
-                </button>
-                {index < steps.length - 1 && (
-                  <div
-                    className={`mx-2 hidden h-px flex-1 sm:block ${
-                      isCompleted ? 'bg-primary' : 'bg-border'
-                    }`}
-                  />
-                )}
-              </li>
-            );
-          })}
-        </ol>
-      </nav>
+      <FormStepIndicator steps={steps} currentStep={currentStep} onStepClick={setCurrentStep} />
 
       <Separator />
 
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        {/* Step: Select Member */}
         {currentStepId === 'member' && (
-          <div className="space-y-4 px-6 pb-6">
-            <div>
-              <h3 className="text-lg font-semibold">Select a Member</h3>
-              <p className="text-sm text-muted-foreground">
-                Choose the member who will receive this membership.
-              </p>
-            </div>
-
-            <Input
-              placeholder="Search by name, email, or phone..."
-              value={memberSearch}
-              onChange={(e) => setMemberSearch(e.target.value)}
-            />
-
-            {membersLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredMembers.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                No members found. Try a different search term.
-              </p>
-            ) : (
-              <div className="grid gap-2 max-h-[400px] overflow-y-auto pr-1">
-                {filteredMembers.map((member) => (
-                  <Card
-                    key={member.id}
-                    className={`cursor-pointer transition-all hover:border-primary/50 ${
-                      selectedMemberId === member.id
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                        : ''
-                    }`}
-                    onClick={() => form.setValue('memberId', member.id)}
-                  >
-                    <CardContent className="flex items-center justify-between p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">
-                          {member.firstName[0]}
-                          {member.lastName[0]}
-                        </div>
-                        <div>
-                          <p className="font-medium">
-                            {member.firstName} {member.lastName}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {member.email}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={member.isActive ? 'default' : 'secondary'}
-                        >
-                          {member.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                        {selectedMemberId === member.id && (
-                          <Check className="h-5 w-5 text-primary" />
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-            {form.formState.errors.memberId && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.memberId.message}
-              </p>
-            )}
-
-            {/* Active membership warning */}
-            {selectedMemberId && existingActiveMembership && (
-              <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
-                <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-medium text-amber-800 dark:text-amber-400">
-                    This member already has an active membership
-                  </p>
-                  <p className="text-amber-700 dark:text-amber-500 mt-0.5">
-                    {existingActiveMembership.planVariant?.planType?.name} -{' '}
-                    {existingActiveMembership.planVariant?.durationLabel} (expires{' '}
-                    {new Date(existingActiveMembership.endDate).toLocaleDateString(
-                      'en-IN',
-                      { day: 'numeric', month: 'short', year: 'numeric' }
-                    )}
-                    ). Creating another will result in overlapping memberships.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
+          <MemberPicker
+            members={filteredMembers}
+            isLoading={membersLoading}
+            selectedMemberId={selectedMemberId}
+            search={memberSearch}
+            onSearchChange={setMemberSearch}
+            onSelect={(id) => form.setValue('memberId', id)}
+            error={form.formState.errors.memberId?.message}
+            activeWarning={existingActiveMembership ? { type: 'membership', item: existingActiveMembership } : null}
+          />
         )}
 
-        {/* Step: Choose Plan */}
         {currentStepId === 'plan' && (
           <div className="space-y-6 px-6 pb-6">
             <div>
@@ -508,762 +304,85 @@ export function CreateMembershipForm({
                 .
               </p>
             </div>
-
-            {/* Plan Type Selection */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Plan Type</Label>
-              {planTypesLoading ? (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {planTypes?.map((planType) => (
-                    <Card
-                      key={planType.id}
-                      className={`cursor-pointer transition-all hover:border-primary/50 ${
-                        selectedPlanTypeId === planType.id
-                          ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                          : ''
-                      }`}
-                      onClick={() => {
-                        form.setValue('planTypeId', planType.id);
-                        form.setValue('planVariantId', '');
-                      }}
-                    >
-                      <CardContent className="flex items-center gap-3 p-4">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                          <Dumbbell className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{planType.name}</p>
-                          {planType.description && (
-                            <p className="text-xs text-muted-foreground truncate">
-                              {planType.description}
-                            </p>
-                          )}
-                        </div>
-                        {selectedPlanTypeId === planType.id && (
-                          <Check className="h-5 w-5 text-primary shrink-0" />
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-              {form.formState.errors.planTypeId && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.planTypeId.message}
-                </p>
-              )}
-            </div>
-
-            {/* Plan Variant Selection */}
+            <PlanTypePicker
+              planTypes={planTypes}
+              isLoading={planTypesLoading}
+              selectedPlanTypeId={selectedPlanTypeId}
+              onSelect={(id) => {
+                form.setValue('planTypeId', id);
+                form.setValue('planVariantId', '');
+              }}
+              error={form.formState.errors.planTypeId?.message}
+            />
             {selectedPlanTypeId && (
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Duration & Pricing</Label>
-                {variantsLoading ? (
-                  <div className="flex items-center justify-center py-6">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : planVariants && planVariants.length > 0 ? (
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {planVariants.map((variant) => (
-                      <Card
-                        key={variant.id}
-                        className={`cursor-pointer transition-all hover:border-primary/50 ${
-                          selectedPlanVariantId === variant.id
-                            ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                            : ''
-                        }`}
-                        onClick={() =>
-                          form.setValue('planVariantId', variant.id)
-                        }
-                      >
-                        <CardContent className="flex items-center justify-between p-4">
-                          <div>
-                            <p className="font-medium">
-                              {variant.durationLabel}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {variant.durationDays} days
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg font-bold">
-                              <IndianRupee className="inline h-4 w-4" />
-                              {variant.price.toLocaleString()}
-                            </span>
-                            {selectedPlanVariantId === variant.id && (
-                              <Check className="h-5 w-5 text-primary" />
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="py-4 text-center text-sm text-muted-foreground">
-                    No active variants available for this plan type.
-                  </p>
-                )}
-                {form.formState.errors.planVariantId && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.planVariantId.message}
-                  </p>
-                )}
-              </div>
+              <PlanVariantPicker
+                variants={planVariants}
+                isLoading={variantsLoading}
+                selectedVariantId={selectedPlanVariantId}
+                onSelect={(id) => form.setValue('planVariantId', id)}
+                error={form.formState.errors.planVariantId?.message}
+              />
             )}
           </div>
         )}
 
-        {/* Step: Membership Details */}
         {currentStepId === 'details' && (
-          <div className="space-y-6 px-6 pb-6">
-            <div>
-              <h3 className="text-lg font-semibold">Membership Details</h3>
-              <p className="text-sm text-muted-foreground">
-                Configure start date, discount, and other options.
-              </p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date *</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  {...form.register('startDate')}
-                  aria-invalid={!!form.formState.errors.startDate}
-                  aria-describedby={form.formState.errors.startDate ? "startDate-error" : undefined}
-                />
-                {form.formState.errors.startDate && (
-                  <p id="startDate-error" className="text-sm text-destructive">
-                    {form.formState.errors.startDate.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>End Date</Label>
-                <Input
-                  type="date"
-                  value={endDate || ''}
-                  disabled
-                  className="bg-muted"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Auto-calculated from plan duration (
-                  {selectedVariant?.durationDays} days)
-                </p>
-              </div>
-            </div>
-
-            {/* Offer picker */}
-            {discountOffers.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="offerId">Apply Offer (optional)</Label>
-                <Select
-                  value={form.watch('offerId') || 'none'}
-                  onValueChange={(v) => {
-                    const realVal = v === 'none' ? '' : v;
-                    form.setValue('offerId', realVal);
-                    // Auto-fill discount from selected offer
-                    if (realVal && selectedVariant) {
-                      const offer = discountOffers.find((o) => o.id === realVal);
-                      if (offer && offer.discountValue !== null && offer.discountValue !== undefined) {
-                        const computed =
-                          offer.discountType === 'percentage'
-                            ? Math.round((offer.discountValue / 100) * selectedVariant.price)
-                            : offer.discountValue;
-                        form.setValue('discountAmount', Math.min(computed, selectedVariant.price));
-                        setDiscountPercentage('');
-                      }
-                    } else if (!realVal) {
-                      form.setValue('discountAmount', 0);
-                      setDiscountPercentage('');
-                    }
-                  }}
-                >
-                  <SelectTrigger id="offerId">
-                    <SelectValue placeholder="No offer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No offer</SelectItem>
-                    {discountOffers.map((o) => (
-                      <SelectItem key={o.id} value={o.id}>
-                        {o.title}
-                        {o.discountType === 'percentage'
-                          ? ` — ${o.discountValue}% off`
-                          : ` — ₹${o.discountValue} off`}
-                        {o.code ? ` (${o.code})` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Discount</Label>
-              {/* Preset percentage chips */}
-              <div className="flex flex-wrap gap-2">
-                {[5, 10, 15, 20, 25, 50].map((pct) => (
-                  <button
-                    key={pct}
-                    type="button"
-                    onClick={() => {
-                      setDiscountPercentage(discountPercentage === pct ? '' : pct);
-                      if (discountPercentage === pct) form.setValue('discountAmount', 0);
-                    }}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                      discountPercentage === pct
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground'
-                    }`}
-                  >
-                    {pct}%
-                  </button>
-                ))}
-              </div>
-              {/* Custom percentage or fixed amount row */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Custom %</p>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      min={0}
-                      max={100}
-                      placeholder="0"
-                      value={discountPercentage}
-                      onChange={(e) => {
-                        const val = e.target.value === '' ? '' : Math.min(100, Math.max(0, Number(e.target.value)));
-                        setDiscountPercentage(val);
-                      }}
-                      className="pr-8"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Amount (₹)</p>
-                  <div className="relative">
-                    <IndianRupee className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="discountAmount"
-                      type="number"
-                      min={0}
-                      max={selectedVariant?.price || 0}
-                      className="pl-9"
-                      {...form.register('discountAmount', {
-                        onChange: () => setDiscountPercentage(''),
-                      })}
-                    />
-                  </div>
-                </div>
-              </div>
-              {form.formState.errors.discountAmount && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.discountAmount.message}
-                </p>
-              )}
-            </div>
-
-            {/* Price Summary */}
-            {selectedVariant && (
-              <Card className="bg-muted/50">
-                <CardContent className="p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Plan Price</span>
-                    <span>
-                      <IndianRupee className="inline h-3 w-3" />
-                      {selectedVariant.price.toLocaleString()}
-                    </span>
-                  </div>
-                  {discountAmount > 0 && (
-                    <div className="flex justify-between text-sm text-green-600">
-                      <span>Discount</span>
-                      <span>
-                        - <IndianRupee className="inline h-3 w-3" />
-                        {discountAmount.toLocaleString()}
-                      </span>
-                    </div>
-                  )}
-                  <Separator />
-                  <div className="flex justify-between font-semibold">
-                    <span>Final Price</span>
-                    <span>
-                      <IndianRupee className="inline h-3.5 w-3.5" />
-                      {finalPrice.toLocaleString()}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="autoRenew"
-                checked={form.watch('autoRenew')}
-                onCheckedChange={(checked) =>
-                  form.setValue('autoRenew', checked === true)
-                }
-              />
-              <Label htmlFor="autoRenew" className="text-sm font-normal">
-                Auto-renew membership when it expires
-              </Label>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                {...form.register('notes')}
-                placeholder="Any additional notes about this membership..."
-                rows={3}
-              />
-            </div>
-
-            <Separator />
-
-            {/* Add Training Toggle */}
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <Label htmlFor="addTraining" className="text-sm font-medium">
-                  Also assign training
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Optionally assign a personal training plan along with this membership.
-                </p>
-              </div>
-              <Switch
-                id="addTraining"
-                checked={addTraining}
-                onCheckedChange={handleToggleTraining}
-              />
-            </div>
-          </div>
+          <MembershipDetailsStep
+            selectedVariant={selectedVariant}
+            endDate={endDate}
+            discountAmount={discountAmount}
+            discountPercentage={discountPercentage}
+            onPercentageChange={setDiscountPercentage}
+            discountOffers={discountOffers}
+            addTraining={addTraining}
+            onToggleTraining={handleToggleTraining}
+            register={form.register}
+            watch={form.watch}
+            setValue={form.setValue}
+            errors={form.formState.errors as Record<string, { message?: string }>}
+          />
         )}
 
-        {/* Step: Training (conditional) */}
         {currentStepId === 'training' && (
-          <div className="space-y-6 px-6 pb-6">
-            <div>
-              <h3 className="text-lg font-semibold">Training Plan</h3>
-              <p className="text-sm text-muted-foreground">
-                Select a training plan and assign a trainer for{' '}
-                <span className="font-medium text-foreground">
-                  {selectedMember?.firstName} {selectedMember?.lastName}
-                </span>
-                .
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="trainerId">Trainer *</Label>
-              {trainersLoading ? (
-                <div className="flex items-center gap-2 h-10">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Loading trainers...</span>
-                </div>
-              ) : (
-                <Select
-                  value={form.watch('trainerId') || ''}
-                  onValueChange={(value) => form.setValue('trainerId', value)}
-                >
-                  <SelectTrigger id="trainerId">
-                    <SelectValue placeholder="Select a trainer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {trainers.filter((t) => t.isActive).map((trainer) => (
-                      <SelectItem key={trainer.id} value={trainer.id}>
-                        {trainer.name}
-                      </SelectItem>
-                    ))}
-                    {trainers.filter((t) => t.isActive).length === 0 && (
-                      <SelectItem value="_none" disabled>
-                        No active trainers available
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              )}
-              {form.formState.errors.trainerId && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.trainerId.message}
-                </p>
-              )}
-            </div>
-
-            {/* Training Plan Type Selection */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Training Plan Type</Label>
-              {trainingPlanTypesLoading ? (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : trainingPlanTypes && trainingPlanTypes.length > 0 ? (
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {trainingPlanTypes.map((planType) => (
-                    <Card
-                      key={planType.id}
-                      className={`cursor-pointer transition-all hover:border-primary/50 ${
-                        trainingPlanTypeId === planType.id
-                          ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                          : ''
-                      }`}
-                      onClick={() => {
-                        form.setValue('trainingPlanTypeId', planType.id);
-                        form.setValue('trainingPlanVariantId', '');
-                      }}
-                    >
-                      <CardContent className="flex items-center gap-3 p-4">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                          <Dumbbell className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{planType.name}</p>
-                          {planType.description && (
-                            <p className="text-xs text-muted-foreground truncate">
-                              {planType.description}
-                            </p>
-                          )}
-                        </div>
-                        {trainingPlanTypeId === planType.id && (
-                          <Check className="h-5 w-5 text-primary shrink-0" />
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <p className="py-4 text-center text-sm text-muted-foreground">
-                  No training plan types available. Please create a training plan type first.
-                </p>
-              )}
-            </div>
-
-            {/* Training Variant Selection */}
-            {trainingPlanTypeId && (
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Duration & Pricing</Label>
-                {trainingVariantsLoading ? (
-                  <div className="flex items-center justify-center py-6">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : trainingPlanVariants && trainingPlanVariants.length > 0 ? (
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {trainingPlanVariants.map((variant) => (
-                      <Card
-                        key={variant.id}
-                        className={`cursor-pointer transition-all hover:border-primary/50 ${
-                          trainingPlanVariantId === variant.id
-                            ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                            : ''
-                        }`}
-                        onClick={() =>
-                          form.setValue('trainingPlanVariantId', variant.id)
-                        }
-                      >
-                        <CardContent className="flex items-center justify-between p-4">
-                          <div>
-                            <p className="font-medium">{variant.durationLabel}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {variant.durationDays} days
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg font-bold">
-                              <IndianRupee className="inline h-4 w-4" />
-                              {variant.price.toLocaleString()}
-                            </span>
-                            {trainingPlanVariantId === variant.id && (
-                              <Check className="h-5 w-5 text-primary" />
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="py-4 text-center text-sm text-muted-foreground">
-                    No active variants available for this training plan type.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Training discount */}
-            <div className="space-y-2">
-              <Label>Training Discount</Label>
-              {/* Preset percentage chips */}
-              <div className="flex flex-wrap gap-2">
-                {[5, 10, 15, 20, 25, 50].map((pct) => (
-                  <button
-                    key={pct}
-                    type="button"
-                    onClick={() => {
-                      setTrainingDiscountPercentage(trainingDiscountPercentage === pct ? '' : pct);
-                      if (trainingDiscountPercentage === pct) form.setValue('trainingDiscountAmount', 0);
-                    }}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                      trainingDiscountPercentage === pct
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground'
-                    }`}
-                  >
-                    {pct}%
-                  </button>
-                ))}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Custom %</p>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      min={0}
-                      max={100}
-                      placeholder="0"
-                      value={trainingDiscountPercentage}
-                      onChange={(e) => {
-                        const val = e.target.value === '' ? '' : Math.min(100, Math.max(0, Number(e.target.value)));
-                        setTrainingDiscountPercentage(val);
-                      }}
-                      className="pr-8"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Amount (₹)</p>
-                  <div className="relative">
-                    <IndianRupee className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="trainingDiscountAmount"
-                      type="number"
-                      min={0}
-                      max={selectedTrainingVariant?.price || 0}
-                      className="pl-9"
-                      {...form.register('trainingDiscountAmount', {
-                        onChange: () => setTrainingDiscountPercentage(''),
-                      })}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Training price summary */}
-            {selectedTrainingVariant && (
-              <Card className="bg-muted/50">
-                <CardContent className="p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Training Price</span>
-                    <span>
-                      <IndianRupee className="inline h-3 w-3" />
-                      {selectedTrainingVariant.price.toLocaleString()}
-                    </span>
-                  </div>
-                  {(form.watch('trainingDiscountAmount') || 0) > 0 && (
-                    <div className="flex justify-between text-sm text-green-600">
-                      <span>Discount</span>
-                      <span>
-                        - <IndianRupee className="inline h-3 w-3" />
-                        {(form.watch('trainingDiscountAmount') || 0).toLocaleString()}
-                      </span>
-                    </div>
-                  )}
-                  <Separator />
-                  <div className="flex justify-between font-semibold">
-                    <span>Training Final Price</span>
-                    <span>
-                      <IndianRupee className="inline h-3.5 w-3.5" />
-                      {Math.max(0, selectedTrainingVariant.price - (form.watch('trainingDiscountAmount') || 0)).toLocaleString()}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="trainingNotes">Training Notes</Label>
-              <Textarea
-                id="trainingNotes"
-                {...form.register('trainingNotes')}
-                placeholder="Any additional notes about this training..."
-                rows={2}
-              />
-            </div>
-          </div>
+          <TrainingStep
+            selectedMember={selectedMember}
+            trainers={trainers}
+            trainersLoading={trainersLoading}
+            trainingPlanTypes={trainingPlanTypes}
+            trainingPlanTypesLoading={trainingPlanTypesLoading}
+            trainingPlanVariants={trainingPlanVariants}
+            trainingVariantsLoading={trainingVariantsLoading}
+            trainingPlanTypeId={trainingPlanTypeId}
+            trainingPlanVariantId={trainingPlanVariantId}
+            selectedTrainingVariant={selectedTrainingVariant}
+            trainingDiscountAmount={trainingDiscountAmount}
+            trainingDiscountPercentage={trainingDiscountPercentage}
+            onTrainingPercentageChange={setTrainingDiscountPercentage}
+            register={form.register}
+            watch={form.watch}
+            setValue={form.setValue}
+            errors={form.formState.errors as Record<string, { message?: string }>}
+          />
         )}
 
-        {/* Step: Payment */}
         {currentStepId === 'payment' && (
-          <div className="space-y-6 px-6 pb-6">
-            <div>
-              <h3 className="text-lg font-semibold">Payment</h3>
-              <p className="text-sm text-muted-foreground">
-                Optionally record an initial payment for this membership.
-              </p>
-            </div>
-
-            {/* Summary Card */}
-            <Card className="bg-muted/50">
-              <CardContent className="p-4 space-y-3">
-                <h4 className="font-semibold text-sm">Membership Summary</h4>
-                <div className="grid gap-2 text-sm sm:grid-cols-2">
-                  <div>
-                    <span className="text-muted-foreground">Member: </span>
-                    <span className="font-medium">
-                      {selectedMember?.firstName} {selectedMember?.lastName}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Plan: </span>
-                    <span className="font-medium">
-                      {selectedPlanType?.name} - {selectedVariant?.durationLabel}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Duration: </span>
-                    <span className="font-medium">
-                      {startDate} to {endDate}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Amount Due: </span>
-                    <span className="font-bold">
-                      <IndianRupee className="inline h-3 w-3" />
-                      {finalPrice.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-
-                {addTraining && selectedTrainingVariant && (
-                  <>
-                    <Separator />
-                    <h4 className="font-semibold text-sm">Training</h4>
-                    <div className="grid gap-2 text-sm sm:grid-cols-2">
-                      <div>
-                        <span className="text-muted-foreground">Trainer: </span>
-                        <span className="font-medium">{form.watch('trainerName')}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Training Plan: </span>
-                        <span className="font-medium">
-                          {trainingPlanTypes?.find(p => p.id === trainingPlanTypeId)?.name} - {selectedTrainingVariant.durationLabel}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Training Amount: </span>
-                        <span className="font-bold">
-                          <IndianRupee className="inline h-3 w-3" />
-                          {Math.max(0, selectedTrainingVariant.price - (form.watch('trainingDiscountAmount') || 0)).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="collectPayment"
-                checked={collectPayment}
-                onCheckedChange={(checked) =>
-                  form.setValue('collectPayment', checked === true)
-                }
-              />
-              <Label htmlFor="collectPayment" className="text-sm font-normal">
-                Record initial payment now
-              </Label>
-            </div>
-
-            {collectPayment && (
-              <div className="space-y-4 rounded-lg border p-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="paymentAmount">Payment Amount *</Label>
-                    <div className="relative">
-                      <IndianRupee className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id="paymentAmount"
-                        type="number"
-                        min={0}
-                        className="pl-9"
-                        defaultValue={finalPrice}
-                        {...form.register('paymentAmount')}
-                        aria-invalid={!!form.formState.errors.paymentAmount}
-                        aria-describedby={form.formState.errors.paymentAmount ? "paymentAmount-error" : undefined}
-                      />
-                    </div>
-                    {form.formState.errors.paymentAmount && (
-                      <p id="paymentAmount-error" className="text-sm text-destructive">
-                        {form.formState.errors.paymentAmount.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="paymentMethod">Payment Method *</Label>
-                    <Select
-                      value={form.watch('paymentMethod') || ''}
-                      onValueChange={(value) =>
-                        form.setValue('paymentMethod', value)
-                      }
-                    >
-                      <SelectTrigger id="paymentMethod">
-                        <SelectValue placeholder="Select method" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PAYMENT_METHODS.map((method) => (
-                          <SelectItem key={method.value} value={method.value}>
-                            {method.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="paymentDate">Payment Date *</Label>
-                  <Input
-                    id="paymentDate"
-                    type="date"
-                    {...form.register('paymentDate')}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    When was this payment actually received?
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="paymentReference">
-                    Payment Reference / Transaction ID
-                  </Label>
-                  <Input
-                    id="paymentReference"
-                    {...form.register('paymentReference')}
-                    placeholder="e.g., UPI transaction ID, cheque number"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="paymentNotes">Payment Notes</Label>
-                  <Textarea
-                    id="paymentNotes"
-                    {...form.register('paymentNotes')}
-                    placeholder="Any notes about this payment..."
-                    rows={2}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+          <MembershipPaymentStep
+            selectedMember={selectedMember}
+            selectedPlanType={selectedPlanType}
+            selectedVariant={selectedVariant}
+            finalPrice={finalPrice}
+            startDate={startDate}
+            endDate={endDate}
+            addTraining={addTraining}
+            selectedTrainingVariant={selectedTrainingVariant}
+            trainingPlanTypes={trainingPlanTypes}
+            trainingPlanTypeId={trainingPlanTypeId}
+            trainingFinalPrice={trainingFinalPrice}
+            register={form.register}
+            watch={form.watch}
+            setValue={form.setValue}
+            errors={form.formState.errors as Record<string, { message?: string }>}
+          />
         )}
 
         {/* Navigation */}
@@ -1275,12 +394,7 @@ export function CreateMembershipForm({
                 Back
               </Button>
             ) : onCancel ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onCancel}
-                disabled={isSubmitting}
-              >
+              <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
                 Cancel
               </Button>
             ) : (
@@ -1290,26 +404,21 @@ export function CreateMembershipForm({
 
           <div>
             {currentStep < steps.length - 1 ? (
-              <Button
-                type="button"
-                onClick={handleNext}
-                disabled={!canProceed()}
-              >
+              <Button type="button" onClick={handleNext} disabled={!canProceed()}>
                 Next
                 <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             ) : (
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-              >
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Creating...
                   </>
+                ) : addTraining ? (
+                  'Create Membership & Training'
                 ) : (
-                  addTraining ? 'Create Membership & Training' : 'Create Membership'
+                  'Create Membership'
                 )}
               </Button>
             )}
