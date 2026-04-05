@@ -24,6 +24,9 @@ export const ROUTES = {
   ATTENDANCE: "/attendance",
   RECEPTION: "/reception",
   SETTINGS: "/settings",
+  SETTINGS_STAFF: "/settings/staff",
+  SETTINGS_WHATSAPP: "/settings/whatsapp",
+  SETTINGS_BROADCAST: "/settings/broadcast",
   INBOX: "/inbox",
   OFFERS: "/offers",
   // Super admin platform

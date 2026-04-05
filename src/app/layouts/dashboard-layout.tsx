@@ -18,6 +18,7 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -35,11 +36,22 @@ import { useRole } from "@/shared/hooks/use-role";
 import { useView } from "@/shared/hooks/use-view";
 import { useStaffPermissions } from "@/features/settings/hooks/use-staff-permissions";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/shared/components/ui/collapsible";
+import {
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
+} from "@/shared/components/ui/sidebar";
+import {
   LayoutDashboard,
   Users,
   User,
   LogOut,
   ChevronUp,
+  ChevronRight,
   TrendingUp,
   BarChart2,
   ScanLine,
@@ -51,6 +63,8 @@ import {
   Settings,
   Inbox,
   Tag,
+  MessageCircle,
+  Radio,
 } from "lucide-react";
 
 export function DashboardLayout() {
@@ -114,7 +128,9 @@ export function DashboardLayout() {
     [ROUTES.CREATE_MEMBERSHIP, "Create Membership"],
     [ROUTES.CREATE_TRAINING, "Create Training"],
     [ROUTES.PROFILE, "Profile"],
-    [ROUTES.SETTINGS, "Settings"],
+    [ROUTES.SETTINGS_STAFF, "Settings"],
+    [ROUTES.SETTINGS_WHATSAPP, "Settings"],
+    [ROUTES.SETTINGS_BROADCAST, "Settings"],
     [ROUTES.INBOX, "Inbox"],
   ];
   const detailPrefixes: [string, string][] = [
@@ -147,6 +163,56 @@ export function DashboardLayout() {
                 <NavFlat items={adminPeopleItems} label="People" />
                 <NavFlat items={adminOperationsItems} label="Operations" />
                 <NavFlat items={adminBusinessItems} label="Business" />
+                <NavFlat items={[{ name: "Inbox", href: ROUTES.INBOX, icon: Inbox, isActive: isActive(ROUTES.INBOX) }]} label="System" />
+                <SidebarGroup>
+                  <SidebarMenu>
+                    <Collapsible
+                      defaultOpen={location.pathname.startsWith(ROUTES.SETTINGS)}
+                      className="group/settings"
+                    >
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton
+                            isActive={location.pathname.startsWith(ROUTES.SETTINGS)}
+                            tooltip="Settings"
+                          >
+                            <Settings />
+                            <span>Settings</span>
+                            <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/settings:rotate-90" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild isActive={isActive(ROUTES.SETTINGS_STAFF)}>
+                                <Link to={ROUTES.SETTINGS_STAFF}>
+                                  <Users className="size-3" />
+                                  <span>Staff Access</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild isActive={isActive(ROUTES.SETTINGS_WHATSAPP)}>
+                                <Link to={ROUTES.SETTINGS_WHATSAPP}>
+                                  <MessageCircle className="size-3" />
+                                  <span>WhatsApp</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild isActive={isActive(ROUTES.SETTINGS_BROADCAST)}>
+                                <Link to={ROUTES.SETTINGS_BROADCAST}>
+                                  <Radio className="size-3" />
+                                  <span>Broadcast</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  </SidebarMenu>
+                </SidebarGroup>
               </>
             ) : (
               <NavFlat items={staffFlatItems} />
@@ -155,22 +221,6 @@ export function DashboardLayout() {
 
           <SidebarFooter>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive(ROUTES.INBOX)} tooltip="Inbox">
-                  <Link to={ROUTES.INBOX}>
-                    <Inbox />
-                    <span>Inbox</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive(ROUTES.SETTINGS)} tooltip="Settings">
-                  <Link to={ROUTES.SETTINGS}>
-                    <Settings />
-                    <span>Settings</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
               <SidebarMenuItem>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

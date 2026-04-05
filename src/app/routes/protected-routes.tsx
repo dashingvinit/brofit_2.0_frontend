@@ -1,4 +1,5 @@
 import type { RouteObject } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { ProtectedRoute, AdminRoute, StaffRoute, StaffPermissionRoute, SuperAdminRoute } from "./route-guards";
 import { DashboardLayout } from "../layouts/dashboard-layout";
 import { PlatformLayout } from "../layouts/platform-layout";
@@ -22,7 +23,9 @@ import { TrainerDetailPage } from "@/features/trainer/pages/trainer-detail-page"
 import { FinancialsPage, MonthlyExpensesPage } from "@/features/financials";
 import { AnalyticsPage } from "@/features/analytics";
 import { AttendancePage } from "@/features/attendance/pages/attendance-page";
-import { SettingsPage } from "@/features/settings/pages/settings-page";
+import { StaffAccessPage } from "@/features/settings/pages/staff-access-page";
+import { WhatsAppPage } from "@/features/settings/pages/whatsapp-page";
+import { BroadcastPage } from "@/features/settings/pages/broadcast-page";
 import { InboxPage } from "@/features/inbox/pages/inbox-page";
 import { OffersPage } from "@/features/offers";
 
@@ -100,7 +103,10 @@ export const protectedRoutes: RouteObject[] = [
               { path: "/financials",             element: <FinancialsPage /> },
               { path: "/financials/month/:month",element: <MonthlyExpensesPage /> },
               { path: "/analytics",              element: <AnalyticsPage /> },
-              { path: "/settings",               element: <SettingsPage /> },
+              { path: "/settings",            element: <Navigate to="/settings/staff" replace /> },
+              { path: "/settings/staff",     element: <StaffAccessPage /> },
+              { path: "/settings/whatsapp",  element: <WhatsAppPage /> },
+              { path: "/settings/broadcast", element: <BroadcastPage /> },
               { path: "/inbox",                  element: <InboxPage /> },
               { path: "/offers",                 element: <OffersPage /> },
             ],
