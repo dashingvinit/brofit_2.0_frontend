@@ -278,7 +278,7 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
 
       <Separator />
 
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form onSubmit={(e) => e.preventDefault()}>
         {currentStepId === 'member' && (
           <MemberPicker
             members={filteredMembers}
@@ -409,7 +409,7 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
                 <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             ) : (
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="button" onClick={() => form.handleSubmit(onSubmit)()} disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
