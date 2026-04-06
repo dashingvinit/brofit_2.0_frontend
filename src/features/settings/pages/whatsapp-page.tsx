@@ -31,6 +31,7 @@ export function WhatsAppPage() {
   const [duesReminderEnabled, setDuesReminderEnabled] = useState(false);
   const [duesReminderDaysOld, setDuesReminderDaysOld] = useState(7);
   const [digestRan, setDigestRan] = useState(false);
+  const [digestError, setDigestError] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<"sent" | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
 
@@ -129,13 +130,14 @@ export function WhatsAppPage() {
               variant="outline"
               size="sm"
               className="mt-1"
-              onClick={() => { setDigestRan(false); runDigest(undefined, { onSuccess: () => setDigestRan(true) }); }}
+              onClick={() => { setDigestRan(false); setDigestError(null); runDigest(undefined, { onSuccess: () => setDigestRan(true), onError: (err: unknown) => { setDigestError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to run digest. Check your Twilio credentials."); } }); }}
               disabled={isRunningDigest || !ownerWhatsapp.trim()}
             >
               {isRunningDigest ? <Loader2 className="mr-2 size-3 animate-spin" /> : <Send className="mr-2 size-3" />}
               Run Now
             </Button>
             {digestRan && <p className="text-xs text-green-600 font-medium">✓ Digest sent! Check your WhatsApp.</p>}
+            {digestError && <p className="text-xs text-destructive font-medium">✗ {digestError}</p>}
           </div>
           <Switch checked={digestEnabled} onCheckedChange={setDigestEnabled} />
         </div>

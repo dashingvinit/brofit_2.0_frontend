@@ -72,10 +72,15 @@ export function BroadcastPage() {
           />
         </div>
 
-        {broadcastResult && (
+        {broadcastResult && broadcastResult.sent > 0 && (
           <p className="text-sm font-medium text-green-600">
             ✓ Sent {broadcastResult.sent} of {broadcastResult.total} messages
             {broadcastResult.failed > 0 && ` (${broadcastResult.failed} failed)`}.
+          </p>
+        )}
+        {broadcastResult && broadcastResult.sent === 0 && (
+          <p className="text-sm font-medium text-destructive">
+            ✗ All {broadcastResult.total} messages failed to send. Check your Twilio credentials and sandbox opt-in.
           </p>
         )}
 
