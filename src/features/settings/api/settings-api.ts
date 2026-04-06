@@ -51,4 +51,14 @@ export const settingsApi = {
     const response = await apiClient.get('/notifications/default-welcome');
     return response.data;
   },
+
+  sendWelcomeToAll: async (): Promise<ApiResponse<{ sent: number; failed: number; total: number }>> => {
+    const response = await apiClient.post('/notifications/send-welcome-all');
+    return response.data;
+  },
+
+  getWelcomeStatus: async (): Promise<ApiResponse<{ notSent: number; sentNotOptedIn: number; optedIn: number; total: number }>> => {
+    const response = await apiClient.get('/notifications/welcome-status');
+    return response.data;
+  },
 };

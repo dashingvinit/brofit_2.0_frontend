@@ -12,6 +12,8 @@ import {
   useSendTestMessage,
   useRunDigest,
   useDefaultWelcomeMessage,
+  useSendWelcomeToAll,
+  useWelcomeStatus,
 } from "../hooks/use-notification-settings";
 import { PageHeader } from "@/shared/components/page-header";
 
@@ -21,6 +23,8 @@ export function WhatsAppPage() {
   const { mutate: updateSettings, isPending: isSaving } = useUpdateNotificationSettings();
   const { mutate: sendTest, isPending: isTesting } = useSendTestMessage();
   const { mutate: runDigest, isPending: isRunningDigest } = useRunDigest();
+  const { mutate: sendWelcomeToAll, isPending: isSendingWelcome } = useSendWelcomeToAll();
+  const { data: welcomeStatus } = useWelcomeStatus();
 
   const [ownerWhatsapp, setOwnerWhatsapp] = useState("");
   const [digestEnabled, setDigestEnabled] = useState(false);
@@ -32,6 +36,8 @@ export function WhatsAppPage() {
   const [duesReminderDaysOld, setDuesReminderDaysOld] = useState(7);
   const [digestRan, setDigestRan] = useState(false);
   const [digestError, setDigestError] = useState<string | null>(null);
+  const [welcomeAllResult, setWelcomeAllResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
+  const [welcomeAllError, setWelcomeAllError] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<"sent" | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
 
@@ -226,6 +232,56 @@ export function WhatsAppPage() {
             <p className="text-xs text-muted-foreground">Leave blank to use the default gym etiquette message.</p>
           </div>
         )}
+
+        {/* Welcome status breakdown */}
+        {welcomeStatus && (
+          <div className="border-t pt-4 grid grid-cols-3 gap-3">
+            <div className="rounded-lg bg-muted p-3 text-center">
+              <p className="text-lg font-semibold">{welcomeStatus.optedIn}</p>
+              <p className="text-xs text-muted-foreground">Opted in</p>
+            </div>
+            <div className="rounded-lg bg-muted p-3 text-center">
+              <p className="text-lg font-semibold">{welcomeStatus.sentNotOptedIn}</p>
+              <p className="text-xs text-muted-foreground">Sent, awaiting reply</p>
+            </div>
+            <div className="rounded-lg bg-muted p-3 text-center">
+              <p className="text-lg font-semibold">{welcomeStatus.notSent}</p>
+              <p className="text-xs text-muted-foreground">Not sent yet</p>
+            </div>
+          </div>
+        )}
+
+        {/* Send welcome to all existing members */}
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Send Welcome to Existing Members</p>
+          <p className="text-xs text-muted-foreground">
+            Send the welcome template to all active members who haven't opted in yet. Use this once to onboard your existing members.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setWelcomeAllResult(null);
+              setWelcomeAllError(null);
+              sendWelcomeToAll(undefined, {
+                onSuccess: (res) => setWelcomeAllResult(res.data),
+                onError: (err: unknown) => setWelcomeAllError(
+                  (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to send. Check your Twilio credentials."
+                ),
+              });
+            }}
+            disabled={isSendingWelcome}
+          >
+            {isSendingWelcome ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Send className="mr-2 size-4" />}
+            Send Welcome to All
+          </Button>
+          {welcomeAllResult && (
+            <p className="text-xs font-medium text-green-600">
+              ✓ Sent {welcomeAllResult.sent} of {welcomeAllResult.total} messages
+              {welcomeAllResult.failed > 0 && ` (${welcomeAllResult.failed} failed)`}.
+            </p>
+          )}
+          {welcomeAllError && <p className="text-xs text-destructive font-medium">✗ {welcomeAllError}</p>}
+        </div>
 
         <Button onClick={handleSave} disabled={isSaving}>
           {isSaving && <Loader2 className="mr-2 size-4 animate-spin" />}

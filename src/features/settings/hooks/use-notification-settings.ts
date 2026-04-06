@@ -52,3 +52,23 @@ export function useDefaultWelcomeMessage() {
     },
   });
 }
+
+export function useSendWelcomeToAll() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => settingsApi.sendWelcomeToAll(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['welcome-status'] });
+    },
+  });
+}
+
+export function useWelcomeStatus() {
+  return useQuery({
+    queryKey: ['welcome-status'],
+    queryFn: async () => {
+      const res = await settingsApi.getWelcomeStatus();
+      return res.data;
+    },
+  });
+}
