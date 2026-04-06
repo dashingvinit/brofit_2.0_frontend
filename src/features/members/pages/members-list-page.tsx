@@ -278,17 +278,19 @@ export function MembersListPage() {
                 size="sm"
                 onClick={handleSyncExpirations}
                 disabled={isSyncing}
+                title="Sync expirations"
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
-                Sync
+                <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline ml-2">Sync</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setImportOpen(true)}
+                title="Import members"
               >
-                <Upload className="h-4 w-4 mr-2" />
-                Import
+                <Upload className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">Import</span>
               </Button>
               <ExportDropdown
                 title="Members"
@@ -300,9 +302,10 @@ export function MembersListPage() {
                 onClick={() =>
                   navigate(ROUTES.REGISTER_MEMBER || "/members/register")
                 }
+                title="Add member"
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Member
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">Add Member</span>
               </Button>
             </div>
           ) : undefined

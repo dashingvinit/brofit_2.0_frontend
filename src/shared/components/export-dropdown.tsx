@@ -70,9 +70,9 @@ export function ExportDropdown({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size={size} disabled={disabled || isExporting}>
-          <Download className="h-4 w-4 mr-2" />
-          {isExporting ? 'Exporting…' : 'Export'}
+        <Button variant="outline" size={size} disabled={disabled || isExporting} title="Export">
+          <Download className="h-4 w-4" />
+          <span className="hidden sm:inline ml-2">{isExporting ? 'Exporting…' : 'Export'}</span>
           <ChevronDown className="h-3.5 w-3.5 ml-1.5 opacity-70" />
         </Button>
       </DropdownMenuTrigger>

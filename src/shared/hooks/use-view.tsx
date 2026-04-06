@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react";
 import { useRole } from "./use-role";
 
 export type View = "staff" | "admin" | "super_admin";
@@ -35,14 +35,16 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       ? "admin"
       : "staff";
 
-  const [view, setView] = useState<View>(defaultView);
+  const [view, setView] = useState<View>("staff");
+  const initializedRef = useRef(false);
 
-  // Sync default view when role loads
+  // Set default view once when role first loads — never reset after manual switch
   useEffect(() => {
-    if (isLoaded) {
+    if (isLoaded && !initializedRef.current) {
+      initializedRef.current = true;
       setView(defaultView);
     }
-  }, [isLoaded, defaultView]);
+  }, [isLoaded]);
 
   return (
     <ViewContext.Provider value={{ view, setView, availableViews }}>
