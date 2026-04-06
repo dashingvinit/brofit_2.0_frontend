@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Hash,
   Delete,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -121,6 +122,7 @@ function AttendanceRow({
     ? `${record.member.firstName} ${record.member.lastName}`
     : "—";
   const phone = record.member?.phone ?? "";
+  const activePlan = record.member?.memberships?.[0];
 
   return (
     <tr className="border-b last:border-0 hover:bg-muted/40 transition-colors">
@@ -134,6 +136,13 @@ function AttendanceRow({
           <div>
             <p className="font-medium text-sm leading-tight">{name}</p>
             <p className="text-xs text-muted-foreground">{phone}</p>
+            {activePlan ? (
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-0.5">
+                {activePlan.planVariant.planType.name} · {activePlan.planVariant.durationLabel}
+              </p>
+            ) : (
+              <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-0.5">No active plan</p>
+            )}
           </div>
         </div>
       </td>
@@ -196,6 +205,7 @@ function MobileAttendanceCard({
     ? `${record.member.firstName} ${record.member.lastName}`
     : "—";
   const phone = record.member?.phone ?? "";
+  const activePlan = record.member?.memberships?.[0];
 
   return (
     <div className="rounded-lg border p-3 bg-background">
@@ -209,6 +219,13 @@ function MobileAttendanceCard({
           <div className="min-w-0">
             <p className="font-medium text-sm leading-tight truncate">{name}</p>
             <p className="text-xs text-muted-foreground">{phone}</p>
+            {activePlan ? (
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-0.5 truncate">
+                {activePlan.planVariant.planType.name} · {activePlan.planVariant.durationLabel}
+              </p>
+            ) : (
+              <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-0.5">No active plan</p>
+            )}
           </div>
         </div>
         {isInside ? (
@@ -647,6 +664,19 @@ export function AttendancePage() {
                           {member.firstName} {member.lastName}
                         </p>
                         <p className="text-xs text-muted-foreground">{member.phone}</p>
+                        {(() => {
+                          const plan = member.memberships?.[0];
+                          return plan ? (
+                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium truncate mt-0.5">
+                              {plan.planVariant.planType.name} · {plan.planVariant.durationLabel}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1 mt-0.5">
+                              <AlertTriangle className="h-3 w-3 shrink-0" />
+                              No active plan
+                            </p>
+                          );
+                        })()}
                       </div>
                       <div className="shrink-0 flex items-center gap-2">
                         {!member.isActive && (

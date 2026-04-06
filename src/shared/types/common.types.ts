@@ -20,6 +20,15 @@ export interface Member {
   referredBy?: Pick<Member, 'id' | 'firstName' | 'lastName'> | null;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
+  // Populated only in search results (attendance check-in)
+  memberships?: Array<{
+    id: string;
+    status: string;
+    planVariant: {
+      durationLabel: string;
+      planType: { name: string; category: string };
+    };
+  }>;
 }
 
 export interface ApiResponse<T> {
@@ -628,7 +637,15 @@ export interface AttendanceRecord {
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
-  member?: Pick<Member, "id" | "firstName" | "lastName" | "phone" | "email">;
+  member?: Pick<Member, "id" | "firstName" | "lastName" | "phone" | "email"> & {
+    memberships?: Array<{
+      id: string;
+      planVariant: {
+        durationLabel: string;
+        planType: { name: string; category: string };
+      };
+    }>;
+  };
 }
 
 export interface AttendanceCurrentlyInside {
