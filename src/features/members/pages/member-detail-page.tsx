@@ -60,6 +60,7 @@ const membershipStatusConfig: Record<
   MembershipStatus,
   { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
 > = {
+  scheduled: { label: 'Scheduled', variant: 'outline' },
   active: { label: 'Active', variant: 'default' },
   expired: { label: 'Expired', variant: 'secondary' },
   cancelled: { label: 'Cancelled', variant: 'destructive' },
@@ -70,6 +71,7 @@ const trainingStatusConfig: Record<
   TrainingStatus,
   { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
 > = {
+  scheduled: { label: 'Scheduled', variant: 'outline' },
   active: { label: 'Active', variant: 'default' },
   expired: { label: 'Expired', variant: 'secondary' },
   cancelled: { label: 'Cancelled', variant: 'destructive' },
@@ -288,16 +290,18 @@ export function MemberDetailPage() {
   const trainingDuesTotal = duesData?.trainingDuesTotal || 0;
   const hasDues = totalDue > 0;
 
-  // Sort: active first, then by endDate desc
+  const statusOrder: Record<string, number> = { active: 0, scheduled: 1, frozen: 2, expired: 3, cancelled: 4 };
+
+  // Sort: active first, scheduled second, then by endDate desc
   const sortedMemberships = [...memberships].sort((a, b) => {
-    if (a.status === 'active' && b.status !== 'active') return -1;
-    if (a.status !== 'active' && b.status === 'active') return 1;
+    const diff = (statusOrder[a.status] ?? 5) - (statusOrder[b.status] ?? 5);
+    if (diff !== 0) return diff;
     return new Date(b.endDate).getTime() - new Date(a.endDate).getTime();
   });
 
   const sortedTrainings = [...trainings].sort((a, b) => {
-    if (a.status === 'active' && b.status !== 'active') return -1;
-    if (a.status !== 'active' && b.status === 'active') return 1;
+    const diff = (statusOrder[a.status] ?? 5) - (statusOrder[b.status] ?? 5);
+    if (diff !== 0) return diff;
     return new Date(b.endDate).getTime() - new Date(a.endDate).getTime();
   });
 

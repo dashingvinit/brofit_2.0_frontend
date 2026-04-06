@@ -171,7 +171,7 @@ export interface MemberStats {
 /**
  * Shared status for memberships and trainings.
  */
-export type SubscriptionStatus = "active" | "expired" | "cancelled" | "frozen";
+export type SubscriptionStatus = "scheduled" | "active" | "expired" | "cancelled" | "frozen";
 
 /** @alias SubscriptionStatus */
 export type MembershipStatus = SubscriptionStatus;

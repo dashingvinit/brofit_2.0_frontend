@@ -10,6 +10,7 @@ import {
   Snowflake,
   IndianRupee,
   CalendarDays,
+  CalendarClock,
   SlidersHorizontal,
   Search,
   X,
@@ -64,6 +65,7 @@ const statusConfig: Record<
   MembershipStatus,
   { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
 > = {
+  scheduled: { label: 'Scheduled', variant: 'outline' },
   active: { label: 'Active', variant: 'default' },
   expired: { label: 'Expired', variant: 'secondary' },
   cancelled: { label: 'Cancelled', variant: 'destructive' },
@@ -76,6 +78,7 @@ const statusOptions: {
   icon: typeof CreditCard;
 }[] = [
   { value: 'all', label: 'All Memberships', icon: CreditCard },
+  { value: 'scheduled', label: 'Scheduled', icon: CalendarClock },
   { value: 'active', label: 'Active', icon: CheckCircle2 },
   { value: 'expired', label: 'Expired', icon: Clock },
   { value: 'cancelled', label: 'Cancelled', icon: XCircle },
@@ -332,7 +335,7 @@ export function MembershipsPage() {
 
   // Determine which bulk actions are valid for the selection
   const canBulkCancel = selectedMemberships.some(
-    (m) => m.status === 'active' || m.status === 'expired'
+    (m) => m.status === 'active' || m.status === 'expired' || m.status === 'scheduled'
   );
   const canBulkFreeze = selectedMemberships.some((m) => m.status === 'active');
   const canBulkUnfreeze = selectedMemberships.some((m) => m.status === 'frozen');

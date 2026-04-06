@@ -47,6 +47,9 @@ import {
   useMemberGrowth,
   useDemographics,
 } from '../hooks/use-analytics';
+import { useMemberStats } from '@/features/members/hooks/use-members';
+import { useMembershipStats } from '@/features/memberships/hooks/use-memberships';
+import { useTrainingStats } from '@/features/training/hooks/use-training';
 import { formatCurrency } from '@/shared/lib/utils';
 import type { PaymentMethod } from '@/shared/types/common.types';
 
@@ -71,24 +74,17 @@ const METHOD_COLORS: Record<PaymentMethod, string> = {
 // ─── Stat Cards ───────────────────────────────────────────────────────────────
 
 function AnalyticsStatCards() {
-  const { data: retentionRes, isLoading: retLoading } = useRetention();
-  const { data: revenueRes, isLoading: revLoading } = useRevenueBreakdown(6);
+  const { data: memberStatsRes, isLoading: memberLoading } = useMemberStats();
+  const { data: membershipStatsRes, isLoading: membershipLoading } = useMembershipStats();
+  const { data: trainingStatsRes, isLoading: trainingLoading } = useTrainingStats();
 
-  const retention = retentionRes?.data;
-  const revenuePoints = revenueRes?.data ?? [];
-  const totalRevenue = revenuePoints.reduce((sum, p) => sum + p.total, 0);
-  const avgRevPerMember =
-    retention && retention.totalMembers > 0
-      ? Math.round(totalRevenue / retention.totalMembers)
-      : 0;
-
-  const isLoading = retLoading || revLoading;
+  const isLoading = memberLoading || membershipLoading || trainingLoading;
 
   const cards = [
     {
       label: 'Total Members',
       shortLabel: 'Members',
-      value: retention ? String(retention.totalMembers) : '—',
+      value: memberStatsRes?.data ? String(memberStatsRes.data.total) : '—',
       icon: Users,
       colorClass: 'text-blue-600 dark:text-blue-400',
       bgClass: 'bg-blue-50 dark:bg-blue-950/50',
@@ -96,23 +92,23 @@ function AnalyticsStatCards() {
     {
       label: 'Active Members',
       shortLabel: 'Active',
-      value: retention ? String(retention.activeCount) : '—',
+      value: memberStatsRes?.data ? String(memberStatsRes.data.active) : '—',
       icon: UserCheck,
       colorClass: 'text-emerald-600 dark:text-emerald-400',
       bgClass: 'bg-emerald-50 dark:bg-emerald-950/50',
     },
     {
-      label: 'Retention Rate',
-      shortLabel: 'Retention',
-      value: retention ? `${retention.retentionRate}%` : '—',
+      label: 'Active Memberships',
+      shortLabel: 'Memberships',
+      value: membershipStatsRes?.data ? String(membershipStatsRes.data.active) : '—',
       icon: TrendingUp,
       colorClass: 'text-violet-600 dark:text-violet-400',
       bgClass: 'bg-violet-50 dark:bg-violet-950/50',
     },
     {
-      label: 'Avg Rev / Member',
-      shortLabel: 'Avg Rev',
-      value: retention ? `₹${formatCurrency(avgRevPerMember)}` : '—',
+      label: 'Active Trainings',
+      shortLabel: 'Trainings',
+      value: trainingStatsRes?.data ? String(trainingStatsRes.data.active) : '—',
       icon: IndianRupee,
       colorClass: 'text-amber-600 dark:text-amber-400',
       bgClass: 'bg-amber-50 dark:bg-amber-950/50',

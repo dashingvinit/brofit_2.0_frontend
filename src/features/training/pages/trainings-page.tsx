@@ -10,6 +10,7 @@ import {
   Snowflake,
   IndianRupee,
   CalendarDays,
+  CalendarClock,
   SlidersHorizontal,
   Search,
   X,
@@ -54,6 +55,7 @@ const statusConfig: Record<
   TrainingStatus,
   { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
 > = {
+  scheduled: { label: 'Scheduled', variant: 'outline' },
   active: { label: 'Active', variant: 'default' },
   expired: { label: 'Expired', variant: 'secondary' },
   cancelled: { label: 'Cancelled', variant: 'destructive' },
@@ -66,6 +68,7 @@ const statusOptions: {
   icon: typeof Dumbbell;
 }[] = [
   { value: 'all', label: 'All Trainings', icon: Dumbbell },
+  { value: 'scheduled', label: 'Scheduled', icon: CalendarClock },
   { value: 'active', label: 'Active', icon: CheckCircle2 },
   { value: 'expired', label: 'Expired', icon: Clock },
   { value: 'cancelled', label: 'Cancelled', icon: XCircle },

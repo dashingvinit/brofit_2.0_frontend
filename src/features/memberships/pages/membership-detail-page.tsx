@@ -81,6 +81,7 @@ const statusConfig: Record<
     variant: 'default' | 'secondary' | 'destructive' | 'outline';
   }
 > = {
+  scheduled: { label: 'Scheduled', variant: 'outline' },
   active: { label: 'Active', variant: 'default' },
   expired: { label: 'Expired', variant: 'secondary' },
   cancelled: { label: 'Cancelled', variant: 'destructive' },
