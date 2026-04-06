@@ -19,31 +19,44 @@ const VIEW_LABELS: Record<View, string> = {
 
 export { VIEW_LABELS };
 
+const STORAGE_KEY = "brofit_view";
+
+function getSavedView(): View | null {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === "staff" || saved === "admin" || saved === "super_admin") return saved;
+  } catch {}
+  return null;
+}
+
 export function ViewProvider({ children }: { children: ReactNode }) {
-  const { isAdmin, isStaff, isSuperAdmin, isLoaded } = useRole();
+  const { isAdmin, isSuperAdmin, isLoaded } = useRole();
 
   const availableViews: View[] = [];
   if (isSuperAdmin) availableViews.push("super_admin");
   if (isAdmin || isSuperAdmin) availableViews.push("admin");
-  // Staff can only see staff view; admins and super admins can also switch to it
   availableViews.push("staff");
 
-  // Default view based on highest role
-  const defaultView: View = isSuperAdmin
-    ? "super_admin"
-    : isAdmin
-      ? "admin"
-      : "staff";
+  const defaultView: View = isSuperAdmin ? "super_admin" : isAdmin ? "admin" : "staff";
 
-  const [view, setView] = useState<View>("staff");
+  const [view, setViewState] = useState<View>(getSavedView() ?? "staff");
   const initializedRef = useRef(false);
 
-  // Set default view once when role first loads — never reset after manual switch
+  const setView = (v: View) => {
+    setViewState(v);
+    try { localStorage.setItem(STORAGE_KEY, v); } catch {}
+  };
+
+  // Once roles load: validate that the saved view is still allowed, else reset to default
   useEffect(() => {
     if (isLoaded && !initializedRef.current) {
       initializedRef.current = true;
-      setView(defaultView);
+      const saved = getSavedView();
+      if (!saved || !availableViews.includes(saved)) {
+        setView(defaultView);
+      }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded]);
 
   return (

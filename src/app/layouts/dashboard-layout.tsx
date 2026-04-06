@@ -66,8 +66,8 @@ export function DashboardLayout() {
   const { resolvedPermissions: staffPerms } = useStaffPermissions();
   const location = useLocation();
 
-  // Show admin nav when view is "admin" (includes super_admin users who switched to admin view)
-  const showAdminNav = view === "admin";
+  // Show admin nav when view is "admin" or "super_admin" inside the dashboard layout
+  const showAdminNav = view === "admin" || view === "super_admin";
 
   const isActive = (path: string) => location.pathname === path;
 

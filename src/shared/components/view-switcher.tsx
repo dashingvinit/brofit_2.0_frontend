@@ -44,8 +44,7 @@ export function ViewSwitcher() {
   const canSwitch = availableViews.length > 1;
 
   const handleSwitch = (newView: View) => {
-    if (newView === view) return;
-    setView(newView);
+    if (newView !== view) setView(newView);
     navigate(VIEW_CONFIG[newView].defaultRoute);
   };
 
