@@ -329,7 +329,8 @@ export function AttendancePage() {
   const todayRecords = byDateRes?.data?.records ?? [];
   const searchResults = searchRes?.data ?? [];
 
-  // Members already checked in today (by memberId) — prevent duplicate in search dropdown
+  // Members currently inside: memberId → attendanceRecordId (for checkout from search)
+  const insideMemberMap = new Map(insideRecords.map((r) => [r.memberId, r.id]));
   const checkedInMemberIds = new Set(insideRecords.map((r) => r.memberId));
 
   function handleCheckIn(memberId: string) {
@@ -654,16 +655,23 @@ export function AttendancePage() {
                           </Badge>
                         )}
                         {alreadyIn ? (
-                          <Badge
+                          <Button
+                            size="sm"
                             variant="outline"
-                            className="text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-xs gap-1"
+                            className="h-8 text-xs gap-1.5 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                            onClick={() => {
+                              const recordId = insideMemberMap.get(member.id);
+                              if (recordId) {
+                                handleCheckOut(recordId);
+                                if (checkInMode === "keypad") handleKeypadClear();
+                                else { setSearchQuery(""); setDebouncedSearch(""); }
+                              }
+                            }}
+                            disabled={checkOutMutation.isPending}
                           >
-                            <span className="relative flex h-1.5 w-1.5">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
-                            </span>
-                            Inside
-                          </Badge>
+                            <LogOut className="h-3.5 w-3.5" />
+                            Check Out
+                          </Button>
                         ) : (
                           <Button
                             size="sm"
