@@ -834,7 +834,8 @@ function LifetimeEarningsPieCard() {
           <div className="flex items-center gap-6">
             <Skeleton className="h-32 w-32 rounded-full shrink-0" />
             <div className="space-y-3 flex-1">
-              <div className="flex gap-6">
+              <div className="flex flex-wrap gap-6">
+                <Skeleton className="h-8 w-28" />
                 <Skeleton className="h-8 w-28" />
                 <Skeleton className="h-8 w-28" />
               </div>
@@ -881,7 +882,7 @@ function LifetimeEarningsPieCard() {
             </ChartContainer>
 
             <div className="flex-1 w-full space-y-4">
-              <div className="flex items-start gap-6">
+              <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
                 <div className="space-y-0.5">
                   <p className="text-xs text-muted-foreground">Total lifetime earnings</p>
                   <p className="text-2xl font-bold tracking-tight font-display inline-flex items-center">
@@ -889,9 +890,18 @@ function LifetimeEarningsPieCard() {
                     {formatCurrency(grandTotal)}
                   </p>
                 </div>
+                {avgMonthlyIncome > 0 && (
+                  <div className="space-y-0.5">
+                    <p className="text-xs text-muted-foreground">Avg monthly income</p>
+                    <p className="text-2xl font-bold tracking-tight font-display inline-flex items-center">
+                      <IndianRupee className="h-5 w-5" />
+                      {formatCurrency(Math.round(avgMonthlyIncome))}
+                    </p>
+                  </div>
+                )}
                 {avgTicketSize > 0 && (
                   <div className="space-y-0.5">
-                    <p className="text-xs text-muted-foreground">Avg ticket size / member</p>
+                    <p className="text-xs text-muted-foreground">Avg ticket / member</p>
                     <p className="text-2xl font-bold tracking-tight font-display inline-flex items-center">
                       <IndianRupee className="h-5 w-5" />
                       {formatCurrency(Math.round(avgTicketSize))}
