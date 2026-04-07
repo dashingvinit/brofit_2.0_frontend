@@ -62,6 +62,18 @@ export const attendanceApi = {
   },
 
   /**
+   * Get today's hourly counts + historical avg per hour
+   * GET /api/v1/attendance/peak-hours
+   */
+  getPeakHoursData: async (): Promise<ApiResponse<{
+    today: { hour: number; count: number }[];
+    avg: { hour: number; avg: number }[];
+  }>> => {
+    const response = await apiClient.get('/attendance/peak-hours');
+    return response.data;
+  },
+
+  /**
    * Get attendance history for a member
    * GET /api/v1/attendance/member/:memberId
    */

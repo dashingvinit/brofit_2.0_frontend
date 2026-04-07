@@ -74,6 +74,7 @@ export function useCreateMembership() {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['memberships'] });
       queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
       toast.success(response.message || 'Membership created successfully');
     },
     onError: (error: any) => {
@@ -122,6 +123,7 @@ export function useDeleteMembership() {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['memberships'] });
       queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
       toast.success(response.message || 'Membership deleted successfully');
     },
     onError: (error: any) => {
@@ -217,6 +219,7 @@ export function useRecordPayment() {
     mutationFn: (data: RecordPaymentData) => membershipsApi.recordPayment(data),
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['memberships'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
       if (variables.membershipId) {
         queryClient.invalidateQueries({
           queryKey: ['memberships', variables.membershipId, 'dues'],
@@ -242,6 +245,7 @@ export function useDeletePayment() {
     mutationFn: (id: string) => membershipsApi.deletePayment(id),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['memberships'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
       toast.success(response.message || 'Payment deleted successfully');
     },
     onError: (error: any) => {

@@ -50,6 +50,7 @@ export function useCreateTraining() {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['trainings'] });
       queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
       toast.success(response.message || 'Training created successfully');
     },
     onError: (error: any) => {
@@ -92,6 +93,7 @@ export function useDeleteTraining() {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['trainings'] });
       queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
       toast.success(response.message || 'Training deleted successfully');
     },
     onError: (error: any) => {
@@ -163,6 +165,7 @@ export function useDeleteTrainingPayment() {
     mutationFn: (id: string) => trainingApi.deletePayment(id),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['trainings'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
       toast.success(response.message || 'Payment deleted successfully');
     },
     onError: (error: any) => {
@@ -188,6 +191,7 @@ export function useRecordTrainingPayment() {
     mutationFn: (data: RecordTrainingPaymentData) => trainingApi.recordPayment(data),
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['trainings'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
       if (variables.trainingId) {
         queryClient.invalidateQueries({
           queryKey: ['trainings', variables.trainingId, 'dues'],

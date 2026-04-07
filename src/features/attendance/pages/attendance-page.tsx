@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import type { AttendanceRecord } from "@/shared/types/common.types";
 import {
   LogIn,
   LogOut,
@@ -8,7 +9,6 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertTriangle,
-  TrendingUp,
   Users,
   Clock,
 } from "lucide-react";
@@ -34,6 +34,7 @@ import {
   useCheckOut,
 } from "../hooks/use-attendance";
 import { useSearchMembers } from "@/features/members/hooks/use-members";
+import { PeakHoursChart } from "../components/peak-hours-chart";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -65,26 +66,75 @@ function todayLabel() {
 }
 
 function toDateString(date: Date) {
-  return date.toISOString().slice(0, 10);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
-function getPeakHour(records: { entryTime: string }[]): { label: string; count: number } | null {
-  if (records.length === 0) return null;
-  const buckets: Record<number, number> = {};
-  for (const r of records) {
-    const h = new Date(r.entryTime).getHours();
-    buckets[h] = (buckets[h] ?? 0) + 1;
-  }
-  const peakHour = Number(
-    Object.entries(buckets).sort((a, b) => b[1] - a[1])[0][0],
+// ─── daily log row ────────────────────────────────────────────────────────────
+
+function DailyLogRow({
+  record,
+  isStillInside,
+  isChecking,
+  onCheckOut,
+}: {
+  record: AttendanceRecord;
+  isStillInside: boolean;
+  isChecking: boolean;
+  onCheckOut: (id: string) => void;
+}) {
+  const name = record.member
+    ? `${record.member.firstName} ${record.member.lastName}`
+    : "—";
+  const initials = record.member
+    ? `${record.member.firstName[0]}${record.member.lastName[0]}`
+    : "?";
+  const plan = record.member?.memberships?.[0];
+
+  return (
+    <div
+      className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
+        isStillInside ? "opacity-50 hover:opacity-75" : "hover:bg-muted/30"
+      }`}
+    >
+      <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-semibold select-none ${
+        isStillInside
+          ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400"
+          : "bg-muted text-muted-foreground"
+      }`}>
+        {initials}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-sm leading-tight truncate">{name}</p>
+        {plan ? (
+          <p className="text-xs text-blue-600 dark:text-blue-400 font-medium truncate">
+            {plan.planVariant.planType.name} · {plan.planVariant.durationLabel}
+          </p>
+        ) : (
+          <p className="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3 shrink-0" />
+            No plan
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-3 shrink-0 text-xs tabular-nums text-muted-foreground">
+        <span className="hidden sm:block">{formatTime(record.entryTime)}</span>
+        <span className="hidden sm:block">{record.exitTime ? formatTime(record.exitTime) : "—"}</span>
+        <span className="hidden sm:block">{formatDuration(record.entryTime, record.exitTime)}</span>
+        {isStillInside ? (
+          <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
+            onClick={() => onCheckOut(record.id)} disabled={isChecking}>
+            <LogOut className="h-3 w-3" />
+            <span className="hidden sm:inline">Out</span>
+          </Button>
+        ) : (
+          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+        )}
+      </div>
+    </div>
   );
-  const count = buckets[peakHour];
-  const fmt = (h: number) =>
-    new Date(0, 0, 0, h).toLocaleTimeString("en-IN", {
-      hour: "numeric",
-      hour12: true,
-    });
-  return { label: `${fmt(peakHour)} – ${fmt(peakHour + 1)}`, count };
 }
 
 // ─── main page ────────────────────────────────────────────────────────────────
@@ -125,10 +175,8 @@ export function AttendancePage() {
   const insideRecords = insideRes?.data?.records ?? [];
   const logRecords = byDateRes?.data?.records ?? [];
   const searchResults = searchRes?.data ?? [];
-  const peak = getPeakHour(byDateRes?.data?.records ?? []);
 
   const insideMemberMap = new Map(insideRecords.map((r) => [r.memberId, r.id]));
-  const insideMemberIds = new Set(insideRecords.map((r) => r.memberId));
 
   function handleCheckIn(memberId: string) {
     setQuery("");
@@ -148,9 +196,9 @@ export function AttendancePage() {
   }
 
   function navigateDate(dir: -1 | 1) {
-    const d = new Date(selectedDate);
+    const d = new Date(selectedDate + "T00:00:00");
     d.setDate(d.getDate() + dir);
-    if (d > new Date()) return;
+    if (toDateString(d) > toDateString(new Date())) return;
     setSelectedDate(toDateString(d));
   }
 
@@ -171,7 +219,7 @@ export function AttendancePage() {
       e.preventDefault();
       const member = searchResults[highlightedIndex];
       if (!member) return;
-      const alreadyIn = insideMemberIds.has(member.id);
+      const alreadyIn = insideMemberMap.has(member.id);
       if (alreadyIn) {
         const recordId = insideMemberMap.get(member.id);
         if (recordId) handleCheckOut(recordId);
@@ -223,16 +271,6 @@ export function AttendancePage() {
                 <span className="font-semibold text-foreground tabular-nums">{stats?.totalToday ?? 0}</span>
                 {" "}today
               </span>
-              {peak && (
-                <>
-                  <span className="text-muted-foreground/40">·</span>
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <TrendingUp className="h-3 w-3 text-violet-500" />
-                    peak{" "}
-                    <span className="font-semibold text-foreground">{peak.label}</span>
-                  </span>
-                </>
-              )}
             </div>
           )}
         </div>
@@ -283,7 +321,7 @@ export function AttendancePage() {
               ) : (
                 <div>
                   {searchResults.map((member, i) => {
-                    const alreadyIn = insideMemberIds.has(member.id);
+                    const alreadyIn = insideMemberMap.has(member.id);
                     const plan = member.memberships?.[0];
                     const isHighlighted = i === highlightedIndex;
 
@@ -372,6 +410,9 @@ export function AttendancePage() {
           )}
         </div>
       </div>
+
+      {/* ══ PEAK HOURS CHART ══ */}
+      <PeakHoursChart />
 
       {/* ══ CURRENTLY INSIDE + LOG — two columns on desktop ══ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
@@ -499,68 +540,19 @@ export function AttendancePage() {
               <p className="text-sm text-muted-foreground">No records for this date</p>
             </div>
           ) : (() => {
-            const checkedOut = logRecords.filter(r => !isToday || !insideMemberIds.has(r.memberId));
-            const stillInside = isToday ? logRecords.filter(r => insideMemberIds.has(r.memberId)) : [];
-
-            const renderRow = (record: typeof logRecords[number], dimmed: boolean) => {
-              const name = record.member
-                ? `${record.member.firstName} ${record.member.lastName}`
-                : "—";
-              const initials = record.member
-                ? `${record.member.firstName[0]}${record.member.lastName[0]}`
-                : "?";
-              const plan = record.member?.memberships?.[0];
-              const isInside = dimmed;
-              const isChecking = checkOutMutation.isPending && checkOutMutation.variables === record.id;
-
-              return (
-                <div
-                  key={record.id}
-                  className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
-                    dimmed ? "opacity-50 hover:opacity-75" : "hover:bg-muted/30"
-                  }`}
-                >
-                  <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-semibold select-none ${
-                    isInside
-                      ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400"
-                      : "bg-muted text-muted-foreground"
-                  }`}>
-                    {initials}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm leading-tight truncate">{name}</p>
-                    {plan ? (
-                      <p className="text-xs text-blue-600 dark:text-blue-400 font-medium truncate">
-                        {plan.planVariant.planType.name} · {plan.planVariant.durationLabel}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3 shrink-0" />
-                        No plan
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0 text-xs tabular-nums text-muted-foreground">
-                    <span className="hidden sm:block">{formatTime(record.entryTime)}</span>
-                    <span className="hidden sm:block">{record.exitTime ? formatTime(record.exitTime) : "—"}</span>
-                    <span className="hidden sm:block">{formatDuration(record.entryTime, record.exitTime)}</span>
-                    {isInside ? (
-                      <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-                        onClick={() => handleCheckOut(record.id)} disabled={isChecking}>
-                        <LogOut className="h-3 w-3" />
-                        <span className="hidden sm:inline">Out</span>
-                      </Button>
-                    ) : (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    )}
-                  </div>
-                </div>
-              );
-            };
-
+            const checkedOut = logRecords.filter(r => !isToday || !insideMemberMap.has(r.memberId));
+            const stillInside = isToday ? logRecords.filter(r => insideMemberMap.has(r.memberId)) : [];
             return (
               <div className="divide-y">
-                {checkedOut.map(r => renderRow(r, false))}
+                {checkedOut.map(r => (
+                  <DailyLogRow
+                    key={r.id}
+                    record={r}
+                    isStillInside={false}
+                    isChecking={checkOutMutation.isPending && checkOutMutation.variables === r.id}
+                    onCheckOut={handleCheckOut}
+                  />
+                ))}
                 {stillInside.length > 0 && (
                   <>
                     <div className="flex items-center gap-2 px-4 py-2 bg-muted/20">
@@ -572,7 +564,15 @@ export function AttendancePage() {
                         Still inside — {stillInside.length} {stillInside.length === 1 ? "member" : "members"}
                       </span>
                     </div>
-                    {stillInside.map(r => renderRow(r, true))}
+                    {stillInside.map(r => (
+                      <DailyLogRow
+                        key={r.id}
+                        record={r}
+                        isStillInside={true}
+                        isChecking={checkOutMutation.isPending && checkOutMutation.variables === r.id}
+                        onCheckOut={handleCheckOut}
+                      />
+                    ))}
                   </>
                 )}
               </div>

@@ -7,6 +7,7 @@ const KEYS = {
   inside: () => ['attendance', 'inside'] as const,
   stats: () => ['attendance', 'stats'] as const,
   byDate: (date?: string) => ['attendance', 'date', date ?? 'today'] as const,
+  peakHours: () => ['attendance', 'peak-hours'] as const,
   memberHistory: (memberId: string, page: number, limit: number) =>
     ['attendance', 'member', memberId, page, limit] as const,
 };
@@ -31,6 +32,14 @@ export function useAttendanceByDate(date?: string) {
   return useQuery({
     queryKey: KEYS.byDate(date),
     queryFn: () => attendanceApi.getByDate(date),
+  });
+}
+
+export function useAttendancePeakHours() {
+  return useQuery({
+    queryKey: KEYS.peakHours(),
+    queryFn: () => attendanceApi.getPeakHoursData(),
+    staleTime: 5 * 60_000,
   });
 }
 

@@ -27,6 +27,9 @@ import {
   CartesianGrid,
   XAxis,
   YAxis,
+  Pie,
+  PieChart,
+  Cell,
 } from 'recharts';
 import {
   Table,
@@ -780,6 +783,178 @@ function DemographicsCard() {
   );
 }
 
+// ─── Lifetime Earnings Pie ─────────────────────────────────────────────────────
+
+const lifetimePieConfig = {
+  membership: {
+    label: 'Membership',
+    color: 'var(--chart-1)',
+  },
+  training: {
+    label: 'Training',
+    color: 'var(--chart-2)',
+  },
+} satisfies ChartConfig;
+
+function LifetimeEarningsPieCard() {
+  const { data: membershipStatsRes, isLoading: membershipLoading } = useMembershipStats();
+  const { data: trainingStatsRes, isLoading: trainingLoading } = useTrainingStats();
+  const { data: memberStatsRes, isLoading: memberLoading } = useMemberStats();
+  const { data: revenueRes, isLoading: revenueLoading } = useRevenueBreakdown(60);
+
+  const isLoading = membershipLoading || trainingLoading || memberLoading || revenueLoading;
+
+  const membershipTotal = membershipStatsRes?.data?.totalCollected ?? 0;
+  const trainingTotal = trainingStatsRes?.data?.totalCollected ?? 0;
+  const grandTotal = membershipTotal + trainingTotal;
+  const totalMembers = memberStatsRes?.data?.total ?? 0;
+  const avgTicketSize = totalMembers > 0 ? grandTotal / totalMembers : 0;
+
+  const activeMonths = (revenueRes?.data ?? []).filter((p) => p.total > 0).length;
+  const avgMonthlyIncome = activeMonths > 0 ? grandTotal / activeMonths : 0;
+
+  const membershipPct = grandTotal > 0 ? Math.round((membershipTotal / grandTotal) * 1000) / 10 : 0;
+  const trainingPct = grandTotal > 0 ? Math.round((trainingTotal / grandTotal) * 1000) / 10 : 0;
+
+  const chartData = [
+    { name: 'membership', value: membershipTotal, label: 'Membership' },
+    { name: 'training', value: trainingTotal, label: 'Training' },
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <IndianRupee className="h-4 w-4 text-muted-foreground" />
+          Lifetime Earnings
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center gap-6">
+            <Skeleton className="h-32 w-32 rounded-full shrink-0" />
+            <div className="space-y-3 flex-1">
+              <div className="flex gap-6">
+                <Skeleton className="h-8 w-28" />
+                <Skeleton className="h-8 w-28" />
+              </div>
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+            </div>
+          </div>
+        ) : grandTotal === 0 ? (
+          <EmptyState message="No revenue data yet" />
+        ) : (
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <ChartContainer config={lifetimePieConfig} className="h-[160px] w-[160px] shrink-0">
+              <PieChart>
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value, name) => (
+                        <div className="flex items-center justify-between gap-4 w-full">
+                          <span className="text-muted-foreground">
+                            {lifetimePieConfig[name as keyof typeof lifetimePieConfig]?.label ?? name}
+                          </span>
+                          <span className="font-mono font-medium tabular-nums text-foreground">
+                            ₹{formatCurrency(Number(value))}
+                          </span>
+                        </div>
+                      )}
+                    />
+                  }
+                />
+                <Pie
+                  data={chartData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={48}
+                  outerRadius={72}
+                  strokeWidth={2}
+                >
+                  <Cell fill="var(--color-membership)" />
+                  <Cell fill="var(--color-training)" />
+                </Pie>
+              </PieChart>
+            </ChartContainer>
+
+            <div className="flex-1 w-full space-y-4">
+              <div className="flex items-start gap-6">
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Total lifetime earnings</p>
+                  <p className="text-2xl font-bold tracking-tight font-display inline-flex items-center">
+                    <IndianRupee className="h-5 w-5" />
+                    {formatCurrency(grandTotal)}
+                  </p>
+                </div>
+                {avgTicketSize > 0 && (
+                  <div className="space-y-0.5">
+                    <p className="text-xs text-muted-foreground">Avg ticket size / member</p>
+                    <p className="text-2xl font-bold tracking-tight font-display inline-flex items-center">
+                      <IndianRupee className="h-5 w-5" />
+                      {formatCurrency(Math.round(avgTicketSize))}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                {/* Membership */}
+                <div>
+                  <div className="flex items-center justify-between mb-1 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-[var(--chart-1)]" />
+                      <span className="text-muted-foreground">Membership</span>
+                    </div>
+                    <span className="font-medium inline-flex items-center">
+                      <IndianRupee className="h-3 w-3" />
+                      {formatCurrency(membershipTotal)}
+                      <span className="ml-1.5 text-xs text-muted-foreground font-normal">
+                        ({membershipPct}%)
+                      </span>
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-1.5 rounded-full bg-[var(--chart-1)]"
+                      style={{ width: `${membershipPct}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Training */}
+                <div>
+                  <div className="flex items-center justify-between mb-1 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-[var(--chart-2)]" />
+                      <span className="text-muted-foreground">Training</span>
+                    </div>
+                    <span className="font-medium inline-flex items-center">
+                      <IndianRupee className="h-3 w-3" />
+                      {formatCurrency(trainingTotal)}
+                      <span className="ml-1.5 text-xs text-muted-foreground font-normal">
+                        ({trainingPct}%)
+                      </span>
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-1.5 rounded-full bg-[var(--chart-2)]"
+                      style={{ width: `${trainingPct}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export function AnalyticsPage() {
@@ -796,6 +971,8 @@ export function AnalyticsPage() {
         <MemberGrowthCard />
         <RevenueBreakdownCard />
       </div>
+
+      <LifetimeEarningsPieCard />
 
       <TopPlansCard />
 
