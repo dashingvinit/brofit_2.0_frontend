@@ -49,3 +49,10 @@ export function useDemographics() {
     queryFn: () => analyticsApi.getDemographics(),
   });
 }
+
+export function useMembershipDurationPreference() {
+  return useQuery({
+    queryKey: ['analytics', 'membership-duration-preference'],
+    queryFn: () => analyticsApi.getMembershipDurationPreference(),
+  });
+}

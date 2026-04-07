@@ -619,6 +619,18 @@ export interface MemberGrowthPoint {
   newMembers: number;
 }
 
+export interface MembershipDurationBucket {
+  durationLabel: string;
+  durationDays: number;
+  count: number;
+  percentage: number;
+}
+
+export interface MembershipDurationPreference {
+  avgMonths: number;
+  buckets: MembershipDurationBucket[];
+}
+
 export interface DemographicsData {
   gender: { label: string; count: number; percentage: number }[];
   ageBrackets: { label: string; count: number; percentage: number }[];

@@ -8,6 +8,7 @@ import type {
   TrainerPerformanceItem,
   MemberGrowthPoint,
   DemographicsData,
+  MembershipDurationPreference,
 } from '@/shared/types/common.types';
 
 export const analyticsApi = {
@@ -43,6 +44,11 @@ export const analyticsApi = {
 
   getDemographics: async (): Promise<ApiResponse<DemographicsData>> => {
     const response = await apiClient.get('/analytics/demographics');
+    return response.data;
+  },
+
+  getMembershipDurationPreference: async (): Promise<ApiResponse<MembershipDurationPreference>> => {
+    const response = await apiClient.get('/analytics/membership-duration-preference');
     return response.data;
   },
 };

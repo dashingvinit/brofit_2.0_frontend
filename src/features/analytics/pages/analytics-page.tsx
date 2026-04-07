@@ -6,8 +6,6 @@ import {
   IndianRupee,
   BarChart3,
   RefreshCw,
-  UserX,
-  UserMinus,
   RotateCcw,
 } from 'lucide-react';
 import {
@@ -32,6 +30,8 @@ import {
   Pie,
   PieChart,
   Cell,
+  Tooltip,
+  LabelList,
 } from 'recharts';
 import {
   Table,
@@ -51,6 +51,7 @@ import {
   useTrainerPerformance,
   useMemberGrowth,
   useDemographics,
+  useMembershipDurationPreference,
 } from '../hooks/use-analytics';
 import { useMemberStats } from '@/features/members/hooks/use-members';
 import { useMembershipStats } from '@/features/memberships/hooks/use-memberships';
@@ -66,14 +67,6 @@ const METHOD_LABELS: Record<PaymentMethod, string> = {
   upi: 'UPI',
   bank_transfer: 'Bank Transfer',
   other: 'Other',
-};
-
-const METHOD_COLORS: Record<PaymentMethod, string> = {
-  cash: 'bg-emerald-500',
-  card: 'bg-blue-500',
-  upi: 'bg-violet-500',
-  bank_transfer: 'bg-amber-500',
-  other: 'bg-zinc-400',
 };
 
 const RANK_STYLES = [
@@ -689,14 +682,23 @@ function TopPlansCard() {
 
 // ─── Retention Card ────────────────────────────────────────────────────────────
 
+const retentionPieConfig = {
+  repeat: { label: 'Repeat', color: '#10b981' },
+  oneTime: { label: 'One-time', color: '#f59e0b' },
+  churned: { label: 'Churned', color: '#f87171' },
+} satisfies ChartConfig;
+
 function RetentionCard() {
   const { data: retentionRes, isLoading } = useRetention();
   const r = retentionRes?.data;
 
-  const total = r ? r.repeatCount + r.oneTimeCount + r.churnedCount : 0;
-  const repeatPct = total > 0 && r ? (r.repeatCount / total) * 100 : 0;
-  const oneTimePct = total > 0 && r ? (r.oneTimeCount / total) * 100 : 0;
-  const churnedPct = total > 0 && r ? (r.churnedCount / total) * 100 : 0;
+  const pieData = r
+    ? [
+        { name: 'repeat', label: 'Repeat', value: r.repeatCount, color: '#10b981' },
+        { name: 'oneTime', label: 'One-time', value: r.oneTimeCount, color: '#f59e0b' },
+        { name: 'churned', label: 'Churned', value: r.churnedCount, color: '#f87171' },
+      ].filter((d) => d.value > 0)
+    : [];
 
   return (
     <Card>
@@ -708,66 +710,65 @@ function RetentionCard() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-2 w-full rounded-full" />
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-5 w-full" />
-            ))}
+          <div className="flex flex-col items-center gap-4">
+            <Skeleton className="h-36 w-36 rounded-full" />
+            <div className="space-y-2 w-full">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-4 w-full" />
+              ))}
+            </div>
           </div>
         ) : r ? (
-          <div className="space-y-4">
-            <div className="h-2 rounded-full overflow-hidden flex">
-              <div
-                className="bg-emerald-500 transition-all"
-                style={{ width: `${repeatPct}%` }}
-                title={`Repeat: ${r.repeatCount}`}
-              />
-              <div
-                className="bg-amber-400 transition-all"
-                style={{ width: `${oneTimePct}%` }}
-                title={`One-time: ${r.oneTimeCount}`}
-              />
-              <div
-                className="bg-red-400 transition-all"
-                style={{ width: `${churnedPct}%` }}
-                title={`Churned: ${r.churnedCount}`}
-              />
-            </div>
+          <div className="flex flex-col items-center gap-4">
+            <ChartContainer config={retentionPieConfig} className="h-[180px] w-[180px] shrink-0">
+              <PieChart>
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const d = payload[0].payload;
+                    return (
+                      <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md">
+                        <p className="font-medium">{d.label}</p>
+                        <p className="text-muted-foreground">{d.value} members</p>
+                      </div>
+                    );
+                  }}
+                />
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={52}
+                  outerRadius={80}
+                  strokeWidth={2}
+                >
+                  {pieData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ChartContainer>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-sm text-muted-foreground">Repeat members</span>
+            <div className="w-full space-y-2.5">
+              {[
+                { label: 'Repeat', value: r.repeatCount, color: 'bg-emerald-500', textColor: 'text-emerald-600 dark:text-emerald-400' },
+                { label: 'One-time', value: r.oneTimeCount, color: 'bg-amber-400', textColor: 'text-amber-600 dark:text-amber-400' },
+                { label: 'Churned', value: r.churnedCount, color: 'bg-red-400', textColor: 'text-red-600 dark:text-red-400' },
+              ].map((row) => (
+                <div key={row.label} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full ${row.color}`} />
+                    <span className="text-muted-foreground">{row.label}</span>
+                  </div>
+                  <span className={`font-semibold ${row.textColor}`}>{row.value}</span>
                 </div>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                  {r.repeatCount}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <UserMinus className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <span className="text-sm text-muted-foreground">One-time members</span>
-                </div>
-                <span className="font-semibold text-amber-600 dark:text-amber-400">
-                  {r.oneTimeCount}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <UserX className="h-4 w-4 text-red-600 dark:text-red-400" />
-                  <span className="text-sm text-muted-foreground">Churned</span>
-                </div>
-                <span className="font-semibold text-red-600 dark:text-red-400">
-                  {r.churnedCount}
-                </span>
-              </div>
+              ))}
               <div className="h-px bg-border" />
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Retention rate</span>
-                <span className="font-bold text-violet-600 dark:text-violet-400">
-                  {r.retentionRate}%
-                </span>
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Retention rate</span>
+                <span className="font-bold text-violet-600 dark:text-violet-400">{r.retentionRate}%</span>
               </div>
             </div>
           </div>
@@ -779,9 +780,29 @@ function RetentionCard() {
 
 // ─── Payment Methods Card ──────────────────────────────────────────────────────
 
+const METHOD_HEX: Record<PaymentMethod, string> = {
+  cash: '#10b981',
+  card: '#3b82f6',
+  upi: '#8b5cf6',
+  bank_transfer: '#f59e0b',
+  other: '#a1a1aa',
+};
+
 function PaymentMethodsCard() {
   const { data: methodsRes, isLoading } = usePaymentMethods();
   const methods = methodsRes?.data ?? [];
+
+  const pieData = methods.map((m) => ({
+    name: METHOD_LABELS[m.method],
+    value: m.amount,
+    count: m.count,
+    percentage: m.percentage,
+    color: METHOD_HEX[m.method],
+  }));
+
+  const paymentConfig = Object.fromEntries(
+    methods.map((m) => [METHOD_LABELS[m.method], { label: METHOD_LABELS[m.method] }])
+  ) satisfies ChartConfig;
 
   return (
     <Card>
@@ -793,44 +814,68 @@ function PaymentMethodsCard() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-                <Skeleton className="h-1.5 w-full rounded-full" />
-              </div>
-            ))}
+          <div className="flex flex-col items-center gap-4">
+            <Skeleton className="h-36 w-36 rounded-full" />
+            <div className="space-y-2 w-full">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-4 w-full" />
+              ))}
+            </div>
           </div>
         ) : methods.length === 0 ? (
           <EmptyState message="No payment data yet" />
         ) : (
-          <div className="space-y-4">
-            {methods.map((m) => (
-              <div key={m.method}>
-                <div className="flex items-center justify-between mb-1.5">
+          <div className="flex flex-col items-center gap-4">
+            <ChartContainer config={paymentConfig} className="h-[180px] w-[180px] shrink-0">
+              <PieChart>
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const d = payload[0].payload;
+                    return (
+                      <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md space-y-1">
+                        <p className="font-medium">{d.name}</p>
+                        <p className="text-muted-foreground">₹{formatCurrency(d.value)}</p>
+                        <p className="text-muted-foreground">{d.count} transactions · {d.percentage}%</p>
+                      </div>
+                    );
+                  }}
+                />
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={48}
+                  outerRadius={80}
+                  strokeWidth={2}
+                >
+                  {pieData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ChartContainer>
+
+            <div className="w-full space-y-2.5">
+              {pieData.map((m) => (
+                <div key={m.name} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-block h-2 w-2 rounded-full ${METHOD_COLORS[m.method]}`}
-                    />
-                    <span className="text-sm">{METHOD_LABELS[m.method]}</span>
+                    <span className="h-2 w-2 rounded-full shrink-0" style={{ background: m.color }} />
+                    <span className="text-muted-foreground">{m.name}</span>
                     <span className="text-xs text-muted-foreground">({m.count})</span>
                   </div>
-                  <span className="text-sm font-semibold inline-flex items-center">
-                    <IndianRupee className="h-3 w-3" />
-                    {formatCurrency(m.amount)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold inline-flex items-center">
+                      <IndianRupee className="h-3 w-3" />
+                      {formatCurrency(m.value)}
+                    </span>
+                    <span className="text-xs text-muted-foreground w-9 text-right">{m.percentage}%</span>
+                  </div>
                 </div>
-                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={`h-1.5 rounded-full ${METHOD_COLORS[m.method]}`}
-                    style={{ width: `${m.percentage}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </CardContent>
@@ -840,9 +885,31 @@ function PaymentMethodsCard() {
 
 // ─── Demographics Card ─────────────────────────────────────────────────────────
 
+const GENDER_COLORS = ['#3b82f6', '#ec4899', '#a1a1aa', '#f59e0b'];
+
+const ageChartConfig = {
+  count: { label: 'Members', color: 'var(--chart-1)' },
+} satisfies ChartConfig;
+
 function DemographicsCard() {
   const { data: demoRes, isLoading } = useDemographics();
   const demo = demoRes?.data;
+
+  const genderPieData = (demo?.gender ?? []).map((g, i) => ({
+    name: g.label,
+    value: g.count,
+    percentage: g.percentage,
+    color: GENDER_COLORS[i % GENDER_COLORS.length],
+  }));
+
+  const ageChartData = (demo?.ageBrackets ?? []).map((b) => ({
+    bracket: b.label,
+    count: b.count,
+  }));
+
+  const genderConfig = Object.fromEntries(
+    genderPieData.map((g) => [g.name, { label: g.name }])
+  ) satisfies ChartConfig;
 
   return (
     <Card>
@@ -855,16 +922,13 @@ function DemographicsCard() {
       <CardContent>
         {isLoading ? (
           <div className="grid gap-6 sm:grid-cols-2">
-            <div className="space-y-3">
-              <Skeleton className="h-3 w-20" />
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-5 w-full" />
-              ))}
+            <div className="flex flex-col items-center gap-3">
+              <Skeleton className="h-32 w-32 rounded-full" />
+              <Skeleton className="h-3 w-28" />
             </div>
-            <div className="space-y-3">
-              <Skeleton className="h-3 w-20" />
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-5 w-full" />
+            <div className="flex items-end gap-2 h-36">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="flex-1" style={{ height: `${30 + i * 10}px` }} />
               ))}
             </div>
           </div>
@@ -872,61 +936,100 @@ function DemographicsCard() {
           <EmptyState message="No data yet" />
         ) : (
           <div className="grid gap-6 sm:grid-cols-2">
-            {/* Gender */}
+            {/* Gender — donut */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60 mb-3">
                 Gender
               </p>
-              {demo.gender.length > 0 ? (
-                <div className="space-y-3">
-                  {demo.gender.map((g) => (
-                    <div key={g.label}>
-                      <div className="flex items-center justify-between mb-1 text-sm">
-                        <span className="text-muted-foreground">{g.label}</span>
-                        <span className="font-medium">
-                          {g.count}{' '}
-                          <span className="text-muted-foreground font-normal">({g.percentage}%)</span>
-                        </span>
+              {genderPieData.length > 0 ? (
+                <div className="flex flex-col items-center gap-3">
+                  <ChartContainer config={genderConfig} className="h-[150px] w-[150px]">
+                    <PieChart>
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (!active || !payload?.length) return null;
+                          const d = payload[0].payload;
+                          return (
+                            <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md">
+                              <p className="font-medium">{d.name}</p>
+                              <p className="text-muted-foreground">{d.value} · {d.percentage}%</p>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Pie
+                        data={genderPieData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={42}
+                        outerRadius={68}
+                        strokeWidth={2}
+                      >
+                        {genderPieData.map((entry, i) => (
+                          <Cell key={i} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ChartContainer>
+                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+                    {genderPieData.map((g) => (
+                      <div key={g.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="h-2 w-2 rounded-full shrink-0" style={{ background: g.color }} />
+                        {g.name} ({g.percentage}%)
                       </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-1.5 rounded-full bg-blue-500"
-                          style={{ width: `${g.percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No data</p>
               )}
             </div>
 
-            {/* Age */}
+            {/* Age — vertical bar */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60 mb-3">
                 Age Brackets
               </p>
-              {demo.ageBrackets.length > 0 ? (
-                <div className="space-y-3">
-                  {demo.ageBrackets.map((b) => (
-                    <div key={b.label}>
-                      <div className="flex items-center justify-between mb-1 text-sm">
-                        <span className="text-muted-foreground">{b.label}</span>
-                        <span className="font-medium">
-                          {b.count}{' '}
-                          <span className="text-muted-foreground font-normal">({b.percentage}%)</span>
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-1.5 rounded-full bg-violet-500"
-                          style={{ width: `${b.percentage}%` }}
+              {ageChartData.length > 0 ? (
+                <ChartContainer config={ageChartConfig} className="h-[180px] w-full">
+                  <BarChart data={ageChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="bracket"
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 10 }}
+                      tickMargin={6}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 10 }}
+                      allowDecimals={false}
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'hsl(var(--muted))' }}
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        return (
+                          <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md">
+                            <p className="font-medium">{payload[0].payload.bracket}</p>
+                            <p className="text-muted-foreground">{payload[0].value} members</p>
+                          </div>
+                        );
+                      }}
+                    />
+                    <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]}>
+                        <LabelList
+                          dataKey="count"
+                          position="top"
+                          style={{ fontSize: 10, fill: 'hsl(var(--foreground))', fontWeight: 500 }}
                         />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      </Bar>
+                  </BarChart>
+                </ChartContainer>
               ) : (
                 <p className="text-sm text-muted-foreground">No data</p>
               )}
@@ -1037,6 +1140,92 @@ function TrainerPerformanceCard() {
   );
 }
 
+// ─── Membership Duration Preference Card ──────────────────────────────────────
+
+const DURATION_COLORS = [
+  'bg-violet-500',
+  'bg-blue-500',
+  'bg-emerald-500',
+  'bg-amber-500',
+  'bg-rose-500',
+  'bg-cyan-500',
+];
+
+function MembershipDurationCard() {
+  const { data: res, isLoading } = useMembershipDurationPreference();
+  const avgMonths = res?.data?.avgMonths ?? 0;
+  const buckets = res?.data?.buckets ?? [];
+
+  const avgLabel =
+    avgMonths === 0
+      ? '—'
+      : avgMonths < 1
+      ? `${Math.round(avgMonths * 30)}d`
+      : `${avgMonths}mo`;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          Avg Membership Duration
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-28" />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+                <Skeleton className="h-1.5 w-full rounded-full" />
+              </div>
+            ))}
+          </div>
+        ) : buckets.length === 0 ? (
+          <EmptyState message="No membership data yet" />
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <p className="text-3xl font-bold tracking-tight font-display">{avgLabel}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">weighted average across all memberships</p>
+            </div>
+
+            <div className="h-px bg-border" />
+
+            <div className="space-y-3">
+              {buckets.map((d, i) => {
+                const color = DURATION_COLORS[i % DURATION_COLORS.length];
+                return (
+                  <div key={d.durationLabel}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-block h-2 w-2 rounded-full ${color}`} />
+                        <span className="text-sm">{d.durationLabel}</span>
+                        <span className="text-xs text-muted-foreground">({d.count})</span>
+                      </div>
+                      <span className="text-sm font-semibold tabular-nums">{d.percentage}%</span>
+                    </div>
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className={`h-1.5 rounded-full ${color}`}
+                        style={{ width: `${d.percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export function AnalyticsPage() {
@@ -1084,6 +1273,9 @@ export function AnalyticsPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <PaymentMethodsCard />
         <DemographicsCard />
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <MembershipDurationCard />
       </div>
     </div>
   );
