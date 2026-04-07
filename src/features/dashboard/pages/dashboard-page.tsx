@@ -210,53 +210,79 @@ export function DashboardPage() {
         />
       </div>
 
-      {/* Revenue Breakdown + Expiring + Inactive */}
+      {/* Attendance + Expiring + Inactive */}
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Revenue Breakdown */}
+        {/* Today's Attendance */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-base flex items-center gap-2">
-              <IndianRupee className="h-4 w-4" />
-              Revenue Breakdown
+              <Activity className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              Today's Attendance
             </CardTitle>
+            <button
+              className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1"
+              onClick={() => navigate(ROUTES.ATTENDANCE)}
+            >
+              View all
+              <ArrowRight className="h-3 w-3" />
+            </button>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {isLoadingMemberships || isLoadingTrainings ? (
-              <div className="space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
+          <CardContent>
+            {isLoadingAttendance ? (
+              <div className="grid grid-cols-2 gap-4">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full rounded-lg" />
                 ))}
               </div>
             ) : (
-              <>
-                <div className="flex items-center justify-between py-2 border-b">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-emerald-600" />
-                    <span className="text-sm font-medium">Memberships</span>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Currently Inside */}
+                  <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 p-3 text-center">
+                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                      </span>
+                      <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Inside Now</p>
+                    </div>
+                    <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 font-display">{insideCount}</p>
                   </div>
-                  <span className="text-sm font-semibold inline-flex items-center">
-                    <IndianRupee className="h-3 w-3" />
-                    {formatCurrency(membershipStats?.totalCollected ?? 0)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-2 border-b">
-                  <div className="flex items-center gap-2">
-                    <Dumbbell className="h-4 w-4 text-violet-600" />
-                    <span className="text-sm font-medium">Trainings</span>
+                  {/* Total Today */}
+                  <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 p-3 text-center">
+                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                      <LogIn className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                      <p className="text-xs text-blue-700 dark:text-blue-400 font-medium">Total Today</p>
+                    </div>
+                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-400 font-display">{todayTotal}</p>
                   </div>
-                  <span className="text-sm font-semibold inline-flex items-center">
-                    <IndianRupee className="h-3 w-3" />
-                    {formatCurrency(trainingStats?.totalCollected ?? 0)}
-                  </span>
                 </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm font-semibold">Total</span>
-                  <p className="text-lg font-bold inline-flex items-center">
-                    <IndianRupee className="h-4 w-4" />
-                    {formatCurrency(totalRevenue)}
-                  </p>
-                </div>
-              </>
+                {/* Currently Inside list */}
+                {currentlyInside.length > 0 ? (
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground font-medium mb-2">Currently Inside</p>
+                    <div className="space-y-1.5">
+                      {currentlyInside.slice(0, 3).map((r) => (
+                        <div key={r.id} className="flex items-center gap-2 text-sm">
+                          <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground shrink-0">
+                            {r.member ? `${r.member.firstName[0]}${r.member.lastName[0]}` : "?"}
+                          </div>
+                          <span className="truncate font-medium">
+                            {r.member ? `${r.member.firstName} ${r.member.lastName}` : "—"}
+                          </span>
+                        </div>
+                      ))}
+                      {currentlyInside.length > 3 && (
+                        <p className="text-xs text-muted-foreground">+{currentlyInside.length - 3} more</p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed p-3 flex items-center justify-center">
+                    <p className="text-xs text-muted-foreground text-center">No check-ins yet today</p>
+                  </div>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -345,80 +371,6 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Today's Attendance Summary */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Activity className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            Today's Attendance
-          </CardTitle>
-          <button
-            className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1"
-            onClick={() => navigate(ROUTES.ATTENDANCE)}
-          >
-            View all
-            <ArrowRight className="h-3 w-3" />
-          </button>
-        </CardHeader>
-        <CardContent>
-          {isLoadingAttendance ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-lg" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {/* Currently Inside */}
-              <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 p-3 text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                  </span>
-                  <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Inside Now</p>
-                </div>
-                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 font-display">{insideCount}</p>
-              </div>
-              {/* Total Today */}
-              <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 p-3 text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <LogIn className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                  <p className="text-xs text-blue-700 dark:text-blue-400 font-medium">Total Today</p>
-                </div>
-                <p className="text-2xl font-bold text-blue-700 dark:text-blue-400 font-display">{todayTotal}</p>
-              </div>
-              {/* Recent check-ins */}
-              {currentlyInside.length > 0 && (
-                <div className="col-span-2 sm:col-span-1 rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground font-medium mb-2">Currently Inside</p>
-                  <div className="space-y-1.5">
-                    {currentlyInside.slice(0, 3).map((r) => (
-                      <div key={r.id} className="flex items-center gap-2 text-sm">
-                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground shrink-0">
-                          {r.member ? `${r.member.firstName[0]}${r.member.lastName[0]}` : "?"}
-                        </div>
-                        <span className="truncate font-medium">
-                          {r.member ? `${r.member.firstName} ${r.member.lastName}` : "—"}
-                        </span>
-                      </div>
-                    ))}
-                    {currentlyInside.length > 3 && (
-                      <p className="text-xs text-muted-foreground">+{currentlyInside.length - 3} more</p>
-                    )}
-                  </div>
-                </div>
-              )}
-              {currentlyInside.length === 0 && todayTotal === 0 && (
-                <div className="col-span-2 sm:col-span-1 rounded-lg border border-dashed p-3 flex items-center justify-center">
-                  <p className="text-xs text-muted-foreground text-center">No check-ins yet today</p>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Outstanding Dues */}
       <Card>
