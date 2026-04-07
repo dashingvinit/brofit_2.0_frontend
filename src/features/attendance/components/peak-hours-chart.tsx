@@ -81,8 +81,8 @@ export function PeakHoursChart() {
     : todayBuckets.reduce((best, b) => (b.count > best.count ? b : best), { hour: -1, count: 0 });
   const peakHour = peakBucket.hour;
 
-  // Show ticks at 0, 6, 12, 18
-  const tickHours = new Set([0, 6, 12, 18, 23]);
+  // Show ticks every 2 hours
+  const tickHours = new Set([0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22]);
 
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
