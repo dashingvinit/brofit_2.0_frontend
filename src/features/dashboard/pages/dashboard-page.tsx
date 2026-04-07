@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import {
@@ -12,6 +13,11 @@ import {
   UserX,
   Activity,
   LogIn,
+  Plus,
+  Eye,
+  EyeOff,
+  AlertTriangle,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -22,7 +28,6 @@ import {
 } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Skeleton } from "@/shared/components/ui/skeleton";
-import { PageHeader } from "@/shared/components/page-header";
 import { useMemberStats } from "@/features/members/hooks/use-members";
 import {
   useMembershipStats,
@@ -42,23 +47,170 @@ import {
 } from "@/features/attendance/hooks/use-attendance";
 import { ROUTES } from "@/shared/lib/constants";
 import { formatCurrency, daysUntil } from "@/shared/lib/utils";
-import { StatCard } from "@/shared/components/stat-card";
-import { ExpiringItem } from "@/shared/components/expiring-item";
-import { EmptyState } from "@/shared/components/empty-state";
+import { cn } from "@/shared/lib/utils";
 import type { Membership, Training } from "@/shared/types/common.types";
 
+// ─── Inline StatCard ────────────────────────────────────────────────────────
 
+interface StatCardProps {
+  label: string;
+  shortLabel: string;
+  value: number | undefined;
+  subtext?: string;
+  icon: React.ElementType;
+  accentClass: string;
+  valueClass: string;
+  isLoading: boolean;
+  isCurrency?: boolean;
+  hidden?: boolean;
+  animationDelay?: number;
+}
+
+function StatCard({
+  label,
+  shortLabel,
+  value,
+  subtext,
+  icon: Icon,
+  accentClass,
+  valueClass,
+  isLoading,
+  isCurrency,
+  hidden = false,
+  animationDelay = 0,
+}: StatCardProps) {
+  const delayClass =
+    animationDelay === 0 ? "delay-0" :
+    animationDelay <= 75 ? "delay-75" :
+    animationDelay <= 150 ? "delay-150" : "delay-300";
+
+  if (isLoading) {
+    return (
+      <Card className={cn("overflow-hidden border-l-[3px]", accentClass)}>
+        {/* Mobile */}
+        <div className="p-3 lg:hidden flex items-center gap-3">
+          <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
+          <div className="space-y-1.5 flex-1">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-5 w-12" />
+          </div>
+        </div>
+        {/* Desktop */}
+        <div className="hidden lg:flex flex-col gap-3 p-4">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="h-7 w-7 rounded-md" />
+          </div>
+          <Skeleton className="h-8 w-20" />
+          <Skeleton className="h-3 w-16" />
+        </div>
+      </Card>
+    );
+  }
+
+  const displayValue = hidden ? (
+    <span className="tracking-widest text-muted-foreground/60 font-normal">••••</span>
+  ) : isCurrency ? (
+    <span className="inline-flex items-baseline gap-0.5">
+      <IndianRupee className="h-4 w-4 lg:h-5 lg:w-5 self-center" />
+      {formatCurrency(value ?? 0)}
+    </span>
+  ) : (
+    value ?? 0
+  );
+
+  return (
+    <Card
+      className={cn(
+        "overflow-hidden border-l-[3px] transition-all duration-200 hover:shadow-md",
+        "animate-in fade-in zoom-in-95 duration-300 fill-mode-both",
+        accentClass,
+        delayClass,
+      )}
+    >
+      {/* Mobile compact */}
+      <div className="p-3 lg:hidden">
+        <div className="flex items-center gap-2.5">
+          <div className={cn("rounded-md p-1.5 shrink-0 bg-muted/60")}>
+            <Icon className={cn("h-3.5 w-3.5", valueClass)} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium text-muted-foreground truncate">{shortLabel}</p>
+            <p className={cn("text-lg font-bold leading-tight tracking-tight font-display", valueClass)}>
+              {displayValue}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop full */}
+      <div className="hidden lg:flex flex-col gap-1 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+          <div className="rounded-md p-1.5 bg-muted/60 shrink-0 mt-0.5">
+            <Icon className={cn("h-3.5 w-3.5", valueClass)} />
+          </div>
+        </div>
+        <p className={cn("text-[28px] font-bold tracking-tight font-display leading-none mt-2", valueClass)}>
+          {displayValue}
+        </p>
+        {!hidden && subtext && (
+          <p className="text-xs text-muted-foreground mt-1">{subtext}</p>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+// ─── Section header ──────────────────────────────────────────────────────────
+
+function SectionHeader({
+  icon: Icon,
+  iconClass,
+  title,
+  badge,
+  action,
+}: {
+  icon: React.ElementType;
+  iconClass: string;
+  title: string;
+  badge?: number | string;
+  action?: { label: string; onClick: () => void };
+}) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2">
+        <Icon className={cn("h-4 w-4", iconClass)} />
+        <h3 className="text-sm font-semibold">{title}</h3>
+        {badge !== undefined && badge !== 0 && (
+          <span className="inline-flex items-center justify-center h-4.5 min-w-[1.125rem] px-1 rounded-full bg-muted text-[10px] font-semibold text-muted-foreground leading-none">
+            {badge}
+          </span>
+        )}
+      </div>
+      {action && (
+        <button
+          onClick={action.onClick}
+          className="text-xs font-medium text-primary/80 hover:text-primary inline-flex items-center gap-1 transition-colors"
+        >
+          {action.label}
+          <ArrowRight className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Main page ───────────────────────────────────────────────────────────────
 
 export function DashboardPage() {
   const { user } = useUser();
   const navigate = useNavigate();
+  const [valuesHidden, setValuesHidden] = useState(true);
 
-  const { data: memberStatsRes, isLoading: isLoadingMembers } =
-    useMemberStats();
-  const { data: membershipStatsRes, isLoading: isLoadingMemberships } =
-    useMembershipStats();
-  const { data: trainingStatsRes, isLoading: isLoadingTrainings } =
-    useTrainingStats();
+  const { data: memberStatsRes, isLoading: isLoadingMembers } = useMemberStats();
+  const { data: membershipStatsRes, isLoading: isLoadingMemberships } = useMembershipStats();
+  const { data: trainingStatsRes, isLoading: isLoadingTrainings } = useTrainingStats();
   const { data: expiringMembershipsRes } = useExpiringMemberships(7);
   const { data: expiringTrainingsRes } = useExpiringTrainings(7);
   const { data: inactiveSubRes } = useInactiveCandidates(1, 10);
@@ -70,23 +222,12 @@ export function DashboardPage() {
   const membershipStats = membershipStatsRes?.data;
   const trainingStats = trainingStatsRes?.data;
 
-  const expiringMemberships: Membership[] = expiringMembershipsRes?.data ?? [];
-  const expiringTrainings: Training[] = expiringTrainingsRes?.data ?? [];
-
-  const totalRevenue =
-    (membershipStats?.totalCollected ?? 0) +
-    (trainingStats?.totalCollected ?? 0);
-  const revenueThisMonth =
-    (membershipStats?.collectedThisMonth ?? 0) +
-    (trainingStats?.collectedThisMonth ?? 0);
+  const totalRevenue = (membershipStats?.totalCollected ?? 0) + (trainingStats?.totalCollected ?? 0);
+  const revenueThisMonth = (membershipStats?.collectedThisMonth ?? 0) + (trainingStats?.collectedThisMonth ?? 0);
 
   const inactiveSubMembers = inactiveSubRes?.data ?? [];
-
   const duesMembers = duesReportRes?.data ?? [];
-  const duesSummary = duesReportRes?.summary ?? {
-    totalMembersWithDues: 0,
-    grandTotal: 0,
-  };
+  const duesSummary = duesReportRes?.summary ?? { totalMembersWithDues: 0, grandTotal: 0 };
 
   const attendanceStats = attendanceStatsRes?.data;
   const currentlyInside = attendanceInsideRes?.data?.records ?? [];
@@ -94,7 +235,7 @@ export function DashboardPage() {
   const insideCount = attendanceStats?.currentlyInside ?? currentlyInside.length;
 
   const expiringItems = [
-    ...expiringMemberships.map((m) => ({
+    ...(expiringMembershipsRes?.data ?? [] as Membership[]).map((m) => ({
       id: m.id,
       name: m.member ? `${m.member.firstName} ${m.member.lastName}` : "Unknown",
       plan: m.planVariant?.planType?.name ?? "N/A",
@@ -102,7 +243,7 @@ export function DashboardPage() {
       type: "membership" as const,
       path: `/memberships/${m.id}`,
     })),
-    ...expiringTrainings.map((t) => ({
+    ...(expiringTrainingsRes?.data ?? [] as Training[]).map((t) => ({
       id: t.id,
       name: t.member ? `${t.member.firstName} ${t.member.lastName}` : "Unknown",
       plan: `${t.planVariant?.planType?.name ?? "N/A"} (${t.trainer?.name ?? "—"})`,
@@ -110,176 +251,182 @@ export function DashboardPage() {
       type: "training" as const,
       path: `/trainings/${t.id}`,
     })),
-  ].sort(
-    (a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime(),
-  );
+  ].sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="Dashboard"
-        description={`Welcome back, ${user?.firstName || "User"}!`}
-        actions={
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              size="sm"
-              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white border-0"
-              onClick={() => navigate(ROUTES.REGISTER_MEMBER)}
-            >
-              <UserCheck className="h-3.5 w-3.5" />
-              Add Member
-            </Button>
-            <Button
-              size="sm"
-              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white border-0"
-              onClick={() => navigate(ROUTES.CREATE_MEMBERSHIP)}
-            >
-              <CreditCard className="h-3.5 w-3.5" />
-              <span className="hidden xs:inline">New </span>Membership
-            </Button>
-            <Button
-              size="sm"
-              className="gap-2 bg-violet-600 hover:bg-violet-700 text-white border-0"
-              onClick={() => navigate(ROUTES.CREATE_TRAINING)}
-            >
-              <Dumbbell className="h-3.5 w-3.5" />
-              <span className="hidden xs:inline">New </span>Training
-            </Button>
-          </div>
-        }
-      />
+    <div className="space-y-5">
 
-      {/* Key Stats */}
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight font-display">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {greeting}, {user?.firstName || "there"}.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-muted-foreground hover:text-foreground h-8 px-2.5"
+            onClick={() => setValuesHidden((v) => !v)}
+          >
+            {valuesHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            <span className="hidden sm:inline text-xs">{valuesHidden ? "Show" : "Hide"}</span>
+          </Button>
+
+          <div className="h-4 w-px bg-border hidden sm:block" />
+
+          <Button
+            size="sm"
+            className="gap-1.5 h-8 bg-blue-600 hover:bg-blue-700 text-white border-0 text-xs"
+            onClick={() => navigate(ROUTES.REGISTER_MEMBER)}
+          >
+            <UserCheck className="h-3.5 w-3.5" />
+            Add Member
+          </Button>
+          <Button
+            size="sm"
+            className="gap-1.5 h-8 bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-xs"
+            onClick={() => navigate(ROUTES.CREATE_MEMBERSHIP)}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Membership
+          </Button>
+          <Button
+            size="sm"
+            className="gap-1.5 h-8 bg-violet-600 hover:bg-violet-700 text-white border-0 text-xs"
+            onClick={() => navigate(ROUTES.CREATE_TRAINING)}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Training
+          </Button>
+        </div>
+      </div>
+
+      {/* ── Key Stats ── */}
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Total Members"
-          shortLabel="Members"
+          label="Total Members" shortLabel="Members"
           value={memberStats?.total}
           subtext={memberStats ? `${memberStats.active} active` : undefined}
           icon={Users}
-          colorClass="text-blue-600 dark:text-blue-400"
-          bgClass="bg-blue-50 dark:bg-blue-950/50"
-          isLoading={isLoadingMembers}
-          animationDelay={0}
+          accentClass="border-l-blue-500"
+          valueClass="text-blue-600 dark:text-blue-400"
+          isLoading={isLoadingMembers} animationDelay={0} hidden={valuesHidden}
         />
         <StatCard
-          label="Active Memberships"
-          shortLabel="Memberships"
+          label="Active Memberships" shortLabel="Memberships"
           value={membershipStats?.active}
-          subtext={
-            membershipStats
-              ? `${membershipStats.newThisMonth} new this month`
-              : undefined
-          }
+          subtext={membershipStats ? `${membershipStats.newThisMonth} new this month` : undefined}
           icon={CreditCard}
-          colorClass="text-emerald-600 dark:text-emerald-400"
-          bgClass="bg-emerald-50 dark:bg-emerald-950/50"
-          isLoading={isLoadingMemberships}
-          animationDelay={75}
+          accentClass="border-l-emerald-500"
+          valueClass="text-emerald-600 dark:text-emerald-400"
+          isLoading={isLoadingMemberships} animationDelay={75} hidden={valuesHidden}
         />
         <StatCard
-          label="Active Trainings"
-          shortLabel="Trainings"
+          label="Active Trainings" shortLabel="Trainings"
           value={trainingStats?.active}
-          subtext={
-            trainingStats
-              ? `${trainingStats.newThisMonth} new this month`
-              : undefined
-          }
+          subtext={trainingStats ? `${trainingStats.newThisMonth} new this month` : undefined}
           icon={Dumbbell}
-          colorClass="text-violet-600 dark:text-violet-400"
-          bgClass="bg-violet-50 dark:bg-violet-950/50"
-          isLoading={isLoadingTrainings}
-          animationDelay={150}
+          accentClass="border-l-violet-500"
+          valueClass="text-violet-600 dark:text-violet-400"
+          isLoading={isLoadingTrainings} animationDelay={150} hidden={valuesHidden}
         />
         <StatCard
-          label="Total Revenue"
-          shortLabel="Revenue"
+          label="Total Revenue" shortLabel="Revenue"
           value={totalRevenue}
-          subtext={
-            revenueThisMonth > 0
-              ? `₹${formatCurrency(revenueThisMonth)} this month`
-              : undefined
-          }
+          subtext={revenueThisMonth > 0 ? `₹${formatCurrency(revenueThisMonth)} this month` : undefined}
           icon={TrendingUp}
-          colorClass="text-amber-600 dark:text-amber-400"
-          bgClass="bg-amber-50 dark:bg-amber-950/50"
-          isLoading={isLoadingMemberships || isLoadingTrainings}
-          isCurrency
-          animationDelay={225}
+          accentClass="border-l-amber-500"
+          valueClass="text-amber-600 dark:text-amber-400"
+          isLoading={isLoadingMemberships || isLoadingTrainings} isCurrency animationDelay={225} hidden={valuesHidden}
         />
       </div>
 
-      {/* Attendance + Expiring + Inactive */}
+      {/* ── Three-column row ── */}
       <div className="grid gap-4 lg:grid-cols-3">
+
         {/* Today's Attendance */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Activity className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              Today's Attendance
-            </CardTitle>
-            <button
-              className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1"
-              onClick={() => navigate(ROUTES.ATTENDANCE)}
-            >
-              View all
-              <ArrowRight className="h-3 w-3" />
-            </button>
-          </CardHeader>
-          <CardContent>
+        <Card className="overflow-hidden">
+          <CardContent className="p-4">
+            <SectionHeader
+              icon={Activity}
+              iconClass="text-emerald-600 dark:text-emerald-400"
+              title="Today's Attendance"
+              action={{ label: "View all", onClick: () => navigate(ROUTES.ATTENDANCE) }}
+            />
+
             {isLoadingAttendance ? (
-              <div className="grid grid-cols-2 gap-4">
-                {Array.from({ length: 2 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full rounded-lg" />
-                ))}
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2.5">
+                  <Skeleton className="h-20 rounded-xl" />
+                  <Skeleton className="h-20 rounded-xl" />
+                </div>
+                <Skeleton className="h-24 rounded-xl" />
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Currently Inside */}
-                  <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 p-3 text-center">
-                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                <div className="grid grid-cols-2 gap-2.5">
+                  {/* Inside Now */}
+                  <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 p-3 flex flex-col items-center justify-center gap-1 min-h-[76px]">
+                    <div className="flex items-center gap-1.5">
                       <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                       </span>
-                      <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Inside Now</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                        Inside
+                      </p>
                     </div>
-                    <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 font-display">{insideCount}</p>
+                    <p className="text-3xl font-bold font-display text-emerald-700 dark:text-emerald-400 leading-none">
+                      {insideCount}
+                    </p>
                   </div>
+
                   {/* Total Today */}
-                  <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 p-3 text-center">
-                    <div className="flex items-center justify-center gap-1.5 mb-1">
-                      <LogIn className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                      <p className="text-xs text-blue-700 dark:text-blue-400 font-medium">Total Today</p>
+                  <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 p-3 flex flex-col items-center justify-center gap-1 min-h-[76px]">
+                    <div className="flex items-center gap-1.5">
+                      <LogIn className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-400">
+                        Today
+                      </p>
                     </div>
-                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-400 font-display">{todayTotal}</p>
+                    <p className="text-3xl font-bold font-display text-blue-700 dark:text-blue-400 leading-none">
+                      {todayTotal}
+                    </p>
                   </div>
                 </div>
-                {/* Currently Inside list */}
+
+                {/* Currently inside list */}
                 {currentlyInside.length > 0 ? (
-                  <div className="rounded-lg border p-3">
-                    <p className="text-xs text-muted-foreground font-medium mb-2">Currently Inside</p>
-                    <div className="space-y-1.5">
-                      {currentlyInside.slice(0, 3).map((r) => (
-                        <div key={r.id} className="flex items-center gap-2 text-sm">
-                          <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground shrink-0">
-                            {r.member ? `${r.member.firstName[0]}${r.member.lastName[0]}` : "?"}
-                          </div>
-                          <span className="truncate font-medium">
-                            {r.member ? `${r.member.firstName} ${r.member.lastName}` : "—"}
-                          </span>
+                  <div className="rounded-xl border bg-muted/30 p-3 space-y-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Currently inside
+                    </p>
+                    {currentlyInside.slice(0, 3).map((r) => (
+                      <div key={r.id} className="flex items-center gap-2.5">
+                        <div className="h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-[10px] font-bold text-emerald-700 dark:text-emerald-400 shrink-0">
+                          {r.member ? `${r.member.firstName[0]}${r.member.lastName[0]}` : "?"}
                         </div>
-                      ))}
-                      {currentlyInside.length > 3 && (
-                        <p className="text-xs text-muted-foreground">+{currentlyInside.length - 3} more</p>
-                      )}
-                    </div>
+                        <span className="text-sm font-medium truncate">
+                          {r.member ? `${r.member.firstName} ${r.member.lastName}` : "—"}
+                        </span>
+                      </div>
+                    ))}
+                    {currentlyInside.length > 3 && (
+                      <p className="text-xs text-muted-foreground pl-8.5">
+                        +{currentlyInside.length - 3} more
+                      </p>
+                    )}
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-dashed p-3 flex items-center justify-center">
-                    <p className="text-xs text-muted-foreground text-center">No check-ins yet today</p>
+                  <div className="rounded-xl border border-dashed flex items-center justify-center min-h-[60px]">
+                    <p className="text-xs text-muted-foreground">No check-ins yet today</p>
                   </div>
                 )}
               </div>
@@ -288,81 +435,121 @@ export function DashboardPage() {
         </Card>
 
         {/* Expiring Soon */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-base flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" />
-              Expiring in 7 Days
-            </CardTitle>
-            {expiringItems.length > 0 && (
-              <Badge variant="secondary">{expiringItems.length}</Badge>
-            )}
-          </CardHeader>
-          <CardContent>
+        <Card className="overflow-hidden">
+          <CardContent className="p-4">
+            <SectionHeader
+              icon={CalendarDays}
+              iconClass="text-amber-600 dark:text-amber-400"
+              title="Expiring in 7 Days"
+              badge={expiringItems.length}
+            />
+
             {expiringItems.length === 0 ? (
-              <EmptyState message="No memberships or trainings expiring in the next 7 days." />
+              <div className="flex flex-col items-center justify-center min-h-[120px] gap-2">
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  No expirations in the next 7 days
+                </p>
+              </div>
             ) : (
               <div className="divide-y">
-                {expiringItems.slice(0, 10).map((item) => (
-                  <ExpiringItem
-                    key={`${item.type}-${item.id}`}
-                    name={item.name}
-                    plan={item.plan}
-                    endDate={item.endDate}
-                    type={item.type}
-                    onClick={() => navigate(item.path)}
-                  />
-                ))}
+                {expiringItems.slice(0, 10).map((item) => {
+                  const days = daysUntil(item.endDate);
+                  const urgent = days <= 2;
+                  const UrgencyIcon = urgent ? AlertTriangle : Clock;
+                  return (
+                    <div
+                      key={`${item.type}-${item.id}`}
+                      role="button"
+                      tabIndex={0}
+                      className="flex items-center justify-between py-2.5 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={() => navigate(item.path)}
+                      onKeyDown={(e) => e.key === "Enter" && navigate(item.path)}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={cn(
+                          "rounded-full p-1.5 shrink-0",
+                          urgent ? "bg-red-100 dark:bg-red-950/50" : "bg-amber-100 dark:bg-amber-950/50"
+                        )}>
+                          <UrgencyIcon className={cn(
+                            "h-3 w-3",
+                            urgent ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"
+                          )} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{item.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{item.plan}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <span className={cn(
+                          "text-xs font-semibold tabular-nums whitespace-nowrap",
+                          urgent ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"
+                        )}>
+                          {days <= 0 ? "Today" : days === 1 ? "Tomorrow" : `${days}d`}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </CardContent>
         </Card>
 
         {/* No Active Membership */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-base flex items-center gap-2">
-              <UserX className="h-4 w-4" />
-              No Active Membership
-            </CardTitle>
-            {inactiveSubMembers.length > 0 && (
-              <Badge variant="secondary">{inactiveSubMembers.length}</Badge>
-            )}
-          </CardHeader>
-          <CardContent>
+        <Card className="overflow-hidden">
+          <CardContent className="p-4">
+            <SectionHeader
+              icon={UserX}
+              iconClass="text-red-600 dark:text-red-400"
+              title="No Active Membership"
+              badge={inactiveSubMembers.length}
+            />
+
             {inactiveSubMembers.length === 0 ? (
-              <EmptyState message="All active members have a membership." />
+              <div className="flex flex-col items-center justify-center min-h-[120px] gap-2">
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                  <UserCheck className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  All active members have a membership
+                </p>
+              </div>
             ) : (
               <div className="divide-y">
                 {inactiveSubMembers.map((member) => {
                   const expiredAgo = member.lastSubscriptionEnd
                     ? Math.abs(daysUntil(member.lastSubscriptionEnd))
                     : null;
-
                   return (
                     <div
                       key={member.id}
-                      className="flex items-center justify-between py-3 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors"
+                      className="flex items-center justify-between py-2.5 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors group"
                       onClick={() => navigate(`/members/${member.id}`)}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="rounded-full p-1.5 shrink-0 bg-red-100 dark:bg-red-950/50">
-                          <UserX className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="h-7 w-7 rounded-full bg-red-100 dark:bg-red-950/50 border border-red-200 dark:border-red-900 flex items-center justify-center text-[10px] font-bold text-red-700 dark:text-red-400 shrink-0">
+                          {member.firstName[0]}{member.lastName[0]}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {member.firstName} {member.lastName}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {member.phone}
-                          </p>
+                          <p className="text-sm font-medium truncate">{member.firstName} {member.lastName}</p>
+                          <p className="text-xs text-muted-foreground truncate">{member.phone}</p>
                         </div>
                       </div>
-                      <span className="text-xs font-medium text-red-600 dark:text-red-400 whitespace-nowrap shrink-0 ml-2">
-                        {expiredAgo !== null
-                          ? `Expired ${expiredAgo}d ago`
-                          : "Never subscribed"}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <span className="text-xs font-medium text-red-600 dark:text-red-400 whitespace-nowrap tabular-nums">
+                          {expiredAgo !== null ? `${expiredAgo}d ago` : "Never"}
+                        </span>
+                        <button
+                          className="text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity hover:underline whitespace-nowrap"
+                          onClick={(e) => { e.stopPropagation(); navigate(ROUTES.CREATE_MEMBERSHIP); }}
+                        >
+                          + Add
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -372,143 +559,121 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* Outstanding Dues */}
+      {/* ── Outstanding Dues ── */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base flex items-center gap-2">
-            <IndianRupee className="h-4 w-4" />
-            Outstanding Dues
-          </CardTitle>
-          <div className="flex items-center gap-3">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <IndianRupee className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <h3 className="text-sm font-semibold">Outstanding Dues</h3>
+              {!isLoadingDues && duesSummary.totalMembersWithDues > 0 && (
+                <span className="inline-flex items-center justify-center h-4.5 min-w-[1.125rem] px-1 rounded-full bg-muted text-[10px] font-semibold text-muted-foreground leading-none">
+                  {duesSummary.totalMembersWithDues}
+                </span>
+              )}
+            </div>
             {!isLoadingDues && duesSummary.grandTotal > 0 && (
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Grand Total</p>
-                <p className="text-sm font-bold text-amber-600 dark:text-amber-400 inline-flex items-center">
-                  <IndianRupee className="h-3 w-3" />
-                  {formatCurrency(duesSummary.grandTotal)}
-                </p>
-              </div>
-            )}
-            {!isLoadingDues && duesSummary.totalMembersWithDues > 0 && (
-              <Badge variant="secondary">
-                {duesSummary.totalMembersWithDues} member
-                {duesSummary.totalMembersWithDues !== 1 ? "s" : ""}
-              </Badge>
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 text-xs font-bold text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60">
+                <IndianRupee className="h-3 w-3" />
+                {formatCurrency(duesSummary.grandTotal)}
+              </span>
             )}
           </div>
-        </CardHeader>
-        <CardContent>
+
           {isLoadingDues ? (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+                <Skeleton key={i} className="h-11 w-full rounded-lg" />
               ))}
             </div>
           ) : duesMembers.length === 0 ? (
-            <EmptyState message="No outstanding dues. All payments are up to date!" />
+            <div className="flex flex-col items-center justify-center min-h-[80px] gap-2">
+              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                <IndianRupee className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <p className="text-xs text-muted-foreground">All payments are up to date</p>
+            </div>
           ) : (
             <>
               {/* Desktop Table */}
-              <div className="hidden sm:block">
-                <div className="rounded-lg border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="text-left py-2.5 px-3 font-medium text-muted-foreground">
-                          Member
-                        </th>
-                        <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">
-                          Membership Dues
-                        </th>
-                        <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">
-                          Training Dues
-                        </th>
-                        <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">
-                          Total Due
-                        </th>
-                        <th className="w-8 py-2.5 px-3" />
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {duesMembers.map((m) => (
-                        <tr
-                          key={m.memberId}
-                          className="cursor-pointer hover:bg-muted/50 transition-colors"
-                          onClick={() => navigate(`/members/${m.memberId}`)}
-                        >
-                          <td className="py-2.5 px-3">
-                            <div>
-                              <p className="font-medium">
-                                {m.firstName} {m.lastName}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {m.phone}
-                              </p>
+              <div className="hidden sm:block rounded-xl border overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/40">
+                      <th className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Member</th>
+                      <th className="text-right py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Membership</th>
+                      <th className="text-right py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Training</th>
+                      <th className="text-right py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Due</th>
+                      <th className="w-8 py-2.5 px-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {duesMembers.map((m) => (
+                      <tr
+                        key={m.memberId}
+                        className="cursor-pointer hover:bg-muted/40 transition-colors"
+                        onClick={() => navigate(`/members/${m.memberId}`)}
+                      >
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="h-7 w-7 rounded-full bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center text-[10px] font-bold text-amber-700 dark:text-amber-400 shrink-0">
+                              {m.firstName[0]}{m.lastName[0]}
                             </div>
-                          </td>
-                          <td className="py-2.5 px-3 text-right">
-                            {m.membershipDuesTotal > 0 ? (
-                              <span className="inline-flex items-center">
-                                <IndianRupee className="h-3 w-3" />
-                                {formatCurrency(m.membershipDuesTotal)}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-3 text-right">
-                            {m.trainingDuesTotal > 0 ? (
-                              <span className="inline-flex items-center">
-                                <IndianRupee className="h-3 w-3" />
-                                {formatCurrency(m.trainingDuesTotal)}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-3 text-right">
-                            <span className="font-semibold text-amber-600 dark:text-amber-400 inline-flex items-center">
-                              <IndianRupee className="h-3 w-3" />
-                              {formatCurrency(m.totalDue)}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                            <div>
+                              <p className="font-medium text-sm">{m.firstName} {m.lastName}</p>
+                              <p className="text-xs text-muted-foreground">{m.phone}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 text-right">
+                          {m.membershipDuesTotal > 0
+                            ? <span className="inline-flex items-center font-medium text-foreground tabular-nums"><IndianRupee className="h-3 w-3" />{formatCurrency(m.membershipDuesTotal)}</span>
+                            : <span className="text-muted-foreground/50">—</span>}
+                        </td>
+                        <td className="py-2.5 px-3 text-right">
+                          {m.trainingDuesTotal > 0
+                            ? <span className="inline-flex items-center font-medium text-foreground tabular-nums"><IndianRupee className="h-3 w-3" />{formatCurrency(m.trainingDuesTotal)}</span>
+                            : <span className="text-muted-foreground/50">—</span>}
+                        </td>
+                        <td className="py-2.5 px-3 text-right">
+                          <span className="font-bold text-amber-600 dark:text-amber-400 inline-flex items-center tabular-nums">
+                            <IndianRupee className="h-3 w-3" />{formatCurrency(m.totalDue)}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
               {/* Mobile Cards */}
-              <div className="space-y-3 sm:hidden">
+              <div className="space-y-2.5 sm:hidden">
                 {duesMembers.map((m) => (
                   <div
                     key={m.memberId}
-                    className="rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="rounded-xl border p-3 cursor-pointer hover:bg-muted/40 transition-colors"
                     onClick={() => navigate(`/members/${m.memberId}`)}
                   >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <p className="font-medium text-sm">
-                        {m.firstName} {m.lastName}
-                      </p>
-                      <span className="font-semibold text-amber-600 dark:text-amber-400 inline-flex items-center text-sm">
-                        <IndianRupee className="h-3 w-3" />
-                        {formatCurrency(m.totalDue)}
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center text-[10px] font-bold text-amber-700 dark:text-amber-400 shrink-0">
+                          {m.firstName[0]}{m.lastName[0]}
+                        </div>
+                        <p className="font-medium text-sm">{m.firstName} {m.lastName}</p>
+                      </div>
+                      <span className="font-bold text-amber-600 dark:text-amber-400 inline-flex items-center text-sm tabular-nums">
+                        <IndianRupee className="h-3 w-3" />{formatCurrency(m.totalDue)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground pl-8">
                       <span>{m.phone}</span>
-                      <span>
-                        {m.membershipDuesTotal > 0 &&
-                          `Membership: ₹${formatCurrency(m.membershipDuesTotal)}`}
-                        {m.membershipDuesTotal > 0 &&
-                          m.trainingDuesTotal > 0 &&
-                          " · "}
-                        {m.trainingDuesTotal > 0 &&
-                          `Training: ₹${formatCurrency(m.trainingDuesTotal)}`}
+                      <span className="tabular-nums">
+                        {m.membershipDuesTotal > 0 && `M: ₹${formatCurrency(m.membershipDuesTotal)}`}
+                        {m.membershipDuesTotal > 0 && m.trainingDuesTotal > 0 && " · "}
+                        {m.trainingDuesTotal > 0 && `T: ₹${formatCurrency(m.trainingDuesTotal)}`}
                       </span>
                     </div>
                   </div>
@@ -518,11 +683,10 @@ export function DashboardPage() {
               {duesSummary.totalMembersWithDues > duesMembers.length && (
                 <div className="mt-3 pt-3 border-t text-center">
                   <button
-                    className="text-sm text-primary hover:underline font-medium inline-flex items-center gap-1"
+                    className="text-xs font-medium text-primary/80 hover:text-primary inline-flex items-center gap-1 transition-colors"
                     onClick={() => navigate(`${ROUTES.MEMBERS}?dues=true`)}
                   >
-                    View all {duesSummary.totalMembersWithDues} members with
-                    dues
+                    View all {duesSummary.totalMembersWithDues} members with dues
                     <ArrowRight className="h-3.5 w-3.5" />
                   </button>
                 </div>

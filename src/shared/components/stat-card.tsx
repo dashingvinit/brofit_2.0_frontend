@@ -23,6 +23,8 @@ export interface StatCardProps {
   isSelected?: boolean;
   onClick?: () => void;
   animationDelay?: number;
+  /** Masks the value and subtext with dots for privacy */
+  hidden?: boolean;
 }
 
 export function StatCard({
@@ -38,6 +40,7 @@ export function StatCard({
   isSelected,
   onClick,
   animationDelay = 0,
+  hidden = false,
 }: StatCardProps) {
   const delayClass =
     animationDelay === 0
@@ -99,7 +102,9 @@ export function StatCard({
               {shortLabel}
             </p>
             <p className="text-lg font-bold leading-tight tracking-tight font-display">
-              {isCurrency ? (
+              {hidden ? (
+                <span className="tracking-widest text-muted-foreground">••••</span>
+              ) : isCurrency ? (
                 <span className="inline-flex items-center">
                   <IndianRupee className="h-3.5 w-3.5" />
                   {formatCurrency(value ?? 0)}
@@ -124,7 +129,9 @@ export function StatCard({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold tracking-tight font-display">
-            {isCurrency ? (
+            {hidden ? (
+              <span className="tracking-widest text-muted-foreground">••••</span>
+            ) : isCurrency ? (
               <span className="inline-flex items-center">
                 <IndianRupee className="h-5 w-5" />
                 {formatCurrency(value ?? 0)}
@@ -133,7 +140,7 @@ export function StatCard({
               value ?? 0
             )}
           </div>
-          {subtext && (
+          {!hidden && subtext && (
             <p className="text-xs text-muted-foreground mt-1">{subtext}</p>
           )}
         </CardContent>
