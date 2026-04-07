@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Users,
   UserCheck,
@@ -7,6 +8,7 @@ import {
   RefreshCw,
   UserX,
   UserMinus,
+  RotateCcw,
 } from 'lucide-react';
 import {
   Card,
@@ -74,6 +76,53 @@ const METHOD_COLORS: Record<PaymentMethod, string> = {
   other: 'bg-zinc-400',
 };
 
+const RANK_STYLES = [
+  { medal: '🥇', bar: 'bg-amber-400', badge: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300' },
+  { medal: '🥈', bar: 'bg-zinc-400', badge: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300' },
+  { medal: '🥉', bar: 'bg-orange-400', badge: 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300' },
+];
+
+type TimeWindow = 3 | 6 | 12;
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 pt-2">
+      <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+        {children}
+      </span>
+      <div className="flex-1 h-px bg-border" />
+    </div>
+  );
+}
+
+function TimeToggle({
+  value,
+  onChange,
+  options,
+}: {
+  value: TimeWindow;
+  onChange: (v: TimeWindow) => void;
+  options: TimeWindow[];
+}) {
+  return (
+    <div className="flex items-center gap-0.5 rounded-md border bg-muted/50 p-0.5">
+      {options.map((o) => (
+        <button
+          key={o}
+          onClick={() => onChange(o)}
+          className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+            value === o
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {o}M
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ─── Stat Cards ───────────────────────────────────────────────────────────────
 
 function AnalyticsStatCards() {
@@ -82,6 +131,10 @@ function AnalyticsStatCards() {
   const { data: trainingStatsRes, isLoading: trainingLoading } = useTrainingStats();
 
   const isLoading = memberLoading || membershipLoading || trainingLoading;
+
+  const membershipCollected = membershipStatsRes?.data?.collectedThisMonth ?? 0;
+  const trainingCollected = trainingStatsRes?.data?.collectedThisMonth ?? 0;
+  const monthlyRevenue = membershipCollected + trainingCollected;
 
   const cards = [
     {
@@ -109,9 +162,9 @@ function AnalyticsStatCards() {
       bgClass: 'bg-violet-50 dark:bg-violet-950/50',
     },
     {
-      label: 'Active Trainings',
-      shortLabel: 'Trainings',
-      value: trainingStatsRes?.data ? String(trainingStatsRes.data.active) : '—',
+      label: 'Monthly Revenue',
+      shortLabel: 'Revenue',
+      value: isLoading ? '—' : `₹${formatCurrency(monthlyRevenue)}`,
       icon: IndianRupee,
       colorClass: 'text-amber-600 dark:text-amber-400',
       bgClass: 'bg-amber-50 dark:bg-amber-950/50',
@@ -181,604 +234,6 @@ function AnalyticsStatCards() {
           </div>
         </Card>
       ))}
-    </div>
-  );
-}
-
-// ─── Member Growth Chart ───────────────────────────────────────────────────────
-
-const memberGrowthChartConfig = {
-  newMembers: {
-    label: 'New Members',
-    color: 'var(--chart-1)',
-  },
-} satisfies ChartConfig;
-
-function MemberGrowthCard() {
-  const { data: growthRes, isLoading } = useMemberGrowth(12);
-  const points = growthRes?.data ?? [];
-
-  const chartData = points.map((p) => ({
-    month: new Date(p.year, p.month - 1, 1).toLocaleString('default', { month: 'short', year: '2-digit' }),
-    newMembers: p.newMembers,
-  }));
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-muted-foreground" />
-          Member Growth
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex items-end gap-2 h-40">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="flex-1 flex flex-col gap-1 items-center">
-                <Skeleton className="w-full" style={{ height: `${20 + i * 4}px` }} />
-                <Skeleton className="h-2.5 w-5" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <ChartContainer config={memberGrowthChartConfig} className="h-[180px] w-full">
-            <BarChart data={chartData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
-              <CartesianGrid vertical={false} />
-              <XAxis
-                dataKey="month"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                tick={{ fontSize: 11 }}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tickMargin={4}
-                tick={{ fontSize: 11 }}
-                allowDecimals={false}
-              />
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent indicator="dot" />}
-              />
-              <Bar dataKey="newMembers" fill="var(--color-newMembers)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ChartContainer>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Revenue Breakdown Chart ───────────────────────────────────────────────────
-
-const revenueChartConfig = {
-  membership: {
-    label: 'Membership',
-    color: 'var(--chart-1)',
-  },
-  training: {
-    label: 'Training',
-    color: 'var(--chart-2)',
-  },
-} satisfies ChartConfig;
-
-function RevenueBreakdownCard() {
-  const { data: revenueRes, isLoading } = useRevenueBreakdown(6);
-  const points = revenueRes?.data ?? [];
-
-  const chartData = points.map((p) => ({
-    month: new Date(p.year, p.month - 1, 1).toLocaleString('default', { month: 'short', year: '2-digit' }),
-    membership: p.membership,
-    training: p.training,
-  }));
-
-  const formatYTick = (v: number) => {
-    if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`;
-    if (v >= 1000) return `₹${(v / 1000).toFixed(0)}k`;
-    return `₹${v}`;
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          Revenue by Category
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex items-end gap-2 h-40">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex-1 flex flex-col gap-1 items-center">
-                <Skeleton className="w-full" style={{ height: `${30 + i * 6}px` }} />
-                <Skeleton className="h-2.5 w-6" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <ChartContainer config={revenueChartConfig} className="h-[180px] w-full">
-            <BarChart data={chartData} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
-              <CartesianGrid vertical={false} />
-              <XAxis
-                dataKey="month"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                tick={{ fontSize: 11 }}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tickMargin={4}
-                tick={{ fontSize: 11 }}
-                tickFormatter={formatYTick}
-              />
-              <ChartTooltip
-                cursor={false}
-                content={
-                  <ChartTooltipContent
-                    indicator="dot"
-                    formatter={(value, name) => (
-                      <div className="flex items-center justify-between gap-4 w-full">
-                        <span className="text-muted-foreground">
-                          {revenueChartConfig[name as keyof typeof revenueChartConfig]?.label ?? name}
-                        </span>
-                        <span className="font-mono font-medium tabular-nums text-foreground">
-                          ₹{formatCurrency(Number(value))}
-                        </span>
-                      </div>
-                    )}
-                  />
-                }
-              />
-              <Bar dataKey="membership" fill="var(--color-membership)" radius={[4, 4, 0, 0]} stackId="a" />
-              <Bar dataKey="training" fill="var(--color-training)" radius={[4, 4, 0, 0]} stackId="a" />
-            </BarChart>
-          </ChartContainer>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Top Plans Card ────────────────────────────────────────────────────────────
-
-function TopPlansCard() {
-  const { data: plansRes, isLoading } = useTopPlans(6);
-  const plans = plansRes?.data ?? [];
-  const maxCount = Math.max(...plans.map((p) => p.totalCount), 1);
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          Best-Selling Plans
-          <span className="ml-auto text-xs font-normal text-muted-foreground">Last 6 months</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <Skeleton className="h-4 w-4 rounded" />
-                <Skeleton className="h-4 flex-1" />
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-            ))}
-          </div>
-        ) : plans.length === 0 ? (
-          <EmptyState message="No plan data yet" />
-        ) : (
-          <div className="space-y-3">
-            {plans.map((plan, rank) => {
-              const barWidth = (plan.totalCount / maxCount) * 100;
-              const isMembership = plan.category === 'membership';
-              const barColor = isMembership ? 'bg-blue-500' : 'bg-violet-500';
-              const badgeColor = isMembership
-                ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
-                : 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300';
-
-              return (
-                <div key={plan.planName} className="group">
-                  {/* Main row */}
-                  <div className="flex items-center gap-3 py-2">
-                    <span className="w-5 text-xs text-muted-foreground shrink-0 text-right">
-                      {rank + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-sm font-medium truncate">{plan.planName}</span>
-                        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${badgeColor}`}>
-                          {plan.category}
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className={`h-1.5 rounded-full transition-all ${barColor}`}
-                          style={{ width: `${barWidth}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="shrink-0 text-right space-y-0.5">
-                      <p className="text-sm font-semibold inline-flex items-center justify-end">
-                        <IndianRupee className="h-3 w-3" />
-                        {formatCurrency(plan.totalRevenue)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{plan.totalCount} sold</p>
-                    </div>
-                  </div>
-
-                  {/* Variants — compact pill row */}
-                  {plan.variants.length > 0 && (
-                    <div className="ml-8 mb-1 flex flex-wrap gap-1.5">
-                      {plan.variants.map((v) => (
-                        <span
-                          key={v.planVariantId}
-                          className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
-                        >
-                          {v.durationLabel}
-                          <span className="font-medium text-foreground">{v.count}</span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Retention Card ────────────────────────────────────────────────────────────
-
-function RetentionCard() {
-  const { data: retentionRes, isLoading } = useRetention();
-  const r = retentionRes?.data;
-
-  const total = r ? r.repeatCount + r.oneTimeCount + r.churnedCount : 0;
-  const repeatPct = total > 0 && r ? (r.repeatCount / total) * 100 : 0;
-  const oneTimePct = total > 0 && r ? (r.oneTimeCount / total) * 100 : 0;
-  const churnedPct = total > 0 && r ? (r.churnedCount / total) * 100 : 0;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <RefreshCw className="h-4 w-4 text-muted-foreground" />
-          Member Retention
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-2 w-full rounded-full" />
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-5 w-full" />
-            ))}
-          </div>
-        ) : r ? (
-          <div className="space-y-4">
-            {/* Segmented bar */}
-            <div className="h-2 rounded-full overflow-hidden flex">
-              <div
-                className="bg-emerald-500 transition-all"
-                style={{ width: `${repeatPct}%` }}
-                title={`Repeat: ${r.repeatCount}`}
-              />
-              <div
-                className="bg-amber-400 transition-all"
-                style={{ width: `${oneTimePct}%` }}
-                title={`One-time: ${r.oneTimeCount}`}
-              />
-              <div
-                className="bg-red-400 transition-all"
-                style={{ width: `${churnedPct}%` }}
-                title={`Churned: ${r.churnedCount}`}
-              />
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-sm text-muted-foreground">Repeat members</span>
-                </div>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                  {r.repeatCount}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <UserMinus className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <span className="text-sm text-muted-foreground">One-time members</span>
-                </div>
-                <span className="font-semibold text-amber-600 dark:text-amber-400">
-                  {r.oneTimeCount}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <UserX className="h-4 w-4 text-red-600 dark:text-red-400" />
-                  <span className="text-sm text-muted-foreground">Churned</span>
-                </div>
-                <span className="font-semibold text-red-600 dark:text-red-400">
-                  {r.churnedCount}
-                </span>
-              </div>
-              <div className="h-px bg-border" />
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Retention rate</span>
-                <span className="font-bold text-violet-600 dark:text-violet-400">
-                  {r.retentionRate}%
-                </span>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Payment Methods Card ──────────────────────────────────────────────────────
-
-function PaymentMethodsCard() {
-  const { data: methodsRes, isLoading } = usePaymentMethods();
-  const methods = methodsRes?.data ?? [];
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <IndianRupee className="h-4 w-4 text-muted-foreground" />
-          Payment Methods
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-                <Skeleton className="h-1.5 w-full rounded-full" />
-              </div>
-            ))}
-          </div>
-        ) : methods.length === 0 ? (
-          <EmptyState message="No payment data yet" />
-        ) : (
-          <div className="space-y-4">
-            {methods.map((m) => (
-              <div key={m.method}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-block h-2 w-2 rounded-full ${METHOD_COLORS[m.method]}`}
-                    />
-                    <span className="text-sm">{METHOD_LABELS[m.method]}</span>
-                    <span className="text-xs text-muted-foreground">({m.count})</span>
-                  </div>
-                  <span className="text-sm font-semibold inline-flex items-center">
-                    <IndianRupee className="h-3 w-3" />
-                    {formatCurrency(m.amount)}
-                  </span>
-                </div>
-                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={`h-1.5 rounded-full ${METHOD_COLORS[m.method]}`}
-                    style={{ width: `${m.percentage}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Trainer Performance ───────────────────────────────────────────────────────
-
-function TrainerPerformanceCard() {
-  const { data: trainersRes, isLoading } = useTrainerPerformance();
-  const trainers = trainersRes?.data ?? [];
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserCheck className="h-4 w-4 text-muted-foreground" />
-          Trainer Performance
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        {isLoading ? (
-          <div className="p-4 space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
-        ) : trainers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <p className="text-sm text-muted-foreground">No trainer data yet</p>
-          </div>
-        ) : (
-          <>
-            {/* Desktop */}
-            <div className="hidden md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Trainer</TableHead>
-                    <TableHead className="text-center">Active Clients</TableHead>
-                    <TableHead className="text-center">Total Clients</TableHead>
-                    <TableHead className="text-right">Revenue</TableHead>
-                    <TableHead className="text-right">Avg Plan</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {trainers.map((t) => (
-                    <TableRow key={t.trainerId}>
-                      <TableCell className="font-medium">{t.trainerName}</TableCell>
-                      <TableCell className="text-center">
-                        <span className="inline-flex items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-xs font-medium">
-                          {t.activeClients}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center text-sm text-muted-foreground">
-                        {t.totalClients}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold whitespace-nowrap">
-                        <span className="inline-flex items-center justify-end">
-                          <IndianRupee className="h-3 w-3" />
-                          {formatCurrency(t.totalRevenue)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right text-sm text-muted-foreground whitespace-nowrap">
-                        <span className="inline-flex items-center justify-end">
-                          <IndianRupee className="h-3 w-3" />
-                          {formatCurrency(t.avgPlanPrice)}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Mobile */}
-            <div className="md:hidden divide-y">
-              {trainers.map((t) => (
-                <div key={t.trainerId} className="flex items-center justify-between px-4 py-3 gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm truncate">{t.trainerName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t.activeClients} active · {t.totalClients} total clients
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="font-semibold text-sm inline-flex items-center">
-                      <IndianRupee className="h-3 w-3" />
-                      {formatCurrency(t.totalRevenue)}
-                    </p>
-                    <p className="text-xs text-muted-foreground inline-flex items-center">
-                      avg <IndianRupee className="h-2.5 w-2.5 mx-0.5" />
-                      {formatCurrency(t.avgPlanPrice)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Demographics Card ─────────────────────────────────────────────────────────
-
-function DemographicsCard() {
-  const { data: demoRes, isLoading } = useDemographics();
-  const demo = demoRes?.data;
-
-  return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {/* Gender */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            Gender Distribution
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-5 w-full" />
-              ))}
-            </div>
-          ) : demo && demo.gender.length > 0 ? (
-            <div className="space-y-3">
-              {demo.gender.map((g) => (
-                <div key={g.label}>
-                  <div className="flex items-center justify-between mb-1 text-sm">
-                    <span className="text-muted-foreground">{g.label}</span>
-                    <span className="font-medium">
-                      {g.count}{' '}
-                      <span className="text-muted-foreground font-normal">({g.percentage}%)</span>
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-1.5 rounded-full bg-blue-500"
-                      style={{ width: `${g.percentage}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState message="No data yet" />
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Age */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            Age Distribution
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-5 w-full" />
-              ))}
-            </div>
-          ) : demo && demo.ageBrackets.length > 0 ? (
-            <div className="space-y-3">
-              {demo.ageBrackets.map((b) => (
-                <div key={b.label}>
-                  <div className="flex items-center justify-between mb-1 text-sm">
-                    <span className="text-muted-foreground">{b.label}</span>
-                    <span className="font-medium">
-                      {b.count}{' '}
-                      <span className="text-muted-foreground font-normal">({b.percentage}%)</span>
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-1.5 rounded-full bg-violet-500"
-                      style={{ width: `${b.percentage}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState message="No data yet" />
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
@@ -911,7 +366,6 @@ function LifetimeEarningsPieCard() {
               </div>
 
               <div className="space-y-3">
-                {/* Membership */}
                 <div>
                   <div className="flex items-center justify-between mb-1 text-sm">
                     <div className="flex items-center gap-2">
@@ -934,7 +388,6 @@ function LifetimeEarningsPieCard() {
                   </div>
                 </div>
 
-                {/* Training */}
                 <div>
                   <div className="flex items-center justify-between mb-1 text-sm">
                     <div className="flex items-center gap-2">
@@ -965,35 +418,673 @@ function LifetimeEarningsPieCard() {
   );
 }
 
+// ─── Member Growth Chart ───────────────────────────────────────────────────────
+
+const memberGrowthChartConfig = {
+  newMembers: {
+    label: 'New Members',
+    color: 'var(--chart-1)',
+  },
+} satisfies ChartConfig;
+
+function MemberGrowthCard() {
+  const [window, setWindow] = useState<TimeWindow>(12);
+  const { data: growthRes, isLoading } = useMemberGrowth(window);
+  const points = growthRes?.data ?? [];
+
+  const chartData = points.map((p) => ({
+    month: new Date(p.year, p.month - 1, 1).toLocaleString('default', { month: 'short', year: '2-digit' }),
+    newMembers: p.newMembers,
+  }));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          Member Growth
+          <div className="ml-auto">
+            <TimeToggle value={window} onChange={setWindow} options={[3, 6, 12]} />
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-end gap-2 h-40">
+            {Array.from({ length: window }).map((_, i) => (
+              <div key={i} className="flex-1 flex flex-col gap-1 items-center">
+                <Skeleton className="w-full" style={{ height: `${20 + i * 4}px` }} />
+                <Skeleton className="h-2.5 w-5" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <ChartContainer config={memberGrowthChartConfig} className="h-[180px] w-full">
+            <BarChart data={chartData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="month"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={4}
+                tick={{ fontSize: 11 }}
+                allowDecimals={false}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dot" />}
+              />
+              <Bar dataKey="newMembers" fill="var(--color-newMembers)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Revenue Breakdown Chart ───────────────────────────────────────────────────
+
+const revenueChartConfig = {
+  membership: {
+    label: 'Membership',
+    color: 'var(--chart-1)',
+  },
+  training: {
+    label: 'Training',
+    color: 'var(--chart-2)',
+  },
+} satisfies ChartConfig;
+
+function RevenueBreakdownCard() {
+  const [window, setWindow] = useState<TimeWindow>(6);
+  const { data: revenueRes, isLoading } = useRevenueBreakdown(window);
+  const points = revenueRes?.data ?? [];
+
+  const chartData = points.map((p) => ({
+    month: new Date(p.year, p.month - 1, 1).toLocaleString('default', { month: 'short', year: '2-digit' }),
+    membership: p.membership,
+    training: p.training,
+  }));
+
+  const formatYTick = (v: number) => {
+    if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`;
+    if (v >= 1000) return `₹${(v / 1000).toFixed(0)}k`;
+    return `₹${v}`;
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          Revenue by Category
+          <div className="ml-auto">
+            <TimeToggle value={window} onChange={setWindow} options={[3, 6, 12]} />
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-end gap-2 h-40">
+            {Array.from({ length: window }).map((_, i) => (
+              <div key={i} className="flex-1 flex flex-col gap-1 items-center">
+                <Skeleton className="w-full" style={{ height: `${30 + i * 6}px` }} />
+                <Skeleton className="h-2.5 w-6" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <ChartContainer config={revenueChartConfig} className="h-[180px] w-full">
+            <BarChart data={chartData} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="month"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={4}
+                tick={{ fontSize: 11 }}
+                tickFormatter={formatYTick}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={
+                  <ChartTooltipContent
+                    indicator="dot"
+                    formatter={(value, name) => (
+                      <div className="flex items-center justify-between gap-4 w-full">
+                        <span className="text-muted-foreground">
+                          {revenueChartConfig[name as keyof typeof revenueChartConfig]?.label ?? name}
+                        </span>
+                        <span className="font-mono font-medium tabular-nums text-foreground">
+                          ₹{formatCurrency(Number(value))}
+                        </span>
+                      </div>
+                    )}
+                  />
+                }
+              />
+              <Bar dataKey="membership" fill="var(--color-membership)" radius={[4, 4, 0, 0]} stackId="a" />
+              <Bar dataKey="training" fill="var(--color-training)" radius={[4, 4, 0, 0]} stackId="a" />
+            </BarChart>
+          </ChartContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Top Plans Card ────────────────────────────────────────────────────────────
+
+function TopPlansCard() {
+  const { data: plansRes, isLoading } = useTopPlans(6);
+  const plans = plansRes?.data ?? [];
+  const maxCount = Math.max(...plans.map((p) => p.totalCount), 1);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          Best-Selling Plans
+          <span className="ml-auto text-xs font-normal text-muted-foreground">Last 6 months</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="h-4 w-4 rounded" />
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
+          </div>
+        ) : plans.length === 0 ? (
+          <EmptyState message="No plan data yet" />
+        ) : (
+          <div className="space-y-3">
+            {plans.map((plan, rank) => {
+              const barWidth = (plan.totalCount / maxCount) * 100;
+              const isMembership = plan.category === 'membership';
+              const rankStyle = RANK_STYLES[rank];
+              const barColor = rankStyle
+                ? rankStyle.bar
+                : isMembership
+                ? 'bg-blue-500'
+                : 'bg-violet-500';
+              const badgeColor = isMembership
+                ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
+                : 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300';
+
+              return (
+                <div key={plan.planName} className="group">
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="w-5 text-center shrink-0 text-sm">
+                      {rankStyle ? (
+                        rankStyle.medal
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{rank + 1}</span>
+                      )}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-sm font-medium truncate">{plan.planName}</span>
+                        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${badgeColor}`}>
+                          {plan.category}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-1.5 rounded-full transition-all ${barColor}`}
+                          style={{ width: `${barWidth}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right space-y-0.5">
+                      <p className="text-sm font-semibold inline-flex items-center justify-end">
+                        <IndianRupee className="h-3 w-3" />
+                        {formatCurrency(plan.totalRevenue)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{plan.totalCount} sold</p>
+                    </div>
+                  </div>
+
+                  {plan.variants.length > 0 && (
+                    <div className="ml-8 mb-1 flex flex-wrap gap-1.5">
+                      {plan.variants.map((v) => (
+                        <span
+                          key={v.planVariantId}
+                          className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+                        >
+                          {v.durationLabel}
+                          <span className="font-medium text-foreground">{v.count}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Retention Card ────────────────────────────────────────────────────────────
+
+function RetentionCard() {
+  const { data: retentionRes, isLoading } = useRetention();
+  const r = retentionRes?.data;
+
+  const total = r ? r.repeatCount + r.oneTimeCount + r.churnedCount : 0;
+  const repeatPct = total > 0 && r ? (r.repeatCount / total) * 100 : 0;
+  const oneTimePct = total > 0 && r ? (r.oneTimeCount / total) * 100 : 0;
+  const churnedPct = total > 0 && r ? (r.churnedCount / total) * 100 : 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <RefreshCw className="h-4 w-4 text-muted-foreground" />
+          Member Retention
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-2 w-full rounded-full" />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-5 w-full" />
+            ))}
+          </div>
+        ) : r ? (
+          <div className="space-y-4">
+            <div className="h-2 rounded-full overflow-hidden flex">
+              <div
+                className="bg-emerald-500 transition-all"
+                style={{ width: `${repeatPct}%` }}
+                title={`Repeat: ${r.repeatCount}`}
+              />
+              <div
+                className="bg-amber-400 transition-all"
+                style={{ width: `${oneTimePct}%` }}
+                title={`One-time: ${r.oneTimeCount}`}
+              />
+              <div
+                className="bg-red-400 transition-all"
+                style={{ width: `${churnedPct}%` }}
+                title={`Churned: ${r.churnedCount}`}
+              />
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-sm text-muted-foreground">Repeat members</span>
+                </div>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  {r.repeatCount}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UserMinus className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <span className="text-sm text-muted-foreground">One-time members</span>
+                </div>
+                <span className="font-semibold text-amber-600 dark:text-amber-400">
+                  {r.oneTimeCount}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UserX className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  <span className="text-sm text-muted-foreground">Churned</span>
+                </div>
+                <span className="font-semibold text-red-600 dark:text-red-400">
+                  {r.churnedCount}
+                </span>
+              </div>
+              <div className="h-px bg-border" />
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Retention rate</span>
+                <span className="font-bold text-violet-600 dark:text-violet-400">
+                  {r.retentionRate}%
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Payment Methods Card ──────────────────────────────────────────────────────
+
+function PaymentMethodsCard() {
+  const { data: methodsRes, isLoading } = usePaymentMethods();
+  const methods = methodsRes?.data ?? [];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <IndianRupee className="h-4 w-4 text-muted-foreground" />
+          Payment Methods
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+                <Skeleton className="h-1.5 w-full rounded-full" />
+              </div>
+            ))}
+          </div>
+        ) : methods.length === 0 ? (
+          <EmptyState message="No payment data yet" />
+        ) : (
+          <div className="space-y-4">
+            {methods.map((m) => (
+              <div key={m.method}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-block h-2 w-2 rounded-full ${METHOD_COLORS[m.method]}`}
+                    />
+                    <span className="text-sm">{METHOD_LABELS[m.method]}</span>
+                    <span className="text-xs text-muted-foreground">({m.count})</span>
+                  </div>
+                  <span className="text-sm font-semibold inline-flex items-center">
+                    <IndianRupee className="h-3 w-3" />
+                    {formatCurrency(m.amount)}
+                  </span>
+                </div>
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-1.5 rounded-full ${METHOD_COLORS[m.method]}`}
+                    style={{ width: `${m.percentage}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Demographics Card ─────────────────────────────────────────────────────────
+
+function DemographicsCard() {
+  const { data: demoRes, isLoading } = useDemographics();
+  const demo = demoRes?.data;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          Demographics
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div className="space-y-3">
+              <Skeleton className="h-3 w-20" />
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-5 w-full" />
+              ))}
+            </div>
+            <div className="space-y-3">
+              <Skeleton className="h-3 w-20" />
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-5 w-full" />
+              ))}
+            </div>
+          </div>
+        ) : !demo ? (
+          <EmptyState message="No data yet" />
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2">
+            {/* Gender */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60 mb-3">
+                Gender
+              </p>
+              {demo.gender.length > 0 ? (
+                <div className="space-y-3">
+                  {demo.gender.map((g) => (
+                    <div key={g.label}>
+                      <div className="flex items-center justify-between mb-1 text-sm">
+                        <span className="text-muted-foreground">{g.label}</span>
+                        <span className="font-medium">
+                          {g.count}{' '}
+                          <span className="text-muted-foreground font-normal">({g.percentage}%)</span>
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-1.5 rounded-full bg-blue-500"
+                          style={{ width: `${g.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No data</p>
+              )}
+            </div>
+
+            {/* Age */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60 mb-3">
+                Age Brackets
+              </p>
+              {demo.ageBrackets.length > 0 ? (
+                <div className="space-y-3">
+                  {demo.ageBrackets.map((b) => (
+                    <div key={b.label}>
+                      <div className="flex items-center justify-between mb-1 text-sm">
+                        <span className="text-muted-foreground">{b.label}</span>
+                        <span className="font-medium">
+                          {b.count}{' '}
+                          <span className="text-muted-foreground font-normal">({b.percentage}%)</span>
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-1.5 rounded-full bg-violet-500"
+                          style={{ width: `${b.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No data</p>
+              )}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Trainer Performance ───────────────────────────────────────────────────────
+
+function TrainerPerformanceCard() {
+  const { data: trainersRes, isLoading } = useTrainerPerformance();
+  const trainers = trainersRes?.data ?? [];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <UserCheck className="h-4 w-4 text-muted-foreground" />
+          Trainer Performance
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        {isLoading ? (
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : trainers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <p className="text-sm text-muted-foreground">No trainer data yet</p>
+          </div>
+        ) : (
+          <>
+            {/* Desktop */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Trainer</TableHead>
+                    <TableHead className="text-center">Active Clients</TableHead>
+                    <TableHead className="text-center">Total Clients</TableHead>
+                    <TableHead className="text-right">Revenue</TableHead>
+                    <TableHead className="text-right">Avg Plan</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {trainers.map((t) => (
+                    <TableRow key={t.trainerId}>
+                      <TableCell className="font-medium">{t.trainerName}</TableCell>
+                      <TableCell className="text-center">
+                        <span className="inline-flex items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-xs font-medium">
+                          {t.activeClients}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center text-sm text-muted-foreground">
+                        {t.totalClients}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold whitespace-nowrap">
+                        <span className="inline-flex items-center justify-end">
+                          <IndianRupee className="h-3 w-3" />
+                          {formatCurrency(t.totalRevenue)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right text-sm text-muted-foreground whitespace-nowrap">
+                        <span className="inline-flex items-center justify-end">
+                          <IndianRupee className="h-3 w-3" />
+                          {formatCurrency(t.avgPlanPrice)}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile */}
+            <div className="md:hidden divide-y">
+              {trainers.map((t) => (
+                <div key={t.trainerId} className="flex items-center justify-between px-4 py-3 gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm truncate">{t.trainerName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t.activeClients} active · {t.totalClients} total clients
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-semibold text-sm inline-flex items-center">
+                      <IndianRupee className="h-3 w-3" />
+                      {formatCurrency(t.totalRevenue)}
+                    </p>
+                    <p className="text-xs text-muted-foreground inline-flex items-center">
+                      avg <IndianRupee className="h-2.5 w-2.5 mx-0.5" />
+                      {formatCurrency(t.avgPlanPrice)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export function AnalyticsPage() {
+  const [lastRefreshed, setLastRefreshed] = useState(() => new Date());
+
+  const refreshLabel = lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
   return (
     <div className="space-y-4">
       <PageHeader
         title="Analytics"
         description="Member trends, plan performance, and revenue insights"
+        actions={
+          <button
+            onClick={() => setLastRefreshed(new Date())}
+            className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Updated {refreshLabel}
+          </button>
+        }
       />
 
+      {/* Overview */}
       <AnalyticsStatCards />
+      <LifetimeEarningsPieCard />
 
+      {/* Growth */}
+      <SectionLabel>Growth</SectionLabel>
       <div className="grid gap-4 md:grid-cols-2">
         <MemberGrowthCard />
         <RevenueBreakdownCard />
       </div>
 
-      <LifetimeEarningsPieCard />
-
-      <TopPlansCard />
-
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Products & Retention */}
+      <SectionLabel>Products & Retention</SectionLabel>
+      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+        <TopPlansCard />
         <RetentionCard />
-        <PaymentMethodsCard />
       </div>
 
+      {/* Operations */}
+      <SectionLabel>Operations</SectionLabel>
       <TrainerPerformanceCard />
-
-      <DemographicsCard />
+      <div className="grid gap-4 md:grid-cols-2">
+        <PaymentMethodsCard />
+        <DemographicsCard />
+      </div>
     </div>
   );
 }
