@@ -7,6 +7,12 @@ import { AxiosProvider } from './app/providers/axios-provider'
 import { ViewProvider } from './shared/hooks/use-view'
 import { AppRouter } from './app/routes'
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AppProvider>

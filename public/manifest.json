@@ -1,0 +1,17 @@
+{
+  "name": "Brofit",
+  "short_name": "Brofit",
+  "description": "Gym management made simple",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#18181b",
+  "icons": [
+    {
+      "src": "/brand_logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -30,6 +30,7 @@ import {
 } from "@/shared/components/ui/sidebar";
 import { Separator } from "@/shared/components/ui/separator";
 import { ThemeToggle } from "@/shared/components/theme-toggle";
+import { PwaInstallPrompt } from "@/shared/components/pwa-install-prompt";
 import { NavFlat } from "@/shared/components/nav-flat";
 import { NavMain } from "@/shared/components/nav-main";
 import { ViewSwitcher } from "@/shared/components/view-switcher";
@@ -292,6 +293,7 @@ export function DashboardLayout() {
           </main>
         </SidebarInset>
       </div>
+      <PwaInstallPrompt />
     </SidebarProvider>
   );
 }
