@@ -18,6 +18,9 @@ import { Card } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Separator } from '@/shared/components/ui/separator';
 import brandLogo from '@/assets/brand_logo.png';
+import gymImage1 from '@/assets/1.jpg';
+import gymImage2 from '@/assets/2.jpg';
+import gymImage3 from '@/assets/3.jpg';
 
 const facilities = [
   {
@@ -65,13 +68,10 @@ const highlights = [
   { icon: Flame, value: 'Certified', label: 'Expert Trainers' },
 ];
 
-// Replace null with your imported image, e.g.: import gym1 from '@/assets/gym/gym1.jpg'
 const slides: { src: string | null; label: string }[] = [
-  { src: null, label: 'Weight Training Area' },
-  { src: null, label: 'Cardio Zone' },
-  { src: null, label: 'Free Weights Section' },
-  { src: null, label: "Ladies' Training Area" },
-  { src: null, label: 'Changing Room' },
+  { src: gymImage1, label: 'Weight Training Area' },
+  { src: gymImage2, label: 'Cardio Zone' },
+  { src: gymImage3, label: 'Free Weights Section' },
 ];
 
 function HeroCarousel() {
@@ -107,8 +107,22 @@ function HeroCarousel() {
         <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900" />
       )}
 
-      {/* Dark overlay for text legibility */}
-      <div className="absolute inset-0 bg-black/60" />
+      {/* Edges-only dark vignette — keeps corners dark, center stays bright */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse 70% 60% at 50% 50%, transparent 30%, rgba(0,0,0,0.55) 100%)',
+        }}
+      />
+
+      {/* Frosted-glass blur zone — centered, fades to nothing at edges */}
+      <div
+        className="absolute inset-0 backdrop-blur-md"
+        style={{
+          maskImage: 'radial-gradient(ellipse 55% 50% at 50% 50%, black 20%, transparent 75%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 55% 50% at 50% 50%, black 20%, transparent 75%)',
+        }}
+      />
 
       {/* Subtle animated grain texture */}
       <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iLjY1IiBudW1PY3RhdmVzPSIzIiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIGZpbHRlcj0idXJsKCNhKSIgb3BhY2l0eT0iMSIvPjwvc3ZnPg==')]" />
@@ -337,6 +351,12 @@ export function HomePage() {
               Get in touch.
             </a>
           </p>
+          <a
+            href="/sign-in"
+            className="text-muted-foreground/40 hover:text-muted-foreground text-xs transition-colors mt-2 inline-block"
+          >
+            Staff / Admin Login
+          </a>
         </div>
       </section>
     </div>

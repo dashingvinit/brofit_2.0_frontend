@@ -17,6 +17,8 @@ import {
   Shield,
   Zap,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Menu,
   X,
   Apple,
@@ -27,6 +29,9 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Card } from '@/shared/components/ui/card';
 import { Separator } from '@/shared/components/ui/separator';
 import brandLogo from '@/assets/brand_logo.png';
+import gymImage1 from '@/assets/1.jpg';
+import gymImage2 from '@/assets/2.jpg';
+import gymImage3 from '@/assets/3.jpg';
 
 /* ─── Data ─────────────────────────────────────────────────────────────────── */
 
@@ -297,6 +302,106 @@ function MembersMock() {
         </div>
       </div>
     </div>
+  );
+}
+
+/* ─── Carousel ──────────────────────────────────────────────────────────────── */
+
+const carouselSlides = [
+  {
+    image: gymImage1,
+    caption: 'Modern gym management at your fingertips',
+  },
+  {
+    image: gymImage2,
+    caption: 'Track members, payments, and growth in real time',
+  },
+  {
+    image: gymImage3,
+    caption: 'Built for serious gym owners across India',
+  },
+];
+
+function GymCarousel() {
+  const [current, setCurrent] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const goTo = (idx: number) => {
+    setCurrent((idx + carouselSlides.length) % carouselSlides.length);
+  };
+
+  const resetTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setCurrent((c) => (c + 1) % carouselSlides.length), 4500);
+  };
+
+  useEffect(() => {
+    resetTimer();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
+
+  const handleNav = (dir: number) => {
+    goTo(current + dir);
+    resetTimer();
+  };
+
+  return (
+    <section className="py-20 bg-zinc-950">
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="text-center mb-10">
+          <Badge className="bg-primary/10 text-primary border-primary/20 mb-4">Inside Brofit</Badge>
+          <h2 className="text-3xl md:text-4xl font-bold text-white">A platform built for real gyms</h2>
+        </div>
+
+        <div className="relative max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-2xl border border-white/10 group">
+          {/* Images */}
+          {carouselSlides.map((slide, i) => (
+            <div
+              key={i}
+              className={`transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+            >
+              <img
+                src={slide.image}
+                alt={slide.caption}
+                className="w-full h-[420px] object-cover"
+              />
+              {/* Gradient overlay + caption */}
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/40 to-transparent px-8 py-6">
+                <p className="text-white text-lg font-semibold drop-shadow">{slide.caption}</p>
+              </div>
+            </div>
+          ))}
+
+          {/* Prev / Next */}
+          <button
+            onClick={() => handleNav(-1)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-opacity opacity-0 group-hover:opacity-100"
+            aria-label="Previous"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => handleNav(1)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-opacity opacity-0 group-hover:opacity-100"
+            aria-label="Next"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+
+          {/* Dots */}
+          <div className="absolute bottom-4 right-6 flex gap-2">
+            {carouselSlides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => { goTo(i); resetTimer(); }}
+                className={`h-1.5 rounded-full transition-all ${i === current ? 'bg-white w-5' : 'bg-white/40 w-1.5'}`}
+                aria-label={`Go to slide ${i + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -808,7 +913,15 @@ function Footer() {
         <Separator className="my-8 bg-zinc-800" />
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-zinc-600">
           <p>&copy; 2026 Brofit. All rights reserved.</p>
-          <p>Made with love for gym owners across India 🇮🇳</p>
+          <div className="flex items-center gap-4">
+            <p>Made with love for gym owners across India 🇮🇳</p>
+            <a
+              href="/sign-in"
+              className="text-zinc-700 hover:text-zinc-500 transition-colors"
+            >
+              Staff / Admin Login
+            </a>
+          </div>
         </div>
       </div>
     </footer>
@@ -822,6 +935,7 @@ export function SaasLandingPage() {
     <div className="bg-zinc-950 min-h-screen">
       <Navbar />
       <HeroSection />
+      <GymCarousel />
       <FeaturesSection />
       <PlatformsSection />
       <WhiteLabelSection />

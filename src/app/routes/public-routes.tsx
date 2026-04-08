@@ -15,13 +15,19 @@ export const publicRoutes: RouteObject[] = [
     children: [
       {
         path: "/",
-        element: <HomePage />,
+        element: <SaasLandingPage />,
       },
     ],
   },
   {
-    path: "/snt",
-    element: <SaasLandingPage />,
+    element: <PublicLayout />,
+    errorElement: <RouteErrorBoundary />,
+    children: [
+      {
+        path: "/snt",
+        element: <HomePage />,
+      },
+    ],
   },
   {
     path: "/admin",
