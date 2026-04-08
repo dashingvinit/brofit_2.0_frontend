@@ -10,14 +10,8 @@ import { NotFoundPage } from "@/pages/not-found-page";
 
 export const publicRoutes: RouteObject[] = [
   {
-    element: <PublicLayout />,
-    errorElement: <RouteErrorBoundary />,
-    children: [
-      {
-        path: "/",
-        element: <SaasLandingPage />,
-      },
-    ],
+    path: "/",
+    element: <SaasLandingPage />,
   },
   {
     element: <PublicLayout />,
