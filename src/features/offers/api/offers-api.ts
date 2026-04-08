@@ -8,8 +8,8 @@ import type {
 } from "@/shared/types/common.types";
 
 export const offersApi = {
-  getAllOffers: async (type?: OfferType, isActive?: boolean): Promise<ApiResponse<Offer[]>> => {
-    const params: Record<string, string> = {};
+  getAllOffers: async (type?: OfferType, isActive?: boolean, page = 1, limit = 20): Promise<ApiResponse<Offer[]>> => {
+    const params: Record<string, string | number> = { page, limit };
     if (type) params.type = type;
     if (isActive !== undefined) params.isActive = String(isActive);
     const response = await apiClient.get("/offers", { params });
