@@ -680,6 +680,7 @@ export interface AttendanceTodayStats {
 
 export type OfferType = 'event' | 'referral' | 'discount' | 'promo';
 export type DiscountType = 'flat' | 'percentage';
+export type OfferAppliesTo = 'membership' | 'training' | 'both';
 
 export interface Offer {
   id: string;
@@ -694,6 +695,7 @@ export interface Offer {
   discountValue?: number | null;
   code?: string | null;
   rewardAmount?: number | null;
+  appliesTo: OfferAppliesTo;
   createdAt: string;
   updatedAt: string;
 }
@@ -709,6 +711,7 @@ export interface CreateOfferData {
   discountValue?: number;
   code?: string;
   rewardAmount?: number;
+  appliesTo?: OfferAppliesTo;
 }
 
 export interface UpdateOfferData {
@@ -721,6 +724,7 @@ export interface UpdateOfferData {
   discountValue?: number | null;
   code?: string | null;
   rewardAmount?: number | null;
+  appliesTo?: OfferAppliesTo;
 }
 
 // ── Platform (Super Admin) ───────────────────────────────────────────────────

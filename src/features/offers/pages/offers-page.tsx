@@ -143,7 +143,7 @@ function OfferCard({
         {/* Discount info */}
         {(offer.type === "discount" || offer.type === "promo") &&
           offer.discountValue != null && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               {offer.discountType === "percentage" ? (
                 <Percent className="h-3.5 w-3.5" />
               ) : (
@@ -154,8 +154,11 @@ function OfferCard({
                   ? `${offer.discountValue}% off`
                   : `₹${offer.discountValue} off`}
               </span>
+              <Badge variant="outline" className="text-xs capitalize">
+                {offer.appliesTo === "both" ? "combo" : offer.appliesTo}
+              </Badge>
               {offer.code && (
-                <Badge variant="secondary" className="text-xs ml-1">
+                <Badge variant="secondary" className="text-xs">
                   {offer.code}
                 </Badge>
               )}

@@ -27,7 +27,7 @@ const createMembershipSchema = z
     planTypeId: z.string().min(1, 'Please select a plan type'),
     planVariantId: z.string().min(1, 'Please select a plan variant'),
     startDate: z.string().min(1, 'Start date is required'),
-    discountAmount: z.coerce.number().min(0, 'Discount cannot be negative').default(0),
+    discountAmount: z.coerce.number().min(0).default(0),
     offerId: z.string().optional(),
     autoRenew: z.boolean().default(false),
     notes: z.string().optional(),
@@ -83,8 +83,6 @@ const TRAINING_STEP = { id: 'training' as const, label: 'Training', icon: Dumbbe
 export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId }: CreateMembershipFormProps) {
   const [currentStep, setCurrentStep] = useState(preselectedMemberId ? 1 : 0);
   const [memberSearch, setMemberSearch] = useState('');
-  const [discountPercentage, setDiscountPercentage] = useState<number | ''>('');
-  const [trainingDiscountPercentage, setTrainingDiscountPercentage] = useState<number | ''>('');
 
   const { data: membersResponse, isLoading: membersLoading } = useMembers();
   const { data: planTypes, isLoading: planTypesLoading } = usePlanTypesByCategory('membership');
@@ -163,28 +161,13 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
     return start.toISOString().split('T')[0];
   }, [startDate, selectedVariant]);
 
-  // Sync % → discountAmount for membership
+  // Reset discounts when offer is cleared or variant changes
   useEffect(() => {
-    if (discountPercentage === '' || !selectedVariant) return;
-    const calculated = Math.round((discountPercentage / 100) * selectedVariant.price);
-    form.setValue('discountAmount', Math.min(calculated, selectedVariant.price));
-  }, [discountPercentage, selectedVariant, form]);
-
-  // Sync % → trainingDiscountAmount for training
-  useEffect(() => {
-    if (trainingDiscountPercentage === '' || !selectedTrainingVariant) return;
-    const calculated = Math.round((trainingDiscountPercentage / 100) * selectedTrainingVariant.price);
-    form.setValue('trainingDiscountAmount', Math.min(calculated, selectedTrainingVariant.price));
-  }, [trainingDiscountPercentage, selectedTrainingVariant, form]);
-
-  // Reset discount when variant changes
-  useEffect(() => {
-    setDiscountPercentage('');
     form.setValue('discountAmount', 0);
+    form.setValue('offerId', '');
   }, [selectedPlanVariantId, form]);
 
   useEffect(() => {
-    setTrainingDiscountPercentage('');
     form.setValue('trainingDiscountAmount', 0);
   }, [trainingPlanVariantId, form]);
 
@@ -217,13 +200,31 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
       form.setValue('trainerId', '');
       form.setValue('trainingDiscountAmount', 0);
       form.setValue('trainingNotes', '');
-      setTrainingDiscountPercentage('');
+      // Clear offer if it was combo-only
+      form.setValue('offerId', '');
+      form.setValue('discountAmount', 0);
     }
   };
 
   const isSubmitting = createMembership.isPending || createTraining.isPending;
 
   const onSubmit = (data: CreateMembershipFormData) => {
+    const membershipFinalPrice = finalPrice;
+    const trainingFinalPriceVal = trainingFinalPrice;
+    const totalDue = membershipFinalPrice + (data.addTraining ? trainingFinalPriceVal : 0);
+
+    // Split collected payment proportionally across membership and training
+    let membershipPaymentAmount: number | undefined;
+    let trainingPaymentAmount: number | undefined;
+    if (data.collectPayment && data.paymentAmount && data.paymentMethod) {
+      if (data.addTraining && trainingFinalPriceVal > 0 && totalDue > 0) {
+        membershipPaymentAmount = Math.round((data.paymentAmount * membershipFinalPrice) / totalDue);
+        trainingPaymentAmount = data.paymentAmount - membershipPaymentAmount;
+      } else {
+        membershipPaymentAmount = data.paymentAmount;
+      }
+    }
+
     const payload: CreateMembershipData = {
       memberId: data.memberId,
       planVariantId: data.planVariantId,
@@ -234,8 +235,8 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
       notes: data.notes,
     };
 
-    if (data.collectPayment && data.paymentAmount && data.paymentMethod) {
-      payload.paymentAmount = data.paymentAmount;
+    if (membershipPaymentAmount && data.paymentMethod) {
+      payload.paymentAmount = membershipPaymentAmount;
       payload.paymentMethod = data.paymentMethod as PaymentMethod;
       payload.paymentReference = data.paymentReference;
       payload.paymentNotes = data.paymentNotes;
@@ -253,14 +254,16 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
             discountAmount: data.trainingDiscountAmount || 0,
             notes: data.trainingNotes,
           };
+          if (trainingPaymentAmount && data.paymentMethod) {
+            trainingPayload.paymentAmount = trainingPaymentAmount;
+            trainingPayload.paymentMethod = data.paymentMethod as PaymentMethod;
+            trainingPayload.paymentReference = data.paymentReference;
+            trainingPayload.paymentNotes = data.paymentNotes;
+            trainingPayload.paymentDate = data.paymentDate;
+          }
           createTraining.mutate(trainingPayload, {
             onSuccess: () => { form.reset(); onSuccess?.(); },
-            onError: () => {
-              // Membership was created successfully; training failed.
-              // Reset and surface via the mutation's error state.
-              form.reset();
-              onSuccess?.();
-            },
+            onError: () => { form.reset(); onSuccess?.(); },
           });
         } else {
           form.reset();
@@ -330,10 +333,6 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
           <MembershipDetailsStep
             selectedVariant={selectedVariant}
             endDate={endDate}
-            discountAmount={discountAmount}
-            discountPercentage={discountPercentage}
-            onPercentageChange={setDiscountPercentage}
-            discountOffers={discountOffers}
             addTraining={addTraining}
             onToggleTraining={handleToggleTraining}
             register={form.register}
@@ -354,10 +353,6 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
             trainingVariantsLoading={trainingVariantsLoading}
             trainingPlanTypeId={trainingPlanTypeId}
             trainingPlanVariantId={trainingPlanVariantId}
-            selectedTrainingVariant={selectedTrainingVariant}
-            trainingDiscountAmount={trainingDiscountAmount}
-            trainingDiscountPercentage={trainingDiscountPercentage}
-            onTrainingPercentageChange={setTrainingDiscountPercentage}
             register={form.register}
             watch={form.watch}
             setValue={form.setValue}
@@ -378,6 +373,7 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
             trainingPlanTypes={trainingPlanTypes}
             trainingPlanTypeId={trainingPlanTypeId}
             trainingFinalPrice={trainingFinalPrice}
+            discountOffers={discountOffers}
             register={form.register}
             watch={form.watch}
             setValue={form.setValue}

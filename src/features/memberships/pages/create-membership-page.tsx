@@ -28,7 +28,7 @@ export function CreateMembershipPage() {
         description="Assign a membership plan to a member with optional payment recording."
       />
 
-      <Card className="max-w-4xl">
+      <Card>
         <CreateMembershipForm
           onSuccess={handleSuccess}
           onCancel={handleCancel}

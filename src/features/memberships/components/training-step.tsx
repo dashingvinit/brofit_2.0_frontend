@@ -8,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { DiscountInput } from '@/shared/components/discount-input';
 import { PlanTypePicker } from '@/shared/components/plan-type-picker';
 import { PlanVariantPicker } from '@/shared/components/plan-variant-picker';
 import type { Member, PlanType, PlanVariant, Trainer } from '@/shared/types/common.types';
@@ -24,10 +23,6 @@ interface TrainingStepProps {
   trainingVariantsLoading: boolean;
   trainingPlanTypeId: string;
   trainingPlanVariantId: string;
-  selectedTrainingVariant: PlanVariant | undefined;
-  trainingDiscountAmount: number;
-  trainingDiscountPercentage: number | '';
-  onTrainingPercentageChange: (value: number | '') => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   register: UseFormRegister<any>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,10 +42,6 @@ export function TrainingStep({
   trainingVariantsLoading,
   trainingPlanTypeId,
   trainingPlanVariantId,
-  selectedTrainingVariant,
-  trainingDiscountAmount,
-  trainingDiscountPercentage,
-  onTrainingPercentageChange,
   register,
   watch,
   setValue,
@@ -124,17 +115,6 @@ export function TrainingStep({
           onSelect={(id) => setValue('trainingPlanVariantId', id)}
         />
       )}
-
-      <DiscountInput
-        label="Training Discount"
-        price={selectedTrainingVariant?.price}
-        discountAmount={trainingDiscountAmount}
-        discountPercentage={trainingDiscountPercentage}
-        onPercentageChange={onTrainingPercentageChange}
-        register={register}
-        fieldName="trainingDiscountAmount"
-        onAmountChange={() => onTrainingPercentageChange('')}
-      />
 
       <div className="space-y-2">
         <Label htmlFor="trainingNotes">Training Notes</Label>

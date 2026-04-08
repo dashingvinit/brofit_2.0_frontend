@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { useCreateOffer, useUpdateOffer } from "../hooks/use-offers";
-import type { Offer, OfferType, DiscountType } from "@/shared/types/common.types";
+import type { Offer, OfferType, DiscountType, OfferAppliesTo } from "@/shared/types/common.types";
 
 const offerSchema = z
   .object({
@@ -35,6 +35,7 @@ const offerSchema = z
     isActive: z.boolean().default(true),
     discountType: z.enum(["flat", "percentage"]).optional(),
     discountValue: z.coerce.number().positive("Must be greater than 0").optional(),
+    appliesTo: z.enum(["membership", "training", "both"]).default("membership"),
     code: z.string().optional(),
     rewardAmount: z.coerce.number().nonnegative().optional(),
   })
@@ -91,6 +92,7 @@ export function OfferDialog({ open, onOpenChange, offer }: OfferDialogProps) {
       isActive: true,
       discountType: "percentage",
       discountValue: undefined,
+      appliesTo: "membership" as const,
       code: "",
       rewardAmount: undefined,
     },
@@ -99,6 +101,7 @@ export function OfferDialog({ open, onOpenChange, offer }: OfferDialogProps) {
   const type = watch("type");
   const isActive = watch("isActive");
   const discountType = watch("discountType");
+  const appliesTo = watch("appliesTo");
   const showDiscountFields = type === "discount" || type === "promo";
   const showReferralFields = type === "referral";
 
@@ -114,6 +117,7 @@ export function OfferDialog({ open, onOpenChange, offer }: OfferDialogProps) {
           isActive: offer.isActive,
           discountType: offer.discountType || "percentage",
           discountValue: offer.discountValue ?? undefined,
+          appliesTo: offer.appliesTo ?? "membership",
           code: offer.code || "",
           rewardAmount: offer.rewardAmount ?? undefined,
         });
@@ -134,6 +138,7 @@ export function OfferDialog({ open, onOpenChange, offer }: OfferDialogProps) {
         isActive: data.isActive,
         discountType: showDiscountFields ? (data.discountType as DiscountType) : undefined,
         discountValue: showDiscountFields ? data.discountValue : undefined,
+        appliesTo: showDiscountFields ? (data.appliesTo as OfferAppliesTo) : undefined,
         code: data.code || undefined,
         rewardAmount: showReferralFields ? data.rewardAmount : undefined,
       };
@@ -273,6 +278,27 @@ export function OfferDialog({ open, onOpenChange, offer }: OfferDialogProps) {
                     <p className="text-sm text-destructive">{errors.discountValue.message}</p>
                   )}
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="appliesTo">Applies To</Label>
+                <Select
+                  value={appliesTo}
+                  onValueChange={(v) => setValue("appliesTo", v as OfferAppliesTo)}
+                >
+                  <SelectTrigger id="appliesTo">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="membership">Membership only</SelectItem>
+                    <SelectItem value="training">Training only</SelectItem>
+                    <SelectItem value="both">Both (combo)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {appliesTo === "both"
+                    ? "Discount will be split proportionally across membership and training."
+                    : `Discount applies only to the ${appliesTo}.`}
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="code">Promo Code (optional)</Label>
