@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import {
@@ -18,6 +18,9 @@ import {
   EyeOff,
   AlertTriangle,
   Clock,
+  Bell,
+  BellRing,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -45,6 +48,7 @@ import {
   useAttendanceTodayStats,
   useAttendanceInside,
 } from "@/features/attendance/hooks/use-attendance";
+import { usePingMember } from "@/features/settings/hooks/use-notification-settings";
 import { ROUTES } from "@/shared/lib/constants";
 import { formatCurrency, daysUntil } from "@/shared/lib/utils";
 import { cn } from "@/shared/lib/utils";
@@ -207,6 +211,22 @@ export function DashboardPage() {
   const { user } = useUser();
   const navigate = useNavigate();
   const [valuesHidden, setValuesHidden] = useState(true);
+  // memberId → "sending" | "sent" | "error"
+  const [pingState, setPingState] = useState<Record<string, "sending" | "sent" | "error">>({});
+  const { mutate: pingMember } = usePingMember();
+
+  const handlePing = useCallback((memberId: string, type: "dues" | "no-subscription", e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (pingState[memberId] === "sending" || pingState[memberId] === "sent") return;
+    setPingState((s) => ({ ...s, [memberId]: "sending" }));
+    pingMember(
+      { memberId, type },
+      {
+        onSuccess: () => setPingState((s) => ({ ...s, [memberId]: "sent" })),
+        onError: () => setPingState((s) => ({ ...s, [memberId]: "error" })),
+      },
+    );
+  }, [pingMember, pingState]);
 
   const { data: memberStatsRes, isLoading: isLoadingMembers } = useMemberStats();
   const { data: membershipStatsRes, isLoading: isLoadingMemberships } = useMembershipStats();
@@ -539,7 +559,7 @@ export function DashboardPage() {
                           <p className="text-xs text-muted-foreground truncate">{member.phone}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
                         <span className="text-xs font-medium text-red-600 dark:text-red-400 whitespace-nowrap tabular-nums">
                           {expiredAgo !== null ? `${expiredAgo}d ago` : "Never"}
                         </span>
@@ -549,6 +569,27 @@ export function DashboardPage() {
                         >
                           + Add
                         </button>
+                        {member.phone && (
+                          <button
+                            className={cn(
+                              "opacity-0 group-hover:opacity-100 transition-all p-1 rounded-md",
+                              pingState[member.id] === "sent"
+                                ? "opacity-100 text-green-600 dark:text-green-400"
+                                : pingState[member.id] === "error"
+                                ? "opacity-100 text-destructive"
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                            )}
+                            title={pingState[member.id] === "sent" ? "Reminder sent" : pingState[member.id] === "error" ? "Failed to send" : "Send WhatsApp reminder"}
+                            onClick={(e) => handlePing(member.id, "no-subscription", e)}
+                            disabled={pingState[member.id] === "sending" || pingState[member.id] === "sent"}
+                          >
+                            {pingState[member.id] === "sending"
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : pingState[member.id] === "sent"
+                              ? <BellRing className="h-3.5 w-3.5" />
+                              : <Bell className="h-3.5 w-3.5" />}
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -604,7 +645,7 @@ export function DashboardPage() {
                       <th className="text-right py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Membership</th>
                       <th className="text-right py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Training</th>
                       <th className="text-right py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Due</th>
-                      <th className="w-8 py-2.5 px-3" />
+                      <th className="w-10 py-2.5 px-3" />
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -640,8 +681,26 @@ export function DashboardPage() {
                             <IndianRupee className="h-3 w-3" />{formatCurrency(m.totalDue)}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3">
-                          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                        <td className="py-2.5 px-3" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            className={cn(
+                              "p-1 rounded-md transition-all",
+                              pingState[m.memberId] === "sent"
+                                ? "text-green-600 dark:text-green-400"
+                                : pingState[m.memberId] === "error"
+                                ? "text-destructive"
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                            )}
+                            title={pingState[m.memberId] === "sent" ? "Reminder sent" : pingState[m.memberId] === "error" ? "Failed to send" : "Send dues reminder"}
+                            onClick={(e) => handlePing(m.memberId, "dues", e)}
+                            disabled={pingState[m.memberId] === "sending" || pingState[m.memberId] === "sent"}
+                          >
+                            {pingState[m.memberId] === "sending"
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : pingState[m.memberId] === "sent"
+                              ? <BellRing className="h-3.5 w-3.5" />
+                              : <Bell className="h-3.5 w-3.5" />}
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -664,9 +723,30 @@ export function DashboardPage() {
                         </div>
                         <p className="font-medium text-sm">{m.firstName} {m.lastName}</p>
                       </div>
-                      <span className="font-bold text-amber-600 dark:text-amber-400 inline-flex items-center text-sm tabular-nums">
-                        <IndianRupee className="h-3 w-3" />{formatCurrency(m.totalDue)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-amber-600 dark:text-amber-400 inline-flex items-center text-sm tabular-nums">
+                          <IndianRupee className="h-3 w-3" />{formatCurrency(m.totalDue)}
+                        </span>
+                        <button
+                          className={cn(
+                            "p-1 rounded-md transition-all",
+                            pingState[m.memberId] === "sent"
+                              ? "text-green-600 dark:text-green-400"
+                              : pingState[m.memberId] === "error"
+                              ? "text-destructive"
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                          title={pingState[m.memberId] === "sent" ? "Reminder sent" : "Send dues reminder"}
+                          onClick={(e) => handlePing(m.memberId, "dues", e)}
+                          disabled={pingState[m.memberId] === "sending" || pingState[m.memberId] === "sent"}
+                        >
+                          {pingState[m.memberId] === "sending"
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : pingState[m.memberId] === "sent"
+                            ? <BellRing className="h-3.5 w-3.5" />
+                            : <Bell className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground pl-8">
                       <span>{m.phone}</span>

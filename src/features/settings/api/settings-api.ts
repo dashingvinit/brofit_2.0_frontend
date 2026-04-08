@@ -66,4 +66,9 @@ export const settingsApi = {
     const response = await apiClient.post('/notifications/reset-welcome', memberIds ? { memberIds } : {});
     return response.data;
   },
+
+  pingMember: async (memberId: string, type: 'dues' | 'no-subscription'): Promise<ApiResponse<{ sent: boolean; type: string }>> => {
+    const response = await apiClient.post(`/notifications/ping/${memberId}`, { type });
+    return response.data;
+  },
 };

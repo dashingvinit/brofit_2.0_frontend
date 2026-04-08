@@ -73,6 +73,13 @@ export function useWelcomeStatus() {
   });
 }
 
+export function usePingMember() {
+  return useMutation({
+    mutationFn: ({ memberId, type }: { memberId: string; type: 'dues' | 'no-subscription' }) =>
+      settingsApi.pingMember(memberId, type),
+  });
+}
+
 export function useResetWelcome() {
   const queryClient = useQueryClient();
   return useMutation({
