@@ -72,3 +72,13 @@ export function useWelcomeStatus() {
     },
   });
 }
+
+export function useResetWelcome() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (memberIds?: string[]) => settingsApi.resetWelcome(memberIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['welcome-status'] });
+    },
+  });
+}

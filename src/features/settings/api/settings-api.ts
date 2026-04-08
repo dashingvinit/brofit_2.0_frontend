@@ -37,7 +37,7 @@ export const settingsApi = {
   broadcast: async (data: {
     message: string;
     filter: BroadcastFilter;
-  }): Promise<ApiResponse<{ sent: number; failed: number; total: number }>> => {
+  }): Promise<ApiResponse<{ sent: number; failed: number; skipped: number; total: number }>> => {
     const response = await apiClient.post('/notifications/broadcast', data);
     return response.data;
   },
@@ -59,6 +59,11 @@ export const settingsApi = {
 
   getWelcomeStatus: async (): Promise<ApiResponse<{ notSent: number; sentNotOptedIn: number; optedIn: number; total: number }>> => {
     const response = await apiClient.get('/notifications/welcome-status');
+    return response.data;
+  },
+
+  resetWelcome: async (memberIds?: string[]): Promise<ApiResponse<{ reset: number }>> => {
+    const response = await apiClient.post('/notifications/reset-welcome', memberIds ? { memberIds } : {});
     return response.data;
   },
 };

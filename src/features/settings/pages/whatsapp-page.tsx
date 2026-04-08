@@ -1,29 +1,28 @@
 import { useState, useEffect } from "react";
-import { Loader2, BellRing, MessageCircle, CreditCard, UserPlus, Send } from "lucide-react";
+import { Loader2, BellRing, MessageCircle, CreditCard, UserPlus, Send, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Switch } from "@/shared/components/ui/switch";
-import { Textarea } from "@/shared/components/ui/textarea";
 import {
   useNotificationSettings,
   useUpdateNotificationSettings,
   useSendTestMessage,
   useRunDigest,
-  useDefaultWelcomeMessage,
   useSendWelcomeToAll,
   useWelcomeStatus,
+  useResetWelcome,
 } from "../hooks/use-notification-settings";
 import { PageHeader } from "@/shared/components/page-header";
 
 export function WhatsAppPage() {
   const { data: settings, isLoading } = useNotificationSettings();
-  const { data: defaultWelcome } = useDefaultWelcomeMessage();
   const { mutate: updateSettings, isPending: isSaving } = useUpdateNotificationSettings();
   const { mutate: sendTest, isPending: isTesting } = useSendTestMessage();
   const { mutate: runDigest, isPending: isRunningDigest } = useRunDigest();
   const { mutate: sendWelcomeToAll, isPending: isSendingWelcome } = useSendWelcomeToAll();
+  const { mutate: resetWelcome, isPending: isResetting } = useResetWelcome();
   const { data: welcomeStatus } = useWelcomeStatus();
 
   const [ownerWhatsapp, setOwnerWhatsapp] = useState("");
@@ -31,13 +30,14 @@ export function WhatsAppPage() {
   const [memberReminderEnabled, setMemberReminderEnabled] = useState(false);
   const [reminderDaysBefore, setReminderDaysBefore] = useState(3);
   const [welcomeEnabled, setWelcomeEnabled] = useState(false);
-  const [welcomeMessage, setWelcomeMessage] = useState("");
   const [duesReminderEnabled, setDuesReminderEnabled] = useState(false);
   const [duesReminderDaysOld, setDuesReminderDaysOld] = useState(7);
   const [digestRan, setDigestRan] = useState(false);
   const [digestError, setDigestError] = useState<string | null>(null);
   const [welcomeAllResult, setWelcomeAllResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const [welcomeAllError, setWelcomeAllError] = useState<string | null>(null);
+  const [resetResult, setResetResult] = useState<{ reset: number } | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<"sent" | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
 
@@ -48,7 +48,6 @@ export function WhatsAppPage() {
       setMemberReminderEnabled(settings.memberReminderEnabled);
       setReminderDaysBefore(settings.reminderDaysBefore);
       setWelcomeEnabled(settings.welcomeEnabled);
-      setWelcomeMessage(settings.welcomeMessage ?? "");
       setDuesReminderEnabled(settings.duesReminderEnabled);
       setDuesReminderDaysOld(settings.duesReminderDaysOld);
     }
@@ -61,7 +60,6 @@ export function WhatsAppPage() {
       memberReminderEnabled,
       reminderDaysBefore,
       welcomeEnabled,
-      welcomeMessage: welcomeMessage.trim() || null,
       duesReminderEnabled,
       duesReminderDaysOld,
     });
@@ -115,9 +113,10 @@ export function WhatsAppPage() {
           </div>
           <p className="text-xs text-muted-foreground">
             Include country code (e.g. +91 for India). Daily digests are sent to this number.
+            The test sends the welcome template — free-form messages require the recipient to have first replied to a template.
           </p>
           {testResult === "sent" && (
-            <p className="text-xs text-green-600 font-medium">✓ Test message sent! Check your WhatsApp.</p>
+            <p className="text-xs text-green-600 font-medium">✓ Welcome template sent! Check your WhatsApp.</p>
           )}
           {testError && <p className="text-xs text-destructive font-medium">✗ {testError}</p>}
         </div>
@@ -212,26 +211,12 @@ export function WhatsAppPage() {
               <span className="text-sm font-medium">Welcome Message</span>
             </div>
             <p className="text-xs text-muted-foreground max-w-sm">
-              Automatically send a WhatsApp welcome message when a new member is added. Use{" "}
-              <code className="text-xs bg-muted px-1 rounded">{"{name}"}</code> to personalise.
+              Automatically send a WhatsApp welcome message when a new member is added.
+              The message content is defined by your approved Twilio template (<code className="bg-muted px-1 rounded">TWILIO_WELCOME_TEMPLATE_SID</code>).
             </p>
           </div>
           <Switch checked={welcomeEnabled} onCheckedChange={setWelcomeEnabled} />
         </div>
-        {welcomeEnabled && (
-          <div className="space-y-2 pl-6 border-l-2 border-muted">
-            <Label htmlFor="welcome-msg">Welcome message</Label>
-            <Textarea
-              id="welcome-msg"
-              rows={8}
-              placeholder={defaultWelcome ?? "Loading default…"}
-              value={welcomeMessage}
-              onChange={(e) => setWelcomeMessage(e.target.value)}
-              className="text-sm font-mono"
-            />
-            <p className="text-xs text-muted-foreground">Leave blank to use the default gym etiquette message.</p>
-          </div>
-        )}
 
         {/* Welcome status breakdown */}
         {welcomeStatus && (
@@ -255,7 +240,7 @@ export function WhatsAppPage() {
         <div className="space-y-2">
           <p className="text-sm font-medium">Send Welcome to Existing Members</p>
           <p className="text-xs text-muted-foreground">
-            Send the welcome template to all active members who haven't opted in yet. Use this once to onboard your existing members.
+            Send the welcome template to all active members who haven't received it yet. Use this once to onboard your existing members.
           </p>
           <Button
             variant="outline"
@@ -281,6 +266,37 @@ export function WhatsAppPage() {
             </p>
           )}
           {welcomeAllError && <p className="text-xs text-destructive font-medium">✗ {welcomeAllError}</p>}
+        </div>
+
+        {/* Reset welcome — clears welcomeSentAt so failed sends can be retried */}
+        <div className="space-y-2 border-t pt-4">
+          <p className="text-sm font-medium">Reset Welcome Status</p>
+          <p className="text-xs text-muted-foreground">
+            If messages failed to deliver (e.g. template not yet approved by WhatsApp), clear the sent status so members can receive it again on the next send.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setResetResult(null);
+              setResetError(null);
+              resetWelcome(undefined, {
+                onSuccess: (res) => setResetResult(res.data),
+                onError: (err: unknown) => setResetError(
+                  (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to reset."
+                ),
+              });
+            }}
+            disabled={isResetting}
+          >
+            {isResetting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <RotateCcw className="mr-2 size-4" />}
+            Reset All Welcome Status
+          </Button>
+          {resetResult && (
+            <p className="text-xs font-medium text-green-600">
+              ✓ Reset {resetResult.reset} member{resetResult.reset !== 1 ? "s" : ""}. You can now resend the welcome message.
+            </p>
+          )}
+          {resetError && <p className="text-xs text-destructive font-medium">✗ {resetError}</p>}
         </div>
 
         <Button onClick={handleSave} disabled={isSaving}>
