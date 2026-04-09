@@ -46,7 +46,9 @@ import {
   useRoi,
   useTrends,
   useDeleteInvestment,
+  useMonthlySummary,
 } from '../hooks/use-financials';
+import { ExpenseDialog } from '../components/expense-dialog';
 import { InvestmentDialog } from '../components/investment-dialog';
 import { formatCurrency } from '@/shared/lib/utils';
 import type { Investment } from '@/shared/types/common.types';
@@ -173,6 +175,87 @@ function RoiCard() {
   );
 }
 
+// ─── Current Month Summary ────────────────────────────────────────────────────
+
+function CurrentMonthSummary() {
+  const now = new Date();
+  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const defaultDate = now.toISOString().split('T')[0];
+
+  const { data: summaryRes, isLoading } = useMonthlySummary(month);
+  const summary = summaryRes?.data;
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const monthLabel = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  return (
+    <Card className="border-t-2 border-t-amber-500">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Wallet className="h-4 w-4 text-amber-500" />
+            {monthLabel}
+          </CardTitle>
+          <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add Expense
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="p-4 pt-0">
+        {isLoading ? (
+          <div className="grid gap-3 grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : summary ? (
+          <div className="grid gap-3 grid-cols-3">
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Revenue</p>
+              <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center font-display">
+                <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
+                {formatCurrency(summary.revenue)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Expenses</p>
+              <p className="text-base font-bold text-red-600 dark:text-red-400 inline-flex items-center font-display">
+                <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
+                {formatCurrency(summary.expenses)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Net Profit</p>
+              <p
+                className={`text-base font-bold inline-flex items-center font-display ${
+                  summary.netProfit >= 0
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-red-600 dark:text-red-400'
+                }`}
+              >
+                {summary.netProfit >= 0 ? (
+                  <TrendingUp className="h-3.5 w-3.5 mr-1" />
+                ) : (
+                  <TrendingDown className="h-3.5 w-3.5 mr-1" />
+                )}
+                <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
+                {formatCurrency(Math.abs(summary.netProfit))}
+              </p>
+            </div>
+          </div>
+        ) : null}
+      </CardContent>
+
+      <ExpenseDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        defaultDate={defaultDate}
+      />
+    </Card>
+  );
+}
+
 // ─── Monthly Expenses Grid ────────────────────────────────────────────────────
 
 function MonthlyExpensesGrid() {
@@ -207,8 +290,13 @@ function MonthlyExpensesGrid() {
     );
   }
 
-  // Show months in reverse chronological order (most recent first)
-  const sorted = [...trends].reverse();
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  // Exclude current month (shown in CurrentMonthSummary above), most recent first
+  const sorted = [...trends]
+    .reverse()
+    .filter((t) => `${t.year}-${String(t.month).padStart(2, '0')}` !== currentMonthKey);
 
   return (
     <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -450,11 +538,14 @@ export function FinancialsPage() {
       {/* ROI Cards */}
       <RoiCard />
 
+      {/* Current Month */}
+      <CurrentMonthSummary />
+
       {/* Monthly Expenses Grid */}
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
           <Wallet className="h-4 w-4" />
-          Monthly Expenses
+          Past Months
         </h2>
       </div>
       <MonthlyExpensesGrid />

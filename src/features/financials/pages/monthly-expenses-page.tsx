@@ -152,16 +152,94 @@ function MonthlySummaryStrip({ month }: { month: string }) {
   );
 }
 
+// ─── Category Breakdown ────────────────────────────────────────────────────────
+
+function CategoryBreakdown({ expenses, isLoading }: { expenses: Expense[]; isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">By Category</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0 space-y-2.5">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i}>
+              <div className="flex items-center justify-between mb-1">
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+              <Skeleton className="h-1.5 w-full" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (expenses.length === 0) return null;
+
+  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const byCategory = expenses.reduce<Record<ExpenseCategory, number>>(
+    (acc, e) => {
+      acc[e.category] = (acc[e.category] ?? 0) + e.amount;
+      return acc;
+    },
+    {} as Record<ExpenseCategory, number>
+  );
+
+  const sorted = (Object.entries(byCategory) as [ExpenseCategory, number][]).sort(
+    ([, a], [, b]) => b - a
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">By Category</CardTitle>
+      </CardHeader>
+      <CardContent className="p-4 pt-0 space-y-2.5">
+        {sorted.map(([category, amount]) => {
+          const pct = total > 0 ? (amount / total) * 100 : 0;
+          return (
+            <div key={category}>
+              <div className="flex items-center justify-between mb-1">
+                <span
+                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${CATEGORY_COLORS[category]}`}
+                >
+                  {CATEGORY_LABELS[category]}
+                </span>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground text-xs">{pct.toFixed(0)}%</span>
+                  <span className="font-semibold inline-flex items-center">
+                    <IndianRupee className="h-3 w-3" />
+                    {formatCurrency(amount)}
+                  </span>
+                </div>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-red-400 dark:bg-red-500 transition-all duration-500"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Expenses Table ────────────────────────────────────────────────────────────
 
-function ExpensesSection({ month }: { month: string }) {
-  const { data: expensesRes, isLoading } = useExpenses(month);
+function ExpensesSection({ expenses, isLoading, defaultDate }: {
+  expenses: Expense[];
+  isLoading: boolean;
+  defaultDate: string;
+}) {
   const deleteExpense = useDeleteExpense();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-
-  const expenses = expensesRes?.data ?? [];
 
   const openCreate = () => {
     setEditing(undefined);
@@ -319,6 +397,7 @@ function ExpensesSection({ month }: { month: string }) {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         expense={editing}
+        defaultDate={defaultDate}
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
@@ -358,10 +437,22 @@ export function MonthlyExpensesPage() {
   const { month } = useParams<{ month: string }>();
   const navigate = useNavigate();
 
+  // month is always present per the route definition, but guard defensively
   if (!month) {
     navigate('/financials');
     return null;
   }
+
+  return <MonthlyExpensesContent month={month} />;
+}
+
+function MonthlyExpensesContent({ month }: { month: string }) {
+  const navigate = useNavigate();
+  const { data: expensesRes, isLoading } = useExpenses(month);
+  const expenses = expensesRes?.data ?? [];
+
+  // Default date for new expenses: first day of the viewed month
+  const defaultDate = `${month}-01`;
 
   return (
     <div className="space-y-4">
@@ -383,7 +474,12 @@ export function MonthlyExpensesPage() {
       />
 
       <MonthlySummaryStrip month={month} />
-      <ExpensesSection month={month} />
+      <CategoryBreakdown expenses={expenses} isLoading={isLoading} />
+      <ExpensesSection
+        expenses={expenses}
+        isLoading={isLoading}
+        defaultDate={defaultDate}
+      />
     </div>
   );
 }

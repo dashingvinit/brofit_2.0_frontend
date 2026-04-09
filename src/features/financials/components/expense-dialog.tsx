@@ -46,9 +46,11 @@ interface ExpenseDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Pass an expense to edit; omit for create mode */
   expense?: Expense;
+  /** Default date for new expenses (YYYY-MM-DD). Falls back to today. */
+  defaultDate?: string;
 }
 
-export function ExpenseDialog({ open, onOpenChange, expense }: ExpenseDialogProps) {
+export function ExpenseDialog({ open, onOpenChange, expense, defaultDate }: ExpenseDialogProps) {
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
   const isPending = createExpense.isPending || updateExpense.isPending;
@@ -59,12 +61,12 @@ export function ExpenseDialog({ open, onOpenChange, expense }: ExpenseDialogProp
     defaultValues: {
       amount: undefined,
       category: 'other',
-      date: new Date().toISOString().split('T')[0],
+      date: defaultDate ?? new Date().toISOString().split('T')[0],
       description: '',
     },
   });
 
-  // Populate form when editing
+  // Populate form when dialog opens or switches between create/edit
   useEffect(() => {
     if (expense) {
       form.reset({
@@ -77,7 +79,7 @@ export function ExpenseDialog({ open, onOpenChange, expense }: ExpenseDialogProp
       form.reset({
         amount: undefined,
         category: 'other',
-        date: new Date().toISOString().split('T')[0],
+        date: defaultDate ?? new Date().toISOString().split('T')[0],
         description: '',
       });
     }
