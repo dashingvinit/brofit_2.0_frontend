@@ -14,6 +14,7 @@ import {
   ChevronRight,
   StickyNote,
   Activity,
+  Pencil,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { InlineEditField } from '@/shared/components/inline-edit-field';
