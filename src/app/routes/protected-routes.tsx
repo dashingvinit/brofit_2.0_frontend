@@ -27,7 +27,7 @@ import { StaffAccessPage } from "@/features/settings/pages/staff-access-page";
 import { WhatsAppPage } from "@/features/settings/pages/whatsapp-page";
 import { BroadcastPage } from "@/features/settings/pages/broadcast-page";
 import { InboxPage } from "@/features/inbox/pages/inbox-page";
-import { OffersPage } from "@/features/offers";
+import { OffersPage, CreateOfferPage, EditOfferPage } from "@/features/offers";
 
 export const protectedRoutes: RouteObject[] = [
   // ── Super admin platform ─────────────────────────────────────────────────
@@ -108,7 +108,9 @@ export const protectedRoutes: RouteObject[] = [
               { path: "/settings/whatsapp",  element: <WhatsAppPage /> },
               { path: "/settings/broadcast", element: <BroadcastPage /> },
               { path: "/inbox",                  element: <InboxPage /> },
-              { path: "/offers",                 element: <OffersPage /> },
+              { path: "/offers",          element: <OffersPage /> },
+              { path: "/offers/new",     element: <CreateOfferPage /> },
+              { path: "/offers/:id/edit",element: <EditOfferPage /> },
             ],
           },
 

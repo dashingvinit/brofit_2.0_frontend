@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import {
   Dumbbell,
   Clock,
@@ -13,65 +13,65 @@ import {
   Flame,
   Sparkles,
   LayoutDashboard,
-} from 'lucide-react';
-import { Card } from '@/shared/components/ui/card';
-import { Badge } from '@/shared/components/ui/badge';
-import { Separator } from '@/shared/components/ui/separator';
-import brandLogo from '@/assets/brand_logo.png';
-import gymImage1 from '@/assets/1.jpg';
-import gymImage2 from '@/assets/2.jpg';
-import gymImage3 from '@/assets/3.jpg';
+} from "lucide-react";
+import { Card } from "@/shared/components/ui/card";
+import { Badge } from "@/shared/components/ui/badge";
+import { Separator } from "@/shared/components/ui/separator";
+import brandLogo from "@/assets/brand_logo.png";
+import gymImage1 from "@/assets/1.webp";
+import gymImage2 from "@/assets/2.webp";
+import gymImage3 from "@/assets/3.webp";
 
 const facilities = [
   {
     icon: Dumbbell,
-    title: 'Full Equipment Zone',
+    title: "Full Equipment Zone",
     description:
-      'State-of-the-art machines, free weights, and functional training rigs for every fitness level.',
+      "State-of-the-art machines, free weights, and functional training rigs for every fitness level.",
   },
   {
     icon: Heart,
-    title: 'Cardio Section',
+    title: "Cardio Section",
     description:
-      'Dedicated cardio area with treadmills, ellipticals, cycles, and rowing machines to keep your heart pumping.',
+      "Dedicated cardio area with treadmills, ellipticals, cycles, and rowing machines to keep your heart pumping.",
   },
   {
     icon: ShowerHead,
-    title: 'Clean Washrooms',
+    title: "Clean Washrooms",
     description:
-      'Hygienic, well-maintained washrooms available for all members. Freshness guaranteed.',
+      "Hygienic, well-maintained washrooms available for all members. Freshness guaranteed.",
   },
   {
     icon: ShieldCheck,
-    title: 'Changing Rooms',
+    title: "Changing Rooms",
     description:
-      'Private, secure changing rooms with lockers so you can gear up comfortably before and after your workout.',
+      "Private, secure changing rooms with lockers so you can gear up comfortably before and after your workout.",
   },
   {
     icon: Users,
-    title: 'Separate Ladies Timing',
+    title: "Separate Ladies Timing",
     description:
-      'Dedicated time slots exclusively for women, ensuring a comfortable and private workout environment.',
+      "Dedicated time slots exclusively for women, ensuring a comfortable and private workout environment.",
   },
   {
     icon: Flame,
-    title: 'Expert Trainers',
+    title: "Expert Trainers",
     description:
-      'Certified trainers who craft personalized plans and guide you every step of the way.',
+      "Certified trainers who craft personalized plans and guide you every step of the way.",
   },
 ];
 
 const highlights = [
-  { icon: Sparkles, value: 'Grand Opening', label: 'Newly Launched' },
-  { icon: Clock, value: '6AM–10PM', label: 'Open Daily' },
-  { icon: Users, value: 'Ladies Timing', label: 'Exclusive Slots' },
-  { icon: Flame, value: 'Certified', label: 'Expert Trainers' },
+  { icon: Sparkles, value: "Grand Opening", label: "Newly Launched" },
+  { icon: Clock, value: "6AM–10PM", label: "Open Daily" },
+  { icon: Users, value: "Ladies Timing", label: "Exclusive Slots" },
+  { icon: Flame, value: "Certified", label: "Expert Trainers" },
 ];
 
 const slides: { src: string | null; label: string }[] = [
-  { src: gymImage1, label: 'Weight Training Area' },
-  { src: gymImage2, label: 'Cardio Zone' },
-  { src: gymImage3, label: 'Free Weights Section' },
+  { src: gymImage1, label: "Weight Training Area" },
+  { src: gymImage2, label: "Cardio Zone" },
+  { src: gymImage3, label: "Free Weights Section" },
 ];
 
 function HeroCarousel() {
@@ -79,11 +79,11 @@ function HeroCarousel() {
 
   const prev = useCallback(
     () => setCurrent((c) => (c - 1 + slides.length) % slides.length),
-    []
+    [],
   );
   const next = useCallback(
     () => setCurrent((c) => (c + 1) % slides.length),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -111,7 +111,8 @@ function HeroCarousel() {
       <div
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(ellipse 70% 60% at 50% 50%, transparent 30%, rgba(0,0,0,0.55) 100%)',
+          background:
+            "radial-gradient(ellipse 70% 60% at 50% 50%, transparent 30%, rgba(0,0,0,0.55) 100%)",
         }}
       />
 
@@ -119,8 +120,10 @@ function HeroCarousel() {
       <div
         className="absolute inset-0 backdrop-blur-md"
         style={{
-          maskImage: 'radial-gradient(ellipse 55% 50% at 50% 50%, black 20%, transparent 75%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 55% 50% at 50% 50%, black 20%, transparent 75%)',
+          maskImage:
+            "radial-gradient(ellipse 55% 50% at 50% 50%, black 20%, transparent 75%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 55% 50% at 50% 50%, black 20%, transparent 75%)",
         }}
       />
 
@@ -156,8 +159,8 @@ function HeroCarousel() {
           Now Open — New Batch Starting Soon
         </Badge>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-tight drop-shadow-lg">
-          Your Body Deserves{' '}
-          <span className="text-primary">The Best Gym</span> in Town
+          Your Body Deserves <span className="text-primary">The Best Gym</span>{" "}
+          in Town
         </h1>
         <p className="text-lg md:text-xl text-white/75 max-w-2xl mx-auto leading-relaxed">
           At Brofit, we don't just build muscles — we build discipline,
@@ -196,8 +199,8 @@ function HeroCarousel() {
               onClick={() => setCurrent(i)}
               className={`h-1.5 rounded-full transition-all ${
                 i === current
-                  ? 'w-8 bg-primary'
-                  : 'w-2 bg-white/30 hover:bg-white/60'
+                  ? "w-8 bg-primary"
+                  : "w-2 bg-white/30 hover:bg-white/60"
               }`}
               aria-label={`Go to slide ${i + 1}`}
             />
@@ -219,7 +222,10 @@ export function HomePage() {
         <div className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             {highlights.map((item) => (
-              <div key={item.label} className="flex flex-col items-center gap-2">
+              <div
+                key={item.label}
+                className="flex flex-col items-center gap-2"
+              >
                 <item.icon className="h-6 w-6 text-primary" />
                 <p className="text-lg md:text-xl font-bold text-primary">
                   {item.value}
@@ -308,7 +314,8 @@ export function HomePage() {
             <div className="flex items-start gap-2">
               <MapPin className="h-5 w-5 text-primary mt-0.5 shrink-0" />
               <span className="text-left">
-                HC Nursing Home, Marwadi Patty,<br />
+                HC Nursing Home, Marwadi Patty,
+                <br />
                 Sainthia, Birbhum, 731234, WB
               </span>
             </div>
@@ -343,7 +350,7 @@ export function HomePage() {
           <p className="text-muted-foreground text-sm leading-relaxed">
             Brofit runs on a custom-built gym management platform — handling
             memberships, trainers, payments, and more. Interested in using it
-            for your own gym?{' '}
+            for your own gym?{" "}
             <a
               href="tel:+917407473804"
               className="text-primary underline underline-offset-4 hover:text-primary/80"

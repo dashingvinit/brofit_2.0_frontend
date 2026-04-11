@@ -29,6 +29,8 @@ export const ROUTES = {
   SETTINGS_BROADCAST: "/settings/broadcast",
   INBOX: "/inbox",
   OFFERS: "/offers",
+  CREATE_OFFER: "/offers/new",
+  EDIT_OFFER: "/offers",
   // Super admin platform
   PLATFORM: "/platform",
   PLATFORM_ORG_DETAIL: "/platform/orgs",
