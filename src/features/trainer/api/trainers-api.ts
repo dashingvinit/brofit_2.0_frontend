@@ -74,6 +74,27 @@ export const trainersApi = {
   },
 
   /**
+   * Delete (unmark) a payout for a specific client-month
+   * DELETE /api/v1/trainers/:id/payouts
+   */
+  deletePayout: async (
+    trainerId: string,
+    data: { trainingId: string; month: number; year: number },
+  ): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete(`/trainers/${trainerId}/payouts`, { data });
+    return response.data;
+  },
+
+  /**
+   * Backfill missing expense records for old payouts
+   * POST /api/v1/trainers/backfill-expenses
+   */
+  backfillExpenses: async (): Promise<ApiResponse<{ backfilled: number }>> => {
+    const response = await apiClient.post('/trainers/backfill-expenses');
+    return response.data;
+  },
+
+  /**
    * Get payout history for a trainer
    * GET /api/v1/trainers/:id/payout-history
    */

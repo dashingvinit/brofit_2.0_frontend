@@ -110,6 +110,46 @@ export function useRecordTrainerPayout(trainerId: string) {
 }
 
 /**
+ * Hook to delete (unmark) a payout for a trainer client-month
+ */
+export function useDeleteTrainerPayout(trainerId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { trainingId: string; month: number; year: number }) =>
+      trainersApi.deletePayout(trainerId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trainers', trainerId, 'payout-schedule'] });
+      queryClient.invalidateQueries({ queryKey: ['trainers', 'payout-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['financials'] });
+      toast.success('Payout removed');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to remove payout');
+    },
+  });
+}
+
+/**
+ * Hook to backfill missing expense records for old payouts
+ */
+export function useBackfillTrainerExpenses() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => trainersApi.backfillExpenses(),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['financials'] });
+      const count = response.data?.backfilled ?? 0;
+      toast.success(count > 0 ? `Backfilled ${count} expense${count === 1 ? '' : 's'}` : 'All payouts already have expenses');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Backfill failed');
+    },
+  });
+}
+
+/**
  * Hook to fetch outstanding payout summary for all trainers in the org
  */
 export function useTrainerOutstandingSummary() {

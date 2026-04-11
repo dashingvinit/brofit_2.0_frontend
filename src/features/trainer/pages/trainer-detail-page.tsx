@@ -49,6 +49,8 @@ import {
   useTrainerWithClients,
   useTrainerPayoutSchedule,
   useRecordTrainerPayout,
+  useDeleteTrainerPayout,
+  useBackfillTrainerExpenses,
   useUpdateTrainer,
   useTrainerAssignmentHistory,
 } from '../hooks/use-trainers';
@@ -196,6 +198,72 @@ function ConfirmPayoutDialog({
   );
 }
 
+// ─── Confirm Unmark Dialog ────────────────────────────────────────────────────
+
+interface ConfirmUnmarkDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  row: TrainerPayoutRow;
+  slot: TrainerPayoutMonthSlot;
+  trainerId: string;
+}
+
+function ConfirmUnmarkDialog({
+  open,
+  onOpenChange,
+  row,
+  slot,
+  trainerId,
+}: ConfirmUnmarkDialogProps) {
+  const deletePayout = useDeleteTrainerPayout(trainerId);
+  const memberName = `${row.training.member.firstName} ${row.training.member.lastName}`;
+
+  const handleConfirm = () => {
+    deletePayout.mutate(
+      { trainingId: row.training.id, month: slot.month, year: slot.year },
+      { onSuccess: () => onOpenChange(false) },
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Remove Payout</DialogTitle>
+          <DialogDescription>
+            This will unmark {formatMonthYear(slot.month, slot.year)} as paid for {memberName} and delete the linked expense record.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="rounded-lg border bg-muted/40 p-3 text-sm space-y-1.5">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Client</span>
+            <span className="font-medium">{memberName}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Month</span>
+            <span className="font-medium">{formatMonthYear(slot.month, slot.year)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Amount</span>
+            <span className="font-medium text-red-600 dark:text-red-400">{formatRupees(slot.amount)}</span>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={handleConfirm} disabled={deletePayout.isPending}>
+            {deletePayout.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
+            Remove Payout
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Payout Schedule Section ──────────────────────────────────────────────────
 
 function PayoutScheduleSection({
@@ -212,9 +280,15 @@ function PayoutScheduleSection({
     row: TrainerPayoutRow;
     slot: TrainerPayoutMonthSlot;
   } | null>(null);
+  const [selectedUnmark, setSelectedUnmark] = useState<{
+    row: TrainerPayoutRow;
+    slot: TrainerPayoutMonthSlot;
+  } | null>(null);
   const [editSplitOpen, setEditSplitOpen] = useState(false);
   const [splitInput, setSplitInput] = useState(String(currentSplitPercent));
   const updateTrainer = useUpdateTrainer(trainerId);
+  const backfill = useBackfillTrainerExpenses();
+  const [backfillDone, setBackfillDone] = useState(false);
 
   const schedule = scheduleResponse?.data;
 
@@ -294,7 +368,7 @@ function PayoutScheduleSection({
                 Payout Schedule
               </CardTitle>
               <CardDescription className="mt-1">
-                Click an unpaid month to record a cash payout.{' '}
+                Click an unpaid month to pay, or a paid month to remove.{' '}
                 <button
                   onClick={() => { setSplitInput(String(schedule.splitPercent)); setEditSplitOpen(true); }}
                   className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
@@ -304,6 +378,17 @@ function PayoutScheduleSection({
                 </button>
               </CardDescription>
             </div>
+            {!backfillDone && rows.some((r) => r.months.some((m) => m.paid)) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => backfill.mutate(undefined, { onSuccess: () => setBackfillDone(true) })}
+                disabled={backfill.isPending}
+                title="Create expense records for old payouts that are missing them"
+              >
+                {backfill.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Backfill Expenses'}
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -369,16 +454,18 @@ function PayoutScheduleSection({
                             <button
                               key={`${slot.month}-${slot.year}`}
                               onClick={() =>
-                                !slot.paid && setSelectedPayout({ row, slot })
+                                slot.paid
+                                  ? setSelectedUnmark({ row, slot })
+                                  : setSelectedPayout({ row, slot })
                               }
                               title={
                                 slot.paid
-                                  ? `Paid on ${slot.paidAt ? new Date(slot.paidAt).toLocaleDateString('en-IN') : '—'}`
+                                  ? `Paid on ${slot.paidAt ? new Date(slot.paidAt).toLocaleDateString('en-IN') : '—'} — click to remove`
                                   : `Click to pay ${formatMonthYear(slot.month, slot.year)}`
                               }
                               className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium border transition-colors ${
                                 slot.paid
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800 cursor-default'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/30 dark:hover:text-red-400 dark:hover:border-red-800 cursor-pointer'
                                   : 'bg-muted/50 text-muted-foreground border-border hover:border-primary hover:text-primary cursor-pointer'
                               }`}
                             >
@@ -447,16 +534,18 @@ function PayoutScheduleSection({
                       <button
                         key={`${slot.month}-${slot.year}`}
                         onClick={() =>
-                          !slot.paid && setSelectedPayout({ row, slot })
+                          slot.paid
+                            ? setSelectedUnmark({ row, slot })
+                            : setSelectedPayout({ row, slot })
                         }
                         title={
                           slot.paid
-                            ? `Paid on ${slot.paidAt ? new Date(slot.paidAt).toLocaleDateString('en-IN') : '—'}`
+                            ? `Paid on ${slot.paidAt ? new Date(slot.paidAt).toLocaleDateString('en-IN') : '—'} — tap to remove`
                             : `Tap to pay ${formatMonthYear(slot.month, slot.year)}`
                         }
                         className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium border transition-colors ${
                           slot.paid
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800 cursor-default'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/30 dark:hover:text-red-400 dark:hover:border-red-800 cursor-pointer'
                             : 'bg-muted/50 text-muted-foreground border-border hover:border-primary hover:text-primary cursor-pointer'
                         }`}
                       >
@@ -503,6 +592,16 @@ function PayoutScheduleSection({
           onOpenChange={(open) => !open && setSelectedPayout(null)}
           row={selectedPayout.row}
           slot={selectedPayout.slot}
+          trainerId={trainerId}
+        />
+      )}
+
+      {selectedUnmark && (
+        <ConfirmUnmarkDialog
+          open={!!selectedUnmark}
+          onOpenChange={(open) => !open && setSelectedUnmark(null)}
+          row={selectedUnmark.row}
+          slot={selectedUnmark.slot}
           trainerId={trainerId}
         />
       )}
