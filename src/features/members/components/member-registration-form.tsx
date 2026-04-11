@@ -21,6 +21,7 @@ import type { CreateMemberData } from "@/shared/types/common.types";
 
 const memberRegistrationSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
+  middleName: z.string().optional(),
   lastName: z.string().min(1, "Last name is required"),
   email: z
     .string()
@@ -66,7 +67,8 @@ export function MemberRegistrationForm({
 
   useEffect(() => {
     if (firstName && lastName) {
-      const generatedEmail = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@dummy.com`;
+      const sanitize = (s: string) => s.toLowerCase().replace(/\s+/g, "");
+      const generatedEmail = `${sanitize(firstName)}.${sanitize(lastName)}@dummy.com`;
       form.setValue("email", generatedEmail);
     }
   }, [firstName, lastName, form]);
@@ -74,6 +76,7 @@ export function MemberRegistrationForm({
   const onSubmit = (data: MemberRegistrationFormData) => {
     const memberData: CreateMemberData = {
       firstName: data.firstName,
+      middleName: data.middleName || undefined,
       lastName: data.lastName,
       email: data.email,
       phone: data.phone,
@@ -92,7 +95,7 @@ export function MemberRegistrationForm({
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-6">
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name *</Label>
           <Input
@@ -107,6 +110,15 @@ export function MemberRegistrationForm({
               {form.formState.errors.firstName.message}
             </p>
           )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="middleName">Middle Name</Label>
+          <Input
+            id="middleName"
+            {...form.register("middleName")}
+            placeholder="(optional)"
+          />
         </div>
 
         <div className="space-y-2">

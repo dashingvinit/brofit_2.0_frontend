@@ -27,6 +27,7 @@ import { useState } from 'react';
 
 const updateMemberSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
+  middleName: z.string().optional(),
   lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email address'),
   phone: z.string().min(1, 'Phone number is required'),
@@ -65,6 +66,7 @@ export function EditMemberDialog({
     resolver: zodResolver(updateMemberSchema),
     defaultValues: {
       firstName: member.firstName,
+      middleName: member.middleName || '',
       lastName: member.lastName,
       email: member.email,
       phone: member.phone,
@@ -82,6 +84,7 @@ export function EditMemberDialog({
         memberId: member.id,
         data: {
           ...data,
+          middleName: data.middleName || null,
           gender,
           isActive,
           referredById: referredById || null,
@@ -106,7 +109,7 @@ export function EditMemberDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="firstName">First Name *</Label>
               <Input
@@ -117,6 +120,15 @@ export function EditMemberDialog({
               {errors.firstName && (
                 <p className="text-sm text-destructive">{errors.firstName.message}</p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="middleName">Middle Name</Label>
+              <Input
+                id="middleName"
+                {...register('middleName')}
+                placeholder="(optional)"
+              />
             </div>
 
             <div className="space-y-2">

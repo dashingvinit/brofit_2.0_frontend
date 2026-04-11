@@ -8,6 +8,7 @@ export interface Member {
   orgId: string;
   clerkUserId?: string | null;
   firstName: string;
+  middleName?: string | null;
   lastName: string;
   phone: string;
   email: string;
@@ -142,6 +143,7 @@ export interface UpdatePlanVariantData {
  */
 export interface CreateMemberData {
   firstName: string;
+  middleName?: string;
   lastName: string;
   phone: string;
   email: string;
@@ -158,6 +160,7 @@ export interface CreateMemberData {
  */
 export interface UpdateMemberData {
   firstName?: string;
+  middleName?: string | null;
   lastName?: string;
   phone?: string;
   email?: string;
