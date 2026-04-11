@@ -451,8 +451,10 @@ function MonthlyExpensesContent({ month }: { month: string }) {
   const { data: expensesRes, isLoading } = useExpenses(month);
   const expenses = expensesRes?.data ?? [];
 
-  // Default date for new expenses: first day of the viewed month
-  const defaultDate = `${month}-01`;
+  // Default date for new expenses: today if current month, else first day of the month
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const defaultDate = month === currentMonthKey ? now.toISOString().split('T')[0] : `${month}-01`;
 
   return (
     <div className="space-y-4">
