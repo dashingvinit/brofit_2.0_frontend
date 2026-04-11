@@ -3,10 +3,13 @@ import {
   Users,
   UserCheck,
   TrendingUp,
+  TrendingDown,
   IndianRupee,
   BarChart3,
   RefreshCw,
   RotateCcw,
+  PiggyBank,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   Card,
@@ -52,6 +55,8 @@ import {
   useMemberGrowth,
   useDemographics,
   useMembershipDurationPreference,
+  useUnitEconomics,
+  useProjection,
 } from '../hooks/use-analytics';
 import { useMemberStats } from '@/features/members/hooks/use-members';
 import { useMembershipStats } from '@/features/memberships/hooks/use-memberships';
@@ -75,7 +80,7 @@ const RANK_STYLES = [
   { medal: '🥉', bar: 'bg-orange-400', badge: 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300' },
 ];
 
-type TimeWindow = 3 | 6 | 12;
+type TimeWindow = 3 | 6 | 12 | 24 | 36;
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -1226,6 +1231,192 @@ function MembershipDurationCard() {
   );
 }
 
+// ─── Unit Economics Card ───────────────────────────────────────────────────────
+
+function UnitEconomicsCard() {
+  const [window, setWindow] = useState<TimeWindow>(3);
+  const { data: res, isLoading } = useUnitEconomics(window);
+  const ue = res?.data;
+
+  const metrics = ue
+    ? [
+        { label: 'ARPU', value: `₹${formatCurrency(ue.arpu)}`, sub: 'per member/month', color: 'text-emerald-600 dark:text-emerald-400' },
+        { label: 'Monthly Churn', value: `${ue.churnPercent.toFixed(1)}%`, sub: ue.churnPercent < 5 ? 'Excellent' : ue.churnPercent < 8 ? 'Acceptable' : 'High — needs attention', color: ue.churnPercent < 5 ? 'text-emerald-600 dark:text-emerald-400' : ue.churnPercent < 8 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400' },
+        { label: 'LTV', value: ue.ltv ? `₹${formatCurrency(ue.ltv)}` : '—', sub: 'avg lifetime value', color: 'text-violet-600 dark:text-violet-400' },
+        { label: 'Avg New Joins', value: `${ue.avgNewJoinsPerMonth.toFixed(1)}`, sub: 'per month', color: 'text-blue-600 dark:text-blue-400' },
+      ]
+    : [];
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <BarChart3 className="h-4 w-4 text-violet-500" />
+            Unit Economics
+          </CardTitle>
+          <TimeToggle value={window} onChange={setWindow} options={[3, 6, 12]} />
+        </div>
+        {ue && ue.dataPoints < window && (
+          <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 mt-1">
+            <AlertTriangle className="h-3 w-3 shrink-0" />
+            Only {ue.dataPoints} month{ue.dataPoints !== 1 ? 's' : ''} of data — confidence is low
+          </div>
+        )}
+      </CardHeader>
+      <CardContent className="p-4 pt-0">
+        {isLoading ? (
+          <div className="grid grid-cols-2 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {metrics.map(({ label, value, sub, color }) => (
+              <div key={label} className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
+                <p className={`text-lg font-bold font-display ${color}`}>{value}</p>
+                <p className="text-[11px] text-muted-foreground">{sub}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Projection Card ───────────────────────────────────────────────────────────
+
+function ProjectionCard() {
+  const [window, setWindow] = useState<TimeWindow>(3);
+  const [horizon, setHorizon] = useState<TimeWindow>(12);
+  const [scenario, setScenario] = useState<'base' | 'worst' | 'best'>('base');
+  const { data: res, isLoading } = useProjection(window, horizon);
+  const proj = res?.data;
+
+  const scenarioData = proj?.[scenario];
+  const inp = proj?.inputs;
+
+  const scenarioConfig = {
+    worst: { label: 'Worst', color: 'text-red-600 dark:text-red-400', desc: '−20% joins, +20% churn' },
+    base:  { label: 'Base',  color: 'text-blue-600 dark:text-blue-400', desc: 'Current pace' },
+    best:  { label: 'Best',  color: 'text-emerald-600 dark:text-emerald-400', desc: '+30% joins, −20% churn' },
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <PiggyBank className="h-4 w-4 text-amber-500" />
+            Projection
+          </CardTitle>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-0.5 rounded-md border bg-muted/50 p-0.5">
+              {(['worst', 'base', 'best'] as const).map((s) => (
+                <button key={s} onClick={() => setScenario(s)}
+                  className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${scenario === s ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+                  {scenarioConfig[s].label}
+                </button>
+              ))}
+            </div>
+            <span className="text-xs text-muted-foreground">Learn from</span>
+            <TimeToggle value={window} onChange={setWindow} options={[3, 6, 12]} />
+            <span className="text-xs text-muted-foreground">Project</span>
+            <TimeToggle value={horizon} onChange={setHorizon} options={[12, 24, 36]} />
+          </div>
+        </div>
+        {inp && (
+          <p className="text-xs text-muted-foreground mt-1">
+            {scenarioConfig[scenario].desc} · Based on {inp.activeMembers} active members, ₹{formatCurrency(inp.arpu)} ARPU, {inp.churnPercent.toFixed(1)}% churn
+          </p>
+        )}
+        {inp && inp.dataPoints < window && (
+          <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+            <AlertTriangle className="h-3 w-3 shrink-0" />
+            Only {inp.dataPoints} month{inp.dataPoints !== 1 ? 's' : ''} of data — projection confidence is low
+          </div>
+        )}
+      </CardHeader>
+      <CardContent className="p-4 pt-0">
+        {isLoading ? (
+          <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
+        ) : scenarioData ? (
+          <div className="space-y-4">
+            {/* Summary KPIs */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground mb-0.5">Payback Period</p>
+                <p className="text-lg font-bold font-display text-amber-600 dark:text-amber-400">
+                  {scenarioData.paybackMonth ? `${scenarioData.paybackMonth} mo` : '> horizon'}
+                </p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground mb-0.5">ROI at {horizon}M</p>
+                <p className={`text-lg font-bold font-display ${(scenarioData.roiAtHorizon ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {scenarioData.roiAtHorizon != null ? `${scenarioData.roiAtHorizon.toFixed(1)}%` : '—'}
+                </p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground mb-0.5">Members at {horizon}M</p>
+                <p className="text-lg font-bold font-display text-blue-600 dark:text-blue-400">
+                  {scenarioData.months[scenarioData.months.length - 1]?.members ?? '—'}
+                </p>
+              </div>
+            </div>
+
+            {/* Month table — desktop only */}
+            <div className="hidden sm:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Month</TableHead>
+                    <TableHead className="text-xs text-right">Members</TableHead>
+                    <TableHead className="text-xs text-right">Revenue</TableHead>
+                    <TableHead className="text-xs text-right">Profit</TableHead>
+                    <TableHead className="text-xs text-right">Cumulative</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {scenarioData.months.map((m) => (
+                    <TableRow key={m.month} className={m.month === scenarioData.paybackMonth ? 'bg-emerald-50 dark:bg-emerald-950/30' : ''}>
+                      <TableCell className="text-xs font-medium">M{m.month}{m.month === scenarioData.paybackMonth ? ' ✓' : ''}</TableCell>
+                      <TableCell className="text-xs text-right">{m.members}</TableCell>
+                      <TableCell className="text-xs text-right">₹{formatCurrency(m.revenue)}</TableCell>
+                      <TableCell className={`text-xs text-right font-medium ${m.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {m.profit >= 0 ? <TrendingUp className="inline h-3 w-3 mr-0.5" /> : <TrendingDown className="inline h-3 w-3 mr-0.5" />}
+                        ₹{formatCurrency(Math.abs(m.profit))}
+                      </TableCell>
+                      <TableCell className={`text-xs text-right ${m.cumulativeProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+                        ₹{formatCurrency(Math.abs(m.cumulativeProfit))}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile: just summary rows */}
+            <div className="sm:hidden space-y-2">
+              {scenarioData.months.filter((_, i) => i % 3 === 2).map((m) => (
+                <div key={m.month} className={`flex items-center justify-between rounded-lg border p-3 ${m.month === scenarioData.paybackMonth ? 'border-emerald-500' : ''}`}>
+                  <span className="text-xs font-medium">Month {m.month}</span>
+                  <div className="text-right">
+                    <p className="text-xs font-semibold">₹{formatCurrency(m.revenue)} rev</p>
+                    <p className={`text-[11px] ${m.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                      ₹{formatCurrency(Math.abs(m.profit))} profit
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export function AnalyticsPage() {
@@ -1259,6 +1450,11 @@ export function AnalyticsPage() {
         <MemberGrowthCard />
         <RevenueBreakdownCard />
       </div>
+
+      {/* Unit Economics & Projection */}
+      <SectionLabel>Unit Economics & Projection</SectionLabel>
+      <UnitEconomicsCard />
+      <ProjectionCard />
 
       {/* Products & Retention */}
       <SectionLabel>Products & Retention</SectionLabel>

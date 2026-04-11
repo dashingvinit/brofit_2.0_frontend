@@ -644,6 +644,54 @@ export interface DemographicsData {
   totalMembers: number;
 }
 
+// ─── Unit Economics & Projection ─────────────────────────────────────────────
+
+export interface UnitEconomics {
+  window: number;
+  activeMembers: number;
+  arpu: number;
+  churnRate: number;
+  churnPercent: number;
+  ltv: number | null;
+  avgNewJoinsPerMonth: number;
+  dataPoints: number;
+}
+
+export interface ProjectionMonth {
+  month: number;
+  members: number;
+  revenue: number;
+  cost: number;
+  profit: number;
+  cumulativeProfit: number;
+}
+
+export interface ProjectionScenario {
+  months: ProjectionMonth[];
+  paybackMonth: number | null;
+  roiAtHorizon: number | null;
+}
+
+export interface ProjectionInputs {
+  activeMembers: number;
+  arpu: number;
+  churnRate: number;
+  churnPercent: number;
+  avgNewJoinsPerMonth: number;
+  fixedCostPerMonth: number;
+  capex: number;
+  window: number;
+  horizon: number;
+  dataPoints: number;
+}
+
+export interface ProjectionData {
+  inputs: ProjectionInputs;
+  base: ProjectionScenario;
+  worst: ProjectionScenario;
+  best: ProjectionScenario;
+}
+
 // ─── Attendance ───────────────────────────────────────────────────────────────
 
 export interface AttendanceRecord {

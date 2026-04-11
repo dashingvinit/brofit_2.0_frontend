@@ -56,3 +56,17 @@ export function useMembershipDurationPreference() {
     queryFn: () => analyticsApi.getMembershipDurationPreference(),
   });
 }
+
+export function useUnitEconomics(window = 3) {
+  return useQuery({
+    queryKey: ['analytics', 'unit-economics', window],
+    queryFn: () => analyticsApi.getUnitEconomics(window),
+  });
+}
+
+export function useProjection(window = 3, horizon = 12, fixedCost = 0) {
+  return useQuery({
+    queryKey: ['analytics', 'projection', window, horizon, fixedCost],
+    queryFn: () => analyticsApi.getProjection(window, horizon, fixedCost),
+  });
+}

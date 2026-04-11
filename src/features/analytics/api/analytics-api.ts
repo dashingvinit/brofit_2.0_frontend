@@ -9,6 +9,8 @@ import type {
   MemberGrowthPoint,
   DemographicsData,
   MembershipDurationPreference,
+  UnitEconomics,
+  ProjectionData,
 } from '@/shared/types/common.types';
 
 export const analyticsApi = {
@@ -49,6 +51,16 @@ export const analyticsApi = {
 
   getMembershipDurationPreference: async (): Promise<ApiResponse<MembershipDurationPreference>> => {
     const response = await apiClient.get('/analytics/membership-duration-preference');
+    return response.data;
+  },
+
+  getUnitEconomics: async (window = 3): Promise<ApiResponse<UnitEconomics>> => {
+    const response = await apiClient.get('/analytics/unit-economics', { params: { window } });
+    return response.data;
+  },
+
+  getProjection: async (window = 3, horizon = 12, fixedCost = 0): Promise<ApiResponse<ProjectionData>> => {
+    const response = await apiClient.get('/analytics/projection', { params: { window, horizon, fixedCost } });
     return response.data;
   },
 };
