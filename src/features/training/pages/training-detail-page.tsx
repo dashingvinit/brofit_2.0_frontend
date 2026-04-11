@@ -62,8 +62,9 @@ import {
   useUnfreezeTraining,
   useDeleteTraining,
   useDeleteTrainingPayment,
+  useRecordTrainingPayment,
 } from '../hooks/use-training';
-import { RecordTrainingPaymentDialog } from '../components/record-training-payment-dialog';
+import { RecordPaymentDialog } from '@/shared/components/record-payment-dialog';
 import { RenewTrainingDialog } from '../components/renew-training-dialog';
 import { ROUTES } from '@/shared/lib/constants';
 import type {
@@ -72,32 +73,10 @@ import type {
   PaymentStatus,
 } from '@/shared/types/common.types';
 
-const statusConfig: Record<
-  TrainingStatus,
-  {
-    label: string;
-    variant: 'default' | 'secondary' | 'destructive' | 'outline';
-  }
-> = {
-  scheduled: { label: 'Scheduled', variant: 'outline' },
-  active: { label: 'Active', variant: 'default' },
-  expired: { label: 'Expired', variant: 'secondary' },
-  cancelled: { label: 'Cancelled', variant: 'destructive' },
-  frozen: { label: 'Frozen', variant: 'outline' },
-};
+import { SUBSCRIPTION_STATUS_CONFIG, PAYMENT_STATUS_CONFIG } from '@/shared/lib/constants';
 
-const paymentStatusConfig: Record<
-  PaymentStatus,
-  {
-    label: string;
-    variant: 'default' | 'secondary' | 'destructive' | 'outline';
-  }
-> = {
-  paid: { label: 'Paid', variant: 'default' },
-  pending: { label: 'Pending', variant: 'outline' },
-  failed: { label: 'Failed', variant: 'destructive' },
-  refunded: { label: 'Refunded', variant: 'secondary' },
-};
+const statusConfig = SUBSCRIPTION_STATUS_CONFIG;
+const paymentStatusConfig = PAYMENT_STATUS_CONFIG;
 
 const paymentMethodLabels: Record<PaymentMethod, string> = {
   cash: 'Cash',
@@ -145,6 +124,7 @@ export function TrainingDetailPage() {
   const unfreezeTraining = useUnfreezeTraining();
   const deleteTraining = useDeleteTraining();
   const deletePayment = useDeleteTrainingPayment();
+  const recordPayment = useRecordTrainingPayment();
 
   const training = trainingResponse?.data;
   const dues = duesResponse?.data;
@@ -668,12 +648,15 @@ export function TrainingDetailPage() {
 
       {/* Record Payment Dialog */}
       {training && (
-        <RecordTrainingPaymentDialog
+        <RecordPaymentDialog
           open={paymentDialogOpen}
           onOpenChange={setPaymentDialogOpen}
-          memberId={training.memberId}
-          trainingId={training.id}
           dueAmount={dues?.dueAmount ?? 0}
+          isPending={recordPayment.isPending}
+          onSubmit={(data) => recordPayment.mutate(
+            { memberId: training.memberId, trainingId: training.id, ...data },
+            { onSuccess: () => setPaymentDialogOpen(false) }
+          )}
         />
       )}
 

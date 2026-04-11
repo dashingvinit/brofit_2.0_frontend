@@ -96,18 +96,26 @@ export function MembershipPaymentStep({
 
   // Filter offers by context, gender, and plan variant match
   const visibleOffers = discountOffers.filter((o) => {
-    // Context filter: no training → only membership offers
-    if (!addTraining && o.appliesTo !== 'membership') return false;
+    // Hide training-only offers when no training is selected
+    if (!addTraining && o.appliesTo === 'training') return false;
 
     // Gender filter
     if (o.targetGender && selectedMember?.gender !== o.targetGender) return false;
 
-    // Plan variant match: if offer requires specific variants, check they match
+    // Plan variant match: if offer requires a specific membership variant, it must match
     if (o.membershipPlanVariantId && o.membershipPlanVariantId !== selectedVariant?.id) return false;
-    if (o.trainingPlanVariantId && (!addTraining || o.trainingPlanVariantId !== selectedTrainingVariant?.id)) return false;
+
+    // For training variant: only block if training IS added but wrong variant selected.
+    // If training isn't added yet, still show combo offers so user knows they exist.
+    if (o.trainingPlanVariantId && addTraining && o.trainingPlanVariantId !== selectedTrainingVariant?.id) return false;
 
     return true;
   });
+
+  // Combo offers visible but training not yet added — show as a hint
+  const comboOffersNeedingTraining = visibleOffers.filter(
+    (o) => o.appliesTo === 'both' && !addTraining
+  );
 
   const selectedOffer = visibleOffers.find((o) => o.id === offerId);
 
@@ -278,32 +286,46 @@ export function MembershipPaymentStep({
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                {visibleOffers.length > 0 ? (
+                {visibleOffers.filter((o) => !(o.appliesTo === 'both' && !addTraining)).length > 0 ? (
                   <Select value="none" onValueChange={handleOfferChange}>
                     <SelectTrigger className="h-8 text-sm border-dashed flex-1">
                       <SelectValue placeholder="Apply offer…" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No offer</SelectItem>
-                      {visibleOffers.map((o) => (
-                        <SelectItem key={o.id} value={o.id}>
-                          {o.title}
-                          {o.targetPrice != null
-                            ? ` — ₹${o.targetPrice.toLocaleString()} total`
-                            : o.discountType === 'percentage'
-                            ? ` — ${o.discountValue}% off`
-                            : ` — ₹${o.discountValue?.toLocaleString()} off`}
-                          {o.appliesTo === 'both' ? ' (combo)' : o.appliesTo === 'training' ? ' (training)' : ''}
-                          {o.targetGender ? ` · ${o.targetGender}` : ''}
-                          {o.code ? ` · ${o.code}` : ''}
-                        </SelectItem>
-                      ))}
+                      {visibleOffers
+                        .filter((o) => !(o.appliesTo === 'both' && !addTraining))
+                        .map((o) => (
+                          <SelectItem key={o.id} value={o.id}>
+                            {o.title}
+                            {o.targetPrice != null
+                              ? ` — ₹${o.targetPrice.toLocaleString()} total`
+                              : o.discountType === 'percentage'
+                              ? ` — ${o.discountValue}% off`
+                              : ` — ₹${o.discountValue?.toLocaleString()} off`}
+                            {o.appliesTo === 'both' ? ' (combo)' : o.appliesTo === 'training' ? ' (training)' : ''}
+                            {o.targetGender ? ` · ${o.targetGender}` : ''}
+                            {o.code ? ` · ${o.code}` : ''}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 ) : (
                   <span className="text-xs text-muted-foreground">No active offers</span>
                 )}
               </div>
+
+              {/* Combo offer hint — shown when combo offers exist but training not added */}
+              {comboOffersNeedingTraining.length > 0 && (
+                <div className="flex items-start gap-2 pl-5 rounded-md bg-amber-50 dark:bg-amber-950/30 px-3 py-2">
+                  <Tag className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    <span className="font-medium">
+                      {comboOffersNeedingTraining.map((o) => o.title).join(', ')}
+                    </span>
+                    {' '}— combo offer available. Go back and enable "Assign Training" to apply it.</p>
+                </div>
+              )}
 
               {/* Manual discount — shown only when no offer applied */}
               <div className="flex items-center gap-2 pl-5">

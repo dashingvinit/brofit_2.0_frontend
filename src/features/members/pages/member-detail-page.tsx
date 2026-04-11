@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -11,16 +11,12 @@ import {
   CreditCard,
   AlertCircle,
   CheckCircle2,
-  Pencil,
   ChevronRight,
   StickyNote,
-  Check,
-  X,
   Activity,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
-import { Input } from '@/shared/components/ui/input';
-import { Textarea } from '@/shared/components/ui/textarea';
+import { InlineEditField } from '@/shared/components/inline-edit-field';
 import {
   Card,
   CardContent,
@@ -57,48 +53,11 @@ import type {
   Training,
 } from '@/shared/types/common.types';
 
-const membershipStatusConfig: Record<
-  MembershipStatus,
-  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
-> = {
-  scheduled: { label: 'Scheduled', variant: 'outline' },
-  active: { label: 'Active', variant: 'default' },
-  expired: { label: 'Expired', variant: 'secondary' },
-  cancelled: { label: 'Cancelled', variant: 'destructive' },
-  frozen: { label: 'Frozen', variant: 'outline' },
-};
+import { SUBSCRIPTION_STATUS_CONFIG } from '@/shared/lib/constants';
+import { getInitials, getAvatarColor, calculateAge } from '@/shared/lib/utils';
 
-const trainingStatusConfig: Record<
-  TrainingStatus,
-  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
-> = {
-  scheduled: { label: 'Scheduled', variant: 'outline' },
-  active: { label: 'Active', variant: 'default' },
-  expired: { label: 'Expired', variant: 'secondary' },
-  cancelled: { label: 'Cancelled', variant: 'destructive' },
-  frozen: { label: 'Frozen', variant: 'outline' },
-};
-
-function getInitials(firstName: string, lastName: string) {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-}
-
-function getAvatarColor(name: string) {
-  const colors = [
-    'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
-    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
-    'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300',
-    'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
-    'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300',
-    'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300',
-    'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/50 dark:text-fuchsia-300',
-    'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
-  ];
-  const index =
-    name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) %
-    colors.length;
-  return colors[index];
-}
+const membershipStatusConfig = SUBSCRIPTION_STATUS_CONFIG;
+const trainingStatusConfig = SUBSCRIPTION_STATUS_CONFIG;
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-IN', {
@@ -106,116 +65,6 @@ function formatDate(dateStr: string) {
     month: 'short',
     year: 'numeric',
   });
-}
-
-function calculateAge(dateOfBirth: string) {
-  const today = new Date();
-  const birthDate = new Date(dateOfBirth);
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  if (
-    monthDiff < 0 ||
-    (monthDiff === 0 && today.getDate() < birthDate.getDate())
-  ) {
-    age--;
-  }
-  return age;
-}
-
-// ─── Inline Edit Field ────────────────────────────────────────────────────────
-
-interface InlineEditFieldProps {
-  value: string;
-  onSave: (value: string) => void;
-  isSaving?: boolean;
-  multiline?: boolean;
-  placeholder?: string;
-}
-
-function InlineEditField({ value, onSave, isSaving, multiline, placeholder }: InlineEditFieldProps) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-  const inputRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (editing) {
-      setDraft(value);
-      setTimeout(() => inputRef.current?.focus(), 0);
-    }
-  }, [editing, value]);
-
-  const handleSave = () => {
-    if (draft.trim() !== value.trim()) {
-      onSave(draft.trim());
-    }
-    setEditing(false);
-  };
-
-  const handleCancel = () => {
-    setDraft(value);
-    setEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !multiline) { e.preventDefault(); handleSave(); }
-    if (e.key === 'Escape') handleCancel();
-  };
-
-  if (editing) {
-    return (
-      <div className="flex items-start gap-1.5 mt-0.5">
-        {multiline ? (
-          <Textarea
-            ref={inputRef as React.Ref<HTMLTextAreaElement>}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={handleKeyDown}
-            rows={3}
-            placeholder={placeholder}
-            className="text-sm py-1 h-auto min-h-[60px] flex-1"
-            disabled={isSaving}
-          />
-        ) : (
-          <Input
-            ref={inputRef as React.Ref<HTMLInputElement>}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            className="h-7 text-sm py-1 flex-1"
-            disabled={isSaving}
-          />
-        )}
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="mt-0.5 rounded p-0.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
-          title="Save"
-        >
-          <Check className="h-4 w-4" />
-        </button>
-        <button
-          onClick={handleCancel}
-          disabled={isSaving}
-          className="mt-0.5 rounded p-0.5 text-muted-foreground hover:bg-muted transition-colors"
-          title="Cancel"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className="group flex items-center gap-1.5 cursor-pointer"
-      onClick={() => setEditing(true)}
-      title="Click to edit"
-    >
-      <p className="font-medium text-sm">{value || <span className="text-muted-foreground italic">Not set</span>}</p>
-      <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-    </div>
-  );
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────

@@ -62,8 +62,9 @@ import {
   useUnfreezeMembership,
   useDeleteMembership,
   useDeletePayment,
+  useRecordPayment,
 } from '../hooks/use-memberships';
-import { RecordPaymentDialog } from '../components/record-payment-dialog';
+import { RecordPaymentDialog } from '@/shared/components/record-payment-dialog';
 import { EditMembershipDialog } from '../components/edit-membership-dialog';
 import { RenewMembershipDialog } from '../components/renew-membership-dialog';
 import { FreezeMembershipDialog } from '../components/freeze-membership-dialog';
@@ -74,32 +75,10 @@ import type {
   PaymentStatus,
 } from '@/shared/types/common.types';
 
-const statusConfig: Record<
-  MembershipStatus,
-  {
-    label: string;
-    variant: 'default' | 'secondary' | 'destructive' | 'outline';
-  }
-> = {
-  scheduled: { label: 'Scheduled', variant: 'outline' },
-  active: { label: 'Active', variant: 'default' },
-  expired: { label: 'Expired', variant: 'secondary' },
-  cancelled: { label: 'Cancelled', variant: 'destructive' },
-  frozen: { label: 'Frozen', variant: 'outline' },
-};
+import { SUBSCRIPTION_STATUS_CONFIG, PAYMENT_STATUS_CONFIG } from '@/shared/lib/constants';
 
-const paymentStatusConfig: Record<
-  PaymentStatus,
-  {
-    label: string;
-    variant: 'default' | 'secondary' | 'destructive' | 'outline';
-  }
-> = {
-  paid: { label: 'Paid', variant: 'default' },
-  pending: { label: 'Pending', variant: 'outline' },
-  failed: { label: 'Failed', variant: 'destructive' },
-  refunded: { label: 'Refunded', variant: 'secondary' },
-};
+const statusConfig = SUBSCRIPTION_STATUS_CONFIG;
+const paymentStatusConfig = PAYMENT_STATUS_CONFIG;
 
 const paymentMethodLabels: Record<PaymentMethod, string> = {
   cash: 'Cash',
@@ -149,6 +128,7 @@ export function MembershipDetailPage() {
   const unfreezeMembership = useUnfreezeMembership();
   const deleteMembership = useDeleteMembership();
   const deletePayment = useDeletePayment();
+  const recordPayment = useRecordPayment();
 
   const membership = membershipResponse?.data;
   const dues = duesResponse?.data;
@@ -708,9 +688,12 @@ export function MembershipDetailPage() {
         <RecordPaymentDialog
           open={paymentDialogOpen}
           onOpenChange={setPaymentDialogOpen}
-          memberId={membership.memberId}
-          membershipId={membership.id}
           dueAmount={dues.dueAmount}
+          isPending={recordPayment.isPending}
+          onSubmit={(data) => recordPayment.mutate(
+            { memberId: membership.memberId, membershipId: membership.id, ...data },
+            { onSuccess: () => setPaymentDialogOpen(false) }
+          )}
         />
       )}
 

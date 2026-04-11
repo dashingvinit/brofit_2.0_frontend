@@ -1,5 +1,30 @@
+import type { MembershipStatus, TrainingStatus, PaymentStatus } from '@/shared/types/common.types';
+
 export const API_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
+
+export const SUBSCRIPTION_STATUS_CONFIG: Record<
+  MembershipStatus | TrainingStatus,
+  { label: string; variant: BadgeVariant }
+> = {
+  scheduled: { label: 'Scheduled', variant: 'outline' },
+  active: { label: 'Active', variant: 'default' },
+  expired: { label: 'Expired', variant: 'secondary' },
+  cancelled: { label: 'Cancelled', variant: 'destructive' },
+  frozen: { label: 'Frozen', variant: 'outline' },
+};
+
+export const PAYMENT_STATUS_CONFIG: Record<
+  PaymentStatus,
+  { label: string; variant: BadgeVariant }
+> = {
+  paid: { label: 'Paid', variant: 'default' },
+  pending: { label: 'Pending', variant: 'outline' },
+  failed: { label: 'Failed', variant: 'destructive' },
+  refunded: { label: 'Refunded', variant: 'secondary' },
+};
 
 export const ROUTES = {
   HOME: "/",

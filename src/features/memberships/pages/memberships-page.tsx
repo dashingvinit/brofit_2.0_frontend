@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { EmptyState } from '@/shared/components/empty-state';
 import {
   Plus,
   CreditCard,
@@ -58,19 +59,11 @@ import { BulkFreezeDialog } from '../components/bulk-freeze-dialog';
 import { ROUTES } from '@/shared/lib/constants';
 import { getThisMonthDateRange } from '@/shared/lib/utils';
 import type { Membership, MembershipStatus } from '@/shared/types/common.types';
+import { SUBSCRIPTION_STATUS_CONFIG } from '@/shared/lib/constants';
 
 type StatusFilter = 'all' | MembershipStatus;
 
-const statusConfig: Record<
-  MembershipStatus,
-  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
-> = {
-  scheduled: { label: 'Scheduled', variant: 'outline' },
-  active: { label: 'Active', variant: 'default' },
-  expired: { label: 'Expired', variant: 'secondary' },
-  cancelled: { label: 'Cancelled', variant: 'destructive' },
-  frozen: { label: 'Frozen', variant: 'outline' },
-};
+const statusConfig = SUBSCRIPTION_STATUS_CONFIG;
 
 const statusOptions: {
   value: StatusFilter;
@@ -624,35 +617,22 @@ export function MembershipsPage() {
         </div>
       ) : memberships.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <CreditCard className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-1">
-              {hasActiveFilters ? 'No memberships match your filters' : 'No memberships yet'}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {hasActiveFilters
-                ? 'Try adjusting your search or filter criteria.'
-                : 'Create a membership to assign a plan to a member.'}
-            </p>
-            {hasActiveFilters ? (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchQuery('');
-                  setStatusFilter('all');
-                  setDateRange(null);
-                }}
-              >
-                Clear Filters
-              </Button>
-            ) : (
-              <Button onClick={() => navigate(ROUTES.CREATE_MEMBERSHIP)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create First Membership
-              </Button>
-            )}
+          <CardContent className="p-0">
+            <EmptyState
+              icon={<CreditCard className="h-8 w-8 text-muted-foreground" />}
+              title={hasActiveFilters ? 'No memberships match your filters' : 'No memberships yet'}
+              description={hasActiveFilters ? 'Try adjusting your search or filter criteria.' : 'Create a membership to assign a plan to a member.'}
+              action={hasActiveFilters ? (
+                <Button variant="outline" onClick={() => { setSearchQuery(''); setStatusFilter('all'); setDateRange(null); }}>
+                  Clear Filters
+                </Button>
+              ) : (
+                <Button onClick={() => navigate(ROUTES.CREATE_MEMBERSHIP)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create First Membership
+                </Button>
+              )}
+            />
           </CardContent>
         </Card>
       ) : (

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { EmptyState } from '@/shared/components/empty-state';
 import {
   Plus,
   Dumbbell,
@@ -48,19 +49,11 @@ import { useTrainings, useTrainingStats } from '../hooks/use-training';
 import { RenewTrainingDialog } from '../components/renew-training-dialog';
 import { ROUTES } from '@/shared/lib/constants';
 import type { Training, TrainingStatus } from '@/shared/types/common.types';
+import { SUBSCRIPTION_STATUS_CONFIG } from '@/shared/lib/constants';
 
 type StatusFilter = 'all' | TrainingStatus;
 
-const statusConfig: Record<
-  TrainingStatus,
-  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
-> = {
-  scheduled: { label: 'Scheduled', variant: 'outline' },
-  active: { label: 'Active', variant: 'default' },
-  expired: { label: 'Expired', variant: 'secondary' },
-  cancelled: { label: 'Cancelled', variant: 'destructive' },
-  frozen: { label: 'Frozen', variant: 'outline' },
-};
+const statusConfig = SUBSCRIPTION_STATUS_CONFIG;
 
 const statusOptions: {
   value: StatusFilter;
@@ -459,34 +452,22 @@ export function TrainingsPage() {
         </div>
       ) : trainings.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <Dumbbell className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-1">
-              {hasActiveFilters ? 'No trainings match your filters' : 'No trainings yet'}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {hasActiveFilters
-                ? 'Try adjusting your search or filter criteria.'
-                : 'Create a training to assign a trainer and plan to a member.'}
-            </p>
-            {hasActiveFilters ? (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchQuery('');
-                  setStatusFilter('all');
-                }}
-              >
-                Clear Filters
-              </Button>
-            ) : (
-              <Button onClick={() => navigate(ROUTES.CREATE_TRAINING)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create First Training
-              </Button>
-            )}
+          <CardContent className="p-0">
+            <EmptyState
+              icon={<Dumbbell className="h-8 w-8 text-muted-foreground" />}
+              title={hasActiveFilters ? 'No trainings match your filters' : 'No trainings yet'}
+              description={hasActiveFilters ? 'Try adjusting your search or filter criteria.' : 'Create a training to assign a trainer and plan to a member.'}
+              action={hasActiveFilters ? (
+                <Button variant="outline" onClick={() => { setSearchQuery(''); setStatusFilter('all'); }}>
+                  Clear Filters
+                </Button>
+              ) : (
+                <Button onClick={() => navigate(ROUTES.CREATE_TRAINING)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create First Training
+                </Button>
+              )}
+            />
           </CardContent>
         </Card>
       ) : (

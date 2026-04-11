@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { IndianRupee, Percent, ShoppingBag, Dumbbell, Layers } from "lucide-react";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -271,7 +271,12 @@ export function OfferDetailsStep({ form }: OfferDetailsStepProps) {
   // Show error only after the field is touched OR a submit was attempted
   const showDiscountError = !!errors.discountValue && (!!touchedFields.discountValue || isSubmitted);
 
+  // Skip effects on the initial mount — they should only react to user-driven changes,
+  // not fire when the component first mounts and wipe values already set by reset().
+  const isMounted = useRef(false);
+
   useEffect(() => {
+    if (!isMounted.current) return;
     setValue("membershipPlanTypeId", "");
     setValue("membershipPlanVariantId", null);
     setValue("trainingPlanTypeId", "");
@@ -279,14 +284,17 @@ export function OfferDetailsStep({ form }: OfferDetailsStepProps) {
   }, [appliesTo, setValue]);
 
   useEffect(() => {
+    if (!isMounted.current) return;
     setValue("membershipPlanVariantId", null);
   }, [membershipPlanTypeId, setValue]);
 
   useEffect(() => {
+    if (!isMounted.current) return;
     setValue("trainingPlanVariantId", null);
   }, [trainingPlanTypeId, setValue]);
 
   useEffect(() => {
+    if (!isMounted.current) return;
     if (planScope === "all") {
       setValue("membershipPlanTypeId", "");
       setValue("membershipPlanVariantId", null);
@@ -294,6 +302,10 @@ export function OfferDetailsStep({ form }: OfferDetailsStepProps) {
       setValue("trainingPlanVariantId", null);
     }
   }, [planScope, setValue]);
+
+  // Declared last so it runs after the above effects on mount, setting isMounted only after
+  // the initial effect runs are skipped.
+  useEffect(() => { isMounted.current = true; }, []);
 
   // ── Referral ─────────────────────────────────────────────────────────────
   if (type === "referral") {

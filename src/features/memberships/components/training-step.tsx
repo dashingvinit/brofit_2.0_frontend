@@ -54,11 +54,14 @@ export function TrainingStep({
   const selectedVariant = trainingPlanVariants?.find((v) => v.id === trainingPlanVariantId);
   const trainerFixedPayout = watch('trainerFixedPayout');
 
-  // Show suggested payout based on variant default or trainer split
+  // Split is always on the plan's base price — gym absorbs the discount, not the trainer
+  const variantPrice = selectedVariant?.price ?? 0;
+
+  // Show suggested payout based on variant default or trainer split on base price
   const suggestedPayout = selectedVariant && selectedTrainer
     ? selectedVariant.defaultTrainerFixedPayout != null
       ? selectedVariant.defaultTrainerFixedPayout
-      : Math.round(selectedVariant.price * ((selectedVariant.defaultTrainerSplitPercent ?? selectedTrainer.splitPercent ?? 60) / 100))
+      : Math.round(variantPrice * ((selectedVariant.defaultTrainerSplitPercent ?? selectedTrainer.splitPercent ?? 60) / 100))
     : null;
 
   return (
@@ -129,7 +132,9 @@ export function TrainingStep({
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            Override the trainer's payout for this combo. Leave empty to use the default {selectedTrainer.splitPercent ?? 60}% split.
+            {trainerFixedPayout != null && trainerFixedPayout !== ('' as unknown as number)
+              ? 'Negotiated fixed amount — gym absorbs any remaining discount.'
+              : `Leave empty to use the default ${selectedTrainer.splitPercent ?? 60}% split on the plan price (₹${variantPrice.toLocaleString()}). Discounts are absorbed by the gym.`}
           </p>
         </div>
       )}

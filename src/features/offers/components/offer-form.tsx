@@ -308,22 +308,30 @@ export function OfferForm({ offer, onSuccess, onCancel }: OfferFormProps) {
 
   const selectedTypeConfig = OFFER_TYPES.find((t) => t.value === type);
 
+  const [isNavigating, setIsNavigating] = useState(false);
+
   const handleNext = async () => {
-    const valid = await trigger(["type", "title", "startDate", "endDate"]);
-    if (!valid) {
-      const e = errors;
-      if (e.endDate) toast.error(e.endDate.message);
-      else if (e.title) toast.error(e.title.message);
-      return;
+    if (isNavigating) return;
+    setIsNavigating(true);
+    try {
+      const valid = await trigger(["type", "title", "startDate", "endDate"]);
+      if (!valid) {
+        const e = errors;
+        if (e.endDate) toast.error(e.endDate.message);
+        else if (e.title) toast.error(e.title.message);
+        return;
+      }
+      setStep(1);
+    } finally {
+      setIsNavigating(false);
     }
-    setStep(1);
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit, (errs) => {
-      const first = Object.values(errs)[0];
-      if (first?.message) toast.error(first.message as string);
-    })} className="space-y-4">
+    <form
+      onSubmit={(e) => e.preventDefault()}
+      className="space-y-4"
+    >
       {/* Step indicator */}
       {hasDetailsStep && (
         <div className="flex items-center gap-2">
@@ -523,11 +531,18 @@ export function OfferForm({ offer, onSuccess, onCancel }: OfferFormProps) {
         </Button>
 
         {step === 0 && hasDetailsStep ? (
-          <Button type="button" onClick={handleNext}>
+          <Button type="button" onClick={handleNext} disabled={isNavigating}>
             Next <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         ) : (
-          <Button type="submit" disabled={isSubmitting}>
+          <Button
+            type="button"
+            disabled={isSubmitting}
+            onClick={handleSubmit(onSubmit, (errs) => {
+              const first = Object.values(errs)[0];
+              if (first?.message) toast.error(first.message as string);
+            })}
+          >
             {isSubmitting ? "Saving..." : isEditing ? "Update Offer" : "Create Offer"}
           </Button>
         )}

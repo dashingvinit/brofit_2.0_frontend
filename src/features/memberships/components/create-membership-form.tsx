@@ -21,48 +21,29 @@ import { useTrainers } from '@/features/trainer/hooks/use-trainers';
 import { useOffers } from '@/features/offers/hooks/use-offers';
 import type { CreateMembershipData, CreateTrainingData, PaymentMethod } from '@/shared/types/common.types';
 
-const createMembershipSchema = z
-  .object({
-    memberId: z.string().min(1, 'Please select a member'),
-    planTypeId: z.string().min(1, 'Please select a plan type'),
-    planVariantId: z.string().min(1, 'Please select a plan variant'),
-    startDate: z.string().min(1, 'Start date is required'),
-    discountAmount: z.coerce.number().min(0).default(0),
-    offerId: z.string().optional(),
-    autoRenew: z.boolean().default(false),
-    notes: z.string().optional(),
-    collectPayment: z.boolean().default(false),
-    paymentAmount: z.coerce.number().optional(),
-    paymentMethod: z.string().optional(),
-    paymentReference: z.string().optional(),
-    paymentNotes: z.string().optional(),
-    paymentDate: z.string().optional(),
-    addTraining: z.boolean().default(false),
-    trainingPlanTypeId: z.string().optional(),
-    trainingPlanVariantId: z.string().optional(),
-    trainerId: z.string().optional(),
-    trainingDiscountAmount: z.coerce.number().min(0).default(0),
-    trainerFixedPayout: z.coerce.number().min(0).optional().nullable(),
-    trainingNotes: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.collectPayment) {
-        return !!data.paymentMethod && (data.paymentAmount ?? 0) > 0;
-      }
-      return true;
-    },
-    { message: 'Payment amount and method are required when collecting payment', path: ['paymentAmount'] }
-  )
-  .refine(
-    (data) => {
-      if (data.addTraining) {
-        return !!data.trainingPlanTypeId && !!data.trainingPlanVariantId && !!data.trainerId;
-      }
-      return true;
-    },
-    { message: 'Training plan, variant, and trainer are required', path: ['trainerId'] }
-  );
+const createMembershipSchema = z.object({
+  memberId: z.string().min(1, 'Please select a member'),
+  planTypeId: z.string().min(1, 'Please select a plan type'),
+  planVariantId: z.string().min(1, 'Please select a plan variant'),
+  startDate: z.string().min(1, 'Start date is required'),
+  discountAmount: z.coerce.number().min(0).default(0),
+  offerId: z.string().optional(),
+  autoRenew: z.boolean().default(false),
+  notes: z.string().optional(),
+  collectPayment: z.boolean().default(false),
+  paymentAmount: z.coerce.number().optional(),
+  paymentMethod: z.string().optional(),
+  paymentReference: z.string().optional(),
+  paymentNotes: z.string().optional(),
+  paymentDate: z.string().optional(),
+  addTraining: z.boolean().default(false),
+  trainingPlanTypeId: z.string().optional(),
+  trainingPlanVariantId: z.string().optional(),
+  trainerId: z.string().optional(),
+  trainingDiscountAmount: z.coerce.number().min(0).default(0),
+  trainerFixedPayout: z.coerce.number().min(0).optional().nullable(),
+  trainingNotes: z.string().optional(),
+});
 
 type CreateMembershipFormData = z.infer<typeof createMembershipSchema>;
 
@@ -93,7 +74,10 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
   const createMembership = useCreateMembership();
   const createTraining = useCreateTraining();
 
-  const discountOffers = (activeOffers ?? []).filter((o) => o.type === 'discount' || o.type === 'promo');
+  // Include all active offers that can apply discounts (any type with discountValue/targetPrice, or combo packages)
+  const discountOffers = (activeOffers ?? []).filter(
+    (o) => o.discountValue != null || o.targetPrice != null
+  );
   const trainers = trainersResponse?.data ?? [];
   const members = membersResponse?.data ?? [];
 
@@ -211,6 +195,8 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
   const isSubmitting = createMembership.isPending || createTraining.isPending;
 
   const onSubmit = (data: CreateMembershipFormData) => {
+    // Guard: only submit when on the last step (payment)
+    if (currentStepId !== 'payment') return;
     const membershipFinalPrice = finalPrice;
     const trainingFinalPriceVal = trainingFinalPrice;
     const totalDue = membershipFinalPrice + (data.addTraining ? trainingFinalPriceVal : 0);
@@ -286,7 +272,14 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
 
       <Separator />
 
-      <form onSubmit={(e) => e.preventDefault()}>
+      <form
+        onSubmit={(e) => e.preventDefault()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+            e.preventDefault();
+          }
+        }}
+      >
         {currentStepId === 'member' && (
           <MemberPicker
             members={filteredMembers}

@@ -83,8 +83,8 @@ function RoiCard() {
           : 'bg-red-50 dark:bg-red-950/50',
     },
     {
-      label: 'ROI',
-      shortLabel: 'ROI',
+      label: 'Projected Annual ROI',
+      shortLabel: 'Ann. ROI',
       value:
         roi?.roiPercent != null ? `${roi.roiPercent.toFixed(1)}%` : '—',
       icon: BarChart3,
