@@ -82,18 +82,28 @@ export function DashboardLayout() {
     { name: "Attendance", href: ROUTES.ATTENDANCE, icon: ScanLine, isActive: isActive(ROUTES.ATTENDANCE) },
   ];
 
-  const adminOperationsItems = [
-    { name: "Trainers", href: ROUTES.TRAINERS, icon: UserRound, isActive: isActive(ROUTES.TRAINERS) },
-    { name: "Memberships", href: ROUTES.MEMBERSHIPS, icon: CreditCard, isActive: isActive(ROUTES.MEMBERSHIPS) },
-    { name: "Trainings", href: ROUTES.TRAININGS, icon: Dumbbell, isActive: isActive(ROUTES.TRAININGS) },
+  const adminBusinessItems = [
+    { name: "Analytics", href: ROUTES.ANALYTICS, icon: BarChart2, isActive: isActive(ROUTES.ANALYTICS) },
+    { name: "Financials", href: ROUTES.FINANCIALS, icon: TrendingUp, isActive: isActive(ROUTES.FINANCIALS) },
   ];
 
-  const adminBusinessItems = [
-    { name: "Plans", href: ROUTES.PLANS, icon: LayoutGrid, isActive: isActive(ROUTES.PLANS) },
-    { name: "Offers", href: ROUTES.OFFERS, icon: Tag, isActive: isActive(ROUTES.OFFERS) },
-    { name: "Financials", href: ROUTES.FINANCIALS, icon: TrendingUp, isActive: isActive(ROUTES.FINANCIALS) },
-    { name: "Analytics", href: ROUTES.ANALYTICS, icon: BarChart2, isActive: isActive(ROUTES.ANALYTICS) },
-  ];
+  const adminRecordsGroup = {
+    label: "Records",
+    icon: CreditCard,
+    items: [
+      { name: "Memberships", href: ROUTES.MEMBERSHIPS, icon: CreditCard, isActive: isActive(ROUTES.MEMBERSHIPS) },
+      { name: "Trainings", href: ROUTES.TRAININGS, icon: Dumbbell, isActive: isActive(ROUTES.TRAININGS) },
+    ],
+  };
+
+  const adminCatalogGroup = {
+    label: "Catalog",
+    icon: LayoutGrid,
+    items: [
+      { name: "Plans", href: ROUTES.PLANS, icon: LayoutGrid, isActive: isActive(ROUTES.PLANS) },
+      { name: "Offers", href: ROUTES.OFFERS, icon: Tag, isActive: isActive(ROUTES.OFFERS) },
+    ],
+  };
 
   const staffFlatItems = [
     { name: "Reception", href: ROUTES.RECEPTION, icon: ConciergeBell, isActive: isActive(ROUTES.RECEPTION) },
@@ -112,7 +122,7 @@ export function DashboardLayout() {
   ];
 
   const allFlatItems = showAdminNav
-    ? [...adminTopItems, ...adminPeopleItems, ...adminOperationsItems, ...adminBusinessItems]
+    ? [...adminTopItems, ...adminPeopleItems, ...adminBusinessItems, ...adminRecordsGroup.items, ...adminCatalogGroup.items, { name: "Trainers", href: ROUTES.TRAINERS, icon: UserRound, isActive: isActive(ROUTES.TRAINERS) }]
     : staffFlatItems;
 
   const detailTitles: [string, string][] = [
@@ -152,11 +162,32 @@ export function DashboardLayout() {
             {showAdminNav ? (
               <>
                 <NavFlat items={adminTopItems} />
-                <NavFlat items={adminPeopleItems} label="People" />
-                <NavFlat items={adminOperationsItems} label="Operations" />
                 <NavFlat items={adminBusinessItems} label="Business" />
+                <NavFlat items={adminPeopleItems} label="People" />
+                <SidebarGroup>
+                  <SidebarGroupLabel>Manage</SidebarGroupLabel>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={isActive(ROUTES.TRAINERS)} tooltip="Trainers">
+                        <Link to={ROUTES.TRAINERS}>
+                          <UserRound />
+                          <span>Trainers</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                  <NavMain groups={[adminRecordsGroup, adminCatalogGroup]} />
+                </SidebarGroup>
                 <SidebarGroup>
                   <SidebarGroupLabel>System</SidebarGroupLabel>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive(ROUTES.INBOX)} tooltip="Inbox">
+                      <Link to={ROUTES.INBOX}>
+                        <Inbox />
+                        <span>Inbox</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                   <NavMain groups={[
                     {
                       label: "Settings",
@@ -169,14 +200,6 @@ export function DashboardLayout() {
                       ],
                     },
                   ]} />
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isActive(ROUTES.INBOX)} tooltip="Inbox">
-                      <Link to={ROUTES.INBOX}>
-                        <Inbox />
-                        <span>Inbox</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
                 </SidebarGroup>
               </>
             ) : (
