@@ -83,6 +83,8 @@ export interface PlanVariant {
   isActive: boolean;
   createdAt: string; // ISO date string
   planType?: PlanType; // Optional plan type when fetched with relations
+  defaultTrainerSplitPercent?: number | null;
+  defaultTrainerFixedPayout?: number | null;
 }
 
 /**
@@ -255,6 +257,7 @@ export interface CreateMembershipData {
   offerId?: string;
   autoRenew?: boolean;
   notes?: string;
+  trainingPlanVariantId?: string; // passed for combo offer validation
   paymentAmount?: number;
   paymentMethod?: PaymentMethod;
   paymentReference?: string;
@@ -358,6 +361,7 @@ export interface Training {
   autoRenew: boolean;
   notes?: string | null;
   offerId?: string | null;
+  trainerFixedPayout?: number | null;
   createdAt: string;
   updatedAt: string;
   member?: Member;
@@ -379,6 +383,7 @@ export interface CreateTrainingData {
   offerId?: string;
   autoRenew?: boolean;
   notes?: string;
+  trainerFixedPayout?: number | null;
   paymentAmount?: number;
   paymentMethod?: PaymentMethod;
   paymentReference?: string;
@@ -413,6 +418,7 @@ export interface TrainerPayoutMonthSlot {
   amount: number;
   paid: boolean;
   paidAt: string | null;
+  isFixedPayout: boolean;
 }
 
 export interface TrainerPayoutRow {
@@ -421,6 +427,7 @@ export interface TrainerPayoutRow {
     status: TrainingStatus;
     startDate: string;
     endDate: string;
+    trainerFixedPayout?: number | null;
     finalPrice: number;
     member: Pick<Member, 'id' | 'firstName' | 'lastName' | 'phone' | 'email'>;
     planVariant?: {
@@ -698,6 +705,20 @@ export interface Offer {
   appliesTo: OfferAppliesTo;
   createdAt: string;
   updatedAt: string;
+  // Package configuration
+  targetGender?: string | null;
+  membershipPlanVariantId?: string | null;
+  trainingPlanVariantId?: string | null;
+  targetPrice?: number | null;
+  trainerFixedPayout?: number | null;
+  trainerSplitPercent?: number | null;
+  membershipPlanVariant?: Pick<PlanVariant, 'id' | 'price' | 'durationLabel' | 'durationDays'> & {
+    planType: Pick<PlanType, 'id' | 'name' | 'category'>;
+  } | null;
+  trainingPlanVariant?: Pick<PlanVariant, 'id' | 'price' | 'durationLabel' | 'durationDays'> & {
+    planType: Pick<PlanType, 'id' | 'name' | 'category'>;
+  } | null;
+  _count?: { memberships: number; trainings: number };
 }
 
 export interface CreateOfferData {
@@ -712,6 +733,12 @@ export interface CreateOfferData {
   code?: string;
   rewardAmount?: number;
   appliesTo?: OfferAppliesTo;
+  targetGender?: string | null;
+  membershipPlanVariantId?: string | null;
+  trainingPlanVariantId?: string | null;
+  targetPrice?: number | null;
+  trainerFixedPayout?: number | null;
+  trainerSplitPercent?: number | null;
 }
 
 export interface UpdateOfferData {
@@ -725,6 +752,12 @@ export interface UpdateOfferData {
   code?: string | null;
   rewardAmount?: number | null;
   appliesTo?: OfferAppliesTo;
+  targetGender?: string | null;
+  membershipPlanVariantId?: string | null;
+  trainingPlanVariantId?: string | null;
+  targetPrice?: number | null;
+  trainerFixedPayout?: number | null;
+  trainerSplitPercent?: number | null;
 }
 
 // ── Platform (Super Admin) ───────────────────────────────────────────────────

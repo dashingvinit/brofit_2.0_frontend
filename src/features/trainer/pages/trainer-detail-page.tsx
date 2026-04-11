@@ -148,13 +148,19 @@ function ConfirmPayoutDialog({
               <span className="font-medium">{formatMonthYear(slot.month, slot.year)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Revenue share (60%)</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+              <span className="text-muted-foreground">
+                {slot.isFixedPayout ? 'Negotiated payout' : `Revenue share (${row.training.trainerFixedPayout != null ? '—' : ''}%)`}
+              </span>
+              <span className={`font-semibold ${slot.isFixedPayout ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                 {formatRupees(slot.amount)}
               </span>
             </div>
             <div className="flex justify-between text-xs text-muted-foreground border-t pt-1.5 mt-1">
-              <span>Based on {formatRupees(slot.revenueBase)} / month</span>
+              <span>
+                {slot.isFixedPayout
+                  ? `Fixed total: ${formatRupees(row.training.trainerFixedPayout ?? 0)}`
+                  : `Based on ${formatRupees(slot.revenueBase)} / month`}
+              </span>
               <span>Cash payment</span>
             </div>
           </div>
@@ -350,7 +356,12 @@ function PayoutScheduleSection({
                           : ''}
                       </TableCell>
                       <TableCell className="text-right font-medium text-sm">
-                        {formatRupees(row.months[0]?.amount ?? 0)}
+                        <span className={row.training.trainerFixedPayout != null ? 'text-orange-600 dark:text-orange-400' : ''}>
+                          {formatRupees(row.months[0]?.amount ?? 0)}
+                        </span>
+                        {row.training.trainerFixedPayout != null && (
+                          <span className="block text-xs text-orange-500 dark:text-orange-400 font-normal">negotiated</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1.5 py-1">
@@ -422,8 +433,10 @@ function PayoutScheduleSection({
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Per month</p>
-                      <p className="font-semibold text-sm">
+                      <p className="text-xs text-muted-foreground">
+                        {row.training.trainerFixedPayout != null ? 'Per month (negotiated)' : 'Per month'}
+                      </p>
+                      <p className={`font-semibold text-sm ${row.training.trainerFixedPayout != null ? 'text-orange-600 dark:text-orange-400' : ''}`}>
                         {formatRupees(row.months[0]?.amount ?? 0)}
                       </p>
                     </div>

@@ -29,6 +29,7 @@ import {
   CardDescription,
 } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
+import { Switch } from '@/shared/components/ui/switch';
 import { Separator } from '@/shared/components/ui/separator';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
@@ -365,21 +366,19 @@ export function MemberDetailPage() {
                   </p>
                 </div>
               </div>
-              <Badge
-                variant={member.isActive ? 'default' : 'secondary'}
-                className={
-                  member.isActive
-                    ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-300 border-0'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 border-0'
-                }
-              >
-                <span
-                  className={`mr-1.5 h-1.5 w-1.5 rounded-full inline-block ${
-                    member.isActive ? 'bg-emerald-500' : 'bg-gray-400'
-                  }`}
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={member.isActive}
+                  disabled={updateMember.isPending}
+                  onCheckedChange={(checked) =>
+                    updateMember.mutate({ memberId: member.id, data: { isActive: checked } })
+                  }
+                  className="data-[state=checked]:bg-emerald-500"
                 />
-                {member.isActive ? 'Active' : 'Inactive'}
-              </Badge>
+                <span className={`text-sm font-medium ${member.isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+                  {member.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">

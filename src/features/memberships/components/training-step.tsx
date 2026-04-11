@@ -1,4 +1,5 @@
-import { Loader2 } from 'lucide-react';
+import { Loader2, IndianRupee } from 'lucide-react';
+import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
 import {
@@ -48,6 +49,17 @@ export function TrainingStep({
   errors = {},
 }: TrainingStepProps) {
   const activeTrainers = trainers.filter((t) => t.isActive);
+  const selectedTrainerId = watch('trainerId');
+  const selectedTrainer = activeTrainers.find((t) => t.id === selectedTrainerId);
+  const selectedVariant = trainingPlanVariants?.find((v) => v.id === trainingPlanVariantId);
+  const trainerFixedPayout = watch('trainerFixedPayout');
+
+  // Show suggested payout based on variant default or trainer split
+  const suggestedPayout = selectedVariant && selectedTrainer
+    ? selectedVariant.defaultTrainerFixedPayout != null
+      ? selectedVariant.defaultTrainerFixedPayout
+      : Math.round(selectedVariant.price * ((selectedVariant.defaultTrainerSplitPercent ?? selectedTrainer.splitPercent ?? 60) / 100))
+    : null;
 
   return (
     <div className="space-y-6 px-6 pb-6">
@@ -95,6 +107,32 @@ export function TrainingStep({
           <p className="text-sm text-destructive">{errors.trainerId.message}</p>
         )}
       </div>
+
+      {/* Trainer Fixed Payout */}
+      {selectedTrainer && (
+        <div className="space-y-2">
+          <Label htmlFor="trainerFixedPayout">Trainer Fixed Payout (optional)</Label>
+          <div className="relative">
+            <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              id="trainerFixedPayout"
+              type="number"
+              min={0}
+              step={1}
+              className="pl-8"
+              placeholder={suggestedPayout != null ? `Suggested: ₹${suggestedPayout.toLocaleString()}` : 'Leave empty for default split'}
+              value={trainerFixedPayout ?? ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                setValue('trainerFixedPayout', val === '' ? null : Number(val));
+              }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Override the trainer's payout for this combo. Leave empty to use the default {selectedTrainer.splitPercent ?? 60}% split.
+          </p>
+        </div>
+      )}
 
       <PlanTypePicker
         planTypes={trainingPlanTypes}

@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { UserPlus } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/components/ui/collapsible";
 import {
   Select,
   SelectContent,
@@ -228,27 +230,35 @@ export function MemberRegistrationForm({
       </div>
 
       {allMembers.length > 0 && (
-        <div className="space-y-2">
-          <Label htmlFor="referredById">Referred By (optional)</Label>
-          <Select
-            value={form.watch("referredById") || "none"}
-            onValueChange={(v) => form.setValue("referredById", v === "none" ? "" : v)}
-          >
-            <SelectTrigger id="referredById">
-              <SelectValue placeholder="No referrer" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No referrer</SelectItem>
-              {allMembers
-                .slice(0, 50)
-                .map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.firstName} {m.lastName} — {m.phone}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <Button type="button" variant="ghost" size="sm" className="gap-2 text-muted-foreground px-0">
+              <UserPlus className="h-4 w-4" />
+              Add referral info
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 pt-2">
+            <Label htmlFor="referredById">Referred By</Label>
+            <Select
+              value={form.watch("referredById") || "none"}
+              onValueChange={(v) => form.setValue("referredById", v === "none" ? "" : v)}
+            >
+              <SelectTrigger id="referredById">
+                <SelectValue placeholder="No referrer" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No referrer</SelectItem>
+                {allMembers
+                  .slice(0, 50)
+                  .map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.firstName} {m.lastName} — {m.phone}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
       <div className="flex gap-3 pt-4">

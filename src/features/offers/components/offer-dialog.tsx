@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { useCreateOffer, useUpdateOffer } from "../hooks/use-offers";
+import { OfferPackageConfig } from "./offer-package-config";
 import type { Offer, OfferType, DiscountType, OfferAppliesTo } from "@/shared/types/common.types";
 
 const offerSchema = z
@@ -38,16 +39,28 @@ const offerSchema = z
     appliesTo: z.enum(["membership", "training", "both"]).default("membership"),
     code: z.string().optional(),
     rewardAmount: z.coerce.number().nonnegative().optional(),
+    // Package configuration fields
+    targetGender: z.string().nullable().optional(),
+    membershipPlanTypeId: z.string().optional(), // UI-only, not sent to API
+    trainingPlanTypeId: z.string().optional(),    // UI-only, not sent to API
+    membershipPlanVariantId: z.string().nullable().optional(),
+    trainingPlanVariantId: z.string().nullable().optional(),
+    targetPrice: z.coerce.number().positive().nullable().optional(),
+    trainerPayoutMode: z.string().optional(),     // UI-only, not sent to API
+    trainerFixedPayout: z.coerce.number().nonnegative().nullable().optional(),
+    trainerSplitPercent: z.coerce.number().min(0).max(100).nullable().optional(),
   })
   .refine(
     (data) => {
       if (["discount", "promo"].includes(data.type)) {
+        // targetPrice-based offers don't need discountValue
+        if (data.targetPrice) return true;
         return !!data.discountType && data.discountValue !== undefined;
       }
       return true;
     },
     {
-      message: "Discount type and value are required for discount/promo offers",
+      message: "Discount type and value (or target price) are required for discount/promo offers",
       path: ["discountValue"],
     }
   )
@@ -95,6 +108,15 @@ export function OfferDialog({ open, onOpenChange, offer }: OfferDialogProps) {
       appliesTo: "membership" as const,
       code: "",
       rewardAmount: undefined,
+      targetGender: null,
+      membershipPlanTypeId: "",
+      trainingPlanTypeId: "",
+      membershipPlanVariantId: null,
+      trainingPlanVariantId: null,
+      targetPrice: null,
+      trainerPayoutMode: "default",
+      trainerFixedPayout: null,
+      trainerSplitPercent: null,
     },
   });
 
@@ -108,6 +130,11 @@ export function OfferDialog({ open, onOpenChange, offer }: OfferDialogProps) {
   useEffect(() => {
     if (open) {
       if (offer) {
+        // Determine trainer payout mode from existing values
+        let trainerPayoutMode = "default";
+        if (offer.trainerFixedPayout != null) trainerPayoutMode = "fixed";
+        else if (offer.trainerSplitPercent != null) trainerPayoutMode = "split";
+
         reset({
           type: offer.type,
           title: offer.title,
@@ -120,6 +147,15 @@ export function OfferDialog({ open, onOpenChange, offer }: OfferDialogProps) {
           appliesTo: offer.appliesTo ?? "membership",
           code: offer.code || "",
           rewardAmount: offer.rewardAmount ?? undefined,
+          targetGender: offer.targetGender ?? null,
+          membershipPlanTypeId: offer.membershipPlanVariant?.planType?.id || "",
+          trainingPlanTypeId: offer.trainingPlanVariant?.planType?.id || "",
+          membershipPlanVariantId: offer.membershipPlanVariantId ?? null,
+          trainingPlanVariantId: offer.trainingPlanVariantId ?? null,
+          targetPrice: offer.targetPrice ?? null,
+          trainerPayoutMode,
+          trainerFixedPayout: offer.trainerFixedPayout ?? null,
+          trainerSplitPercent: offer.trainerSplitPercent ?? null,
         });
       } else {
         reset();
@@ -141,6 +177,15 @@ export function OfferDialog({ open, onOpenChange, offer }: OfferDialogProps) {
         appliesTo: showDiscountFields ? (data.appliesTo as OfferAppliesTo) : undefined,
         code: data.code || undefined,
         rewardAmount: showReferralFields ? data.rewardAmount : undefined,
+        // Package configuration
+        targetGender: showDiscountFields ? (data.targetGender || null) : null,
+        membershipPlanVariantId: showDiscountFields ? (data.membershipPlanVariantId || null) : null,
+        trainingPlanVariantId: showDiscountFields ? (data.trainingPlanVariantId || null) : null,
+        targetPrice: showDiscountFields && data.targetPrice ? Number(data.targetPrice) : null,
+        trainerFixedPayout: showDiscountFields && data.trainerPayoutMode === 'fixed' && data.trainerFixedPayout != null
+          ? Number(data.trainerFixedPayout) : null,
+        trainerSplitPercent: showDiscountFields && data.trainerPayoutMode === 'split' && data.trainerSplitPercent != null
+          ? Number(data.trainerSplitPercent) : null,
       };
 
       if (isEditing && offer) {
@@ -156,7 +201,7 @@ export function OfferDialog({ open, onOpenChange, offer }: OfferDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Offer" : "Create Offer"}</DialogTitle>
           <DialogDescription>
@@ -309,6 +354,16 @@ export function OfferDialog({ open, onOpenChange, offer }: OfferDialogProps) {
                 />
               </div>
             </div>
+          )}
+
+          {/* Package configuration — shown for discount/promo */}
+          {showDiscountFields && (
+            <OfferPackageConfig
+              appliesTo={appliesTo as OfferAppliesTo}
+              register={register}
+              watch={watch}
+              setValue={setValue}
+            />
           )}
 
           {/* Referral fields */}

@@ -42,6 +42,7 @@ const createMembershipSchema = z
     trainingPlanVariantId: z.string().optional(),
     trainerId: z.string().optional(),
     trainingDiscountAmount: z.coerce.number().min(0).default(0),
+    trainerFixedPayout: z.coerce.number().min(0).optional().nullable(),
     trainingNotes: z.string().optional(),
   })
   .refine(
@@ -199,6 +200,7 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
       form.setValue('trainingPlanVariantId', '');
       form.setValue('trainerId', '');
       form.setValue('trainingDiscountAmount', 0);
+      form.setValue('trainerFixedPayout', null);
       form.setValue('trainingNotes', '');
       // Clear offer if it was combo-only
       form.setValue('offerId', '');
@@ -233,6 +235,8 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
       offerId: data.offerId || undefined,
       autoRenew: data.autoRenew,
       notes: data.notes,
+      // Pass training variant ID so backend can validate combo offers
+      trainingPlanVariantId: data.addTraining ? data.trainingPlanVariantId : undefined,
     };
 
     if (membershipPaymentAmount && data.paymentMethod) {
@@ -253,6 +257,7 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
             startDate: data.startDate,
             discountAmount: data.trainingDiscountAmount || 0,
             notes: data.trainingNotes,
+            trainerFixedPayout: data.trainerFixedPayout != null ? data.trainerFixedPayout : undefined,
           };
           if (trainingPaymentAmount && data.paymentMethod) {
             trainingPayload.paymentAmount = trainingPaymentAmount;

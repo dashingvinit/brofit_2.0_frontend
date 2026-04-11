@@ -45,6 +45,7 @@ const createTrainingSchema = z
     trainerId: z.string().min(1, 'Please select a trainer'),
     startDate: z.string().min(1, 'Start date is required'),
     discountAmount: z.coerce.number().min(0, 'Discount cannot be negative').default(0),
+    trainerFixedPayout: z.coerce.number().min(0).optional().nullable(),
     offerId: z.string().optional(),
     autoRenew: z.boolean().default(false),
     notes: z.string().optional(),
@@ -112,6 +113,7 @@ export function CreateTrainingForm({
       memberId: preselectedMemberId || '',
       startDate: new Date().toISOString().split('T')[0],
       discountAmount: 0,
+      trainerFixedPayout: null,
       offerId: '',
       autoRenew: false,
       collectPayment: false,
@@ -124,8 +126,10 @@ export function CreateTrainingForm({
   const selectedPlanVariantId = form.watch('planVariantId');
   const selectedMemberId = form.watch('memberId');
   const discountAmount = form.watch('discountAmount') || 0;
+  const trainerFixedPayout = form.watch('trainerFixedPayout');
   const collectPayment = form.watch('collectPayment');
   const startDate = form.watch('startDate');
+  const selectedTrainerId = form.watch('trainerId');
 
   const { data: planVariants, isLoading: variantsLoading } =
     usePlanVariantsByType(selectedPlanTypeId, false);
@@ -155,10 +159,15 @@ export function CreateTrainingForm({
   const selectedVariant = planVariants?.find(
     (v) => v.id === selectedPlanVariantId
   );
-  const selectedTrainer = trainers.find((t) => t.id === form.watch('trainerId'));
+  const selectedTrainer = trainers.find((t) => t.id === selectedTrainerId);
   const finalPrice = selectedVariant
     ? Math.max(0, selectedVariant.price - discountAmount)
     : 0;
+  // Suggested payout = finalPrice × trainer's split %; shown as a hint in the override field
+  const suggestedPayout = selectedTrainer && finalPrice > 0
+    ? Math.round((finalPrice * (selectedTrainer.splitPercent ?? 60)) / 100)
+    : 0;
+  const isFixedPayoutActive = trainerFixedPayout != null && trainerFixedPayout !== ('' as unknown as number);
 
   const endDate = useMemo(() => {
     if (!startDate || !selectedVariant) return null;
@@ -204,6 +213,9 @@ export function CreateTrainingForm({
       offerId: data.offerId || undefined,
       autoRenew: data.autoRenew,
       notes: data.notes,
+      trainerFixedPayout: data.trainerFixedPayout != null && data.trainerFixedPayout !== ('' as unknown as number)
+        ? data.trainerFixedPayout
+        : null,
     };
 
     if (data.collectPayment && data.paymentAmount && data.paymentMethod) {
@@ -644,6 +656,37 @@ export function CreateTrainingForm({
               )}
             </div>
 
+            {/* Trainer Payout Override */}
+            {selectedVariant && (
+              <div className="space-y-2">
+                <Label htmlFor="trainerFixedPayout">
+                  Trainer Payout Override{' '}
+                  <span className="text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <div className="relative">
+                  <IndianRupee className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="trainerFixedPayout"
+                    type="number"
+                    min={0}
+                    className="pl-9"
+                    placeholder={
+                      selectedTrainer
+                        ? `Leave blank for ${selectedTrainer.splitPercent ?? 60}% split (₹${suggestedPayout.toLocaleString()})`
+                        : 'Leave blank to use trainer\'s default split %'
+                    }
+                    {...form.register('trainerFixedPayout', { setValueAs: (v) => v === '' ? null : parseFloat(v) })}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Use this when you've negotiated a fixed total payout with the trainer (e.g. a combo deal).
+                  {selectedTrainer
+                    ? ` Leave blank to use the default ${selectedTrainer.splitPercent ?? 60}% revenue split.`
+                    : ' Leave blank to use the trainer\'s default split %.'}
+                </p>
+              </div>
+            )}
+
             {/* Price Summary */}
             {selectedVariant && (
               <Card className="bg-muted/50">
@@ -672,6 +715,24 @@ export function CreateTrainingForm({
                       {finalPrice.toLocaleString()}
                     </span>
                   </div>
+                  <Separator />
+                  {isFixedPayoutActive ? (
+                    <div className="flex justify-between text-sm text-orange-600 dark:text-orange-400">
+                      <span>Trainer payout (negotiated)</span>
+                      <span className="font-medium">
+                        <IndianRupee className="inline h-3 w-3" />
+                        {Number(trainerFixedPayout).toLocaleString()}
+                      </span>
+                    </div>
+                  ) : selectedTrainer ? (
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Trainer payout ({selectedTrainer.splitPercent ?? 60}% split)</span>
+                      <span>
+                        <IndianRupee className="inline h-3 w-3" />
+                        {suggestedPayout.toLocaleString()}
+                      </span>
+                    </div>
+                  ) : null}
                 </CardContent>
               </Card>
             )}

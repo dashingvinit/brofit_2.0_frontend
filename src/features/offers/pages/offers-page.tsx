@@ -141,29 +141,44 @@ function OfferCard({
 
       <CardContent className="space-y-2 text-sm text-muted-foreground">
         {/* Discount info */}
-        {(offer.type === "discount" || offer.type === "promo") &&
-          offer.discountValue != null && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {offer.discountType === "percentage" ? (
-                <Percent className="h-3.5 w-3.5" />
-              ) : (
+        {(offer.type === "discount" || offer.type === "promo") && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {offer.targetPrice != null ? (
+              <>
                 <IndianRupee className="h-3.5 w-3.5" />
-              )}
-              <span className="font-medium text-foreground">
-                {offer.discountType === "percentage"
-                  ? `${offer.discountValue}% off`
-                  : `₹${offer.discountValue} off`}
-              </span>
-              <Badge variant="outline" className="text-xs capitalize">
-                {offer.appliesTo === "both" ? "combo" : offer.appliesTo}
+                <span className="font-medium text-foreground">
+                  ₹{offer.targetPrice.toLocaleString()} target
+                </span>
+              </>
+            ) : offer.discountValue != null ? (
+              <>
+                {offer.discountType === "percentage" ? (
+                  <Percent className="h-3.5 w-3.5" />
+                ) : (
+                  <IndianRupee className="h-3.5 w-3.5" />
+                )}
+                <span className="font-medium text-foreground">
+                  {offer.discountType === "percentage"
+                    ? `${offer.discountValue}% off`
+                    : `₹${offer.discountValue} off`}
+                </span>
+              </>
+            ) : null}
+            <Badge variant="outline" className="text-xs capitalize">
+              {offer.appliesTo === "both" ? "combo" : offer.appliesTo}
+            </Badge>
+            {offer.targetGender && (
+              <Badge variant="outline" className="text-xs">
+                {offer.targetGender} only
               </Badge>
-              {offer.code && (
-                <Badge variant="secondary" className="text-xs">
-                  {offer.code}
-                </Badge>
-              )}
-            </div>
-          )}
+            )}
+            {offer.code && (
+              <Badge variant="secondary" className="text-xs">
+                {offer.code}
+              </Badge>
+            )}
+          </div>
+        )}
 
         {/* Referral reward */}
         {offer.type === "referral" && offer.rewardAmount != null && (
@@ -185,6 +200,16 @@ function OfferCard({
                 : startFmt
                 ? `From ${startFmt}`
                 : `Until ${endFmt}`}
+            </span>
+          </div>
+        )}
+
+        {/* Usage count */}
+        {offer._count && (offer._count.memberships > 0 || offer._count.trainings > 0) && (
+          <div className="flex items-center gap-1.5">
+            <Users className="h-3.5 w-3.5" />
+            <span>
+              Used <span className="font-medium text-foreground">{offer._count.memberships + offer._count.trainings}</span> times
             </span>
           </div>
         )}

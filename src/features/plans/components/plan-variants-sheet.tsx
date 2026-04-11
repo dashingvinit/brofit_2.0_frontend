@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Edit, Trash2, Calendar, DollarSign, ArrowLeft, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Calendar, DollarSign, ArrowLeft, X, Users } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -36,6 +36,8 @@ const variantSchema = z.object({
     .min(0, 'Price cannot be negative')
     .max(1000000, 'Price is too high'),
   isActive: z.boolean().default(true),
+  defaultTrainerSplitPercent: z.coerce.number().min(0).max(100).optional().nullable(),
+  defaultTrainerFixedPayout: z.coerce.number().min(0).optional().nullable(),
 });
 
 type VariantFormData = z.infer<typeof variantSchema>;
@@ -70,10 +72,13 @@ const { data: variants, isLoading } = usePlanVariantsByType(planType?.id || '', 
       durationLabel: '',
       price: 0,
       isActive: true,
+      defaultTrainerSplitPercent: null,
+      defaultTrainerFixedPayout: null,
     },
   });
 
   const isActive = watch('isActive');
+  const isTrainingPlan = planType?.category === 'training';
 
   // Reset form when switching modes or variant changes
   useEffect(() => {
@@ -83,6 +88,8 @@ const { data: variants, isLoading } = usePlanVariantsByType(planType?.id || '', 
         durationLabel: '',
         price: 0,
         isActive: true,
+        defaultTrainerSplitPercent: null,
+        defaultTrainerFixedPayout: null,
       });
     } else if (viewMode === 'edit' && editingVariant) {
       reset({
@@ -90,6 +97,8 @@ const { data: variants, isLoading } = usePlanVariantsByType(planType?.id || '', 
         durationLabel: editingVariant.durationLabel,
         price: editingVariant.price,
         isActive: editingVariant.isActive,
+        defaultTrainerSplitPercent: editingVariant.defaultTrainerSplitPercent ?? null,
+        defaultTrainerFixedPayout: editingVariant.defaultTrainerFixedPayout ?? null,
       });
     }
   }, [viewMode, editingVariant, reset]);
@@ -117,25 +126,26 @@ const handleCancelForm = () => {
     if (!planType) return;
 
     try {
+      const variantPayload = {
+        durationDays: data.durationDays,
+        durationLabel: data.durationLabel,
+        price: data.price,
+        isActive: data.isActive,
+        ...(isTrainingPlan && {
+          defaultTrainerSplitPercent: data.defaultTrainerSplitPercent ?? null,
+          defaultTrainerFixedPayout: data.defaultTrainerFixedPayout ?? null,
+        }),
+      };
+
       if (viewMode === 'edit' && editingVariant) {
         await updateMutation.mutateAsync({
           id: editingVariant.id,
-          data: {
-            durationDays: data.durationDays,
-            durationLabel: data.durationLabel,
-            price: data.price,
-            isActive: data.isActive,
-          },
+          data: variantPayload,
         });
       } else {
         await createMutation.mutateAsync({
           planTypeId: planType.id,
-          data: {
-            durationDays: data.durationDays,
-            durationLabel: data.durationLabel,
-            price: data.price,
-            isActive: data.isActive,
-          },
+          data: variantPayload,
         });
       }
       handleCancelForm();
@@ -240,10 +250,23 @@ if (!planType) return null;
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                             <div>
                               <p className="text-xs text-muted-foreground">Price</p>
-                              <p className="text-sm font-medium">${variant.price}</p>
+                              <p className="text-sm font-medium">₹{variant.price.toLocaleString()}</p>
                             </div>
                           </div>
                         </div>
+                        {isTrainingPlan && (variant.defaultTrainerSplitPercent != null || variant.defaultTrainerFixedPayout != null) && (
+                          <div className="flex items-center gap-2 mt-2 p-2 rounded-md bg-muted/50">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">Trainer Payout</p>
+                              <p className="text-sm font-medium">
+                                {variant.defaultTrainerFixedPayout != null
+                                  ? `₹${variant.defaultTrainerFixedPayout.toLocaleString()} fixed`
+                                  : `${variant.defaultTrainerSplitPercent}% split`}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -322,6 +345,49 @@ if (!planType) return null;
                     Active (visible to members)
                   </Label>
                 </div>
+
+                {isTrainingPlan && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <div>
+                        <Label className="text-sm font-medium">Trainer Payout Defaults</Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Sets the default trainer payout when this variant is used. Leave empty to use the trainer's own split.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="defaultTrainerSplitPercent" className="text-xs">
+                            Split %
+                          </Label>
+                          <Input
+                            id="defaultTrainerSplitPercent"
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={1}
+                            placeholder="e.g. 40"
+                            {...register('defaultTrainerSplitPercent')}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="defaultTrainerFixedPayout" className="text-xs">
+                            Fixed Payout (₹)
+                          </Label>
+                          <Input
+                            id="defaultTrainerFixedPayout"
+                            type="number"
+                            min={0}
+                            step={1}
+                            placeholder="e.g. 1200"
+                            {...register('defaultTrainerFixedPayout')}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="flex gap-2 pt-4">
                   <Button

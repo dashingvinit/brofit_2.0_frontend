@@ -94,12 +94,20 @@ export function MembershipPaymentStep({
   const totalDiscount = membershipDiscount + trainingDiscount;
   const totalDue = Math.max(0, subtotal - totalDiscount);
 
-  // Only show offers that make sense for the current context:
-  // - No training: only membership-specific offers
-  // - With training: all offers (membership, training, both)
-  const visibleOffers = discountOffers.filter((o) =>
-    addTraining ? true : o.appliesTo === 'membership'
-  );
+  // Filter offers by context, gender, and plan variant match
+  const visibleOffers = discountOffers.filter((o) => {
+    // Context filter: no training → only membership offers
+    if (!addTraining && o.appliesTo !== 'membership') return false;
+
+    // Gender filter
+    if (o.targetGender && selectedMember?.gender !== o.targetGender) return false;
+
+    // Plan variant match: if offer requires specific variants, check they match
+    if (o.membershipPlanVariantId && o.membershipPlanVariantId !== selectedVariant?.id) return false;
+    if (o.trainingPlanVariantId && (!addTraining || o.trainingPlanVariantId !== selectedTrainingVariant?.id)) return false;
+
+    return true;
+  });
 
   const selectedOffer = visibleOffers.find((o) => o.id === offerId);
 
@@ -138,30 +146,49 @@ export function MembershipPaymentStep({
     }
 
     const offer = visibleOffers.find((o) => o.id === newOfferId);
-    if (!offer || offer.discountValue == null) return;
+    if (!offer) return;
 
-    if (offer.appliesTo === 'training' && addTraining) {
-      const computed =
-        offer.discountType === 'percentage'
-          ? Math.round((offer.discountValue / 100) * trainingBase)
-          : offer.discountValue;
-      setValue('discountAmount', 0);
-      setValue('trainingDiscountAmount', Math.min(computed, trainingBase));
-    } else if (offer.appliesTo === 'both' && addTraining) {
-      const flatDiscount =
-        offer.discountType === 'percentage'
-          ? Math.round((offer.discountValue / 100) * subtotal)
-          : offer.discountValue;
-      const { membershipDiscount: mD, trainingDiscount: tD } = splitDiscount(flatDiscount, membershipBase, trainingBase);
-      setValue('discountAmount', mD);
-      setValue('trainingDiscountAmount', tD);
-    } else {
-      const computed =
-        offer.discountType === 'percentage'
-          ? Math.round((offer.discountValue / 100) * membershipBase)
-          : offer.discountValue;
-      setValue('discountAmount', Math.min(computed, membershipBase));
-      setValue('trainingDiscountAmount', 0);
+    // Target-price based offers: compute discount to reach target total
+    if (offer.targetPrice != null) {
+      const totalDiscount = Math.max(0, subtotal - offer.targetPrice);
+      if (addTraining && selectedTrainingVariant) {
+        const { membershipDiscount: mD, trainingDiscount: tD } = splitDiscount(totalDiscount, membershipBase, trainingBase);
+        setValue('discountAmount', mD);
+        setValue('trainingDiscountAmount', tD);
+      } else {
+        setValue('discountAmount', Math.min(totalDiscount, membershipBase));
+        setValue('trainingDiscountAmount', 0);
+      }
+    } else if (offer.discountValue != null) {
+      // Legacy discount flow
+      if (offer.appliesTo === 'training' && addTraining) {
+        const computed =
+          offer.discountType === 'percentage'
+            ? Math.round((offer.discountValue / 100) * trainingBase)
+            : offer.discountValue;
+        setValue('discountAmount', 0);
+        setValue('trainingDiscountAmount', Math.min(computed, trainingBase));
+      } else if (offer.appliesTo === 'both' && addTraining) {
+        const flatDiscount =
+          offer.discountType === 'percentage'
+            ? Math.round((offer.discountValue / 100) * subtotal)
+            : offer.discountValue;
+        const { membershipDiscount: mD, trainingDiscount: tD } = splitDiscount(flatDiscount, membershipBase, trainingBase);
+        setValue('discountAmount', mD);
+        setValue('trainingDiscountAmount', tD);
+      } else {
+        const computed =
+          offer.discountType === 'percentage'
+            ? Math.round((offer.discountValue / 100) * membershipBase)
+            : offer.discountValue;
+        setValue('discountAmount', Math.min(computed, membershipBase));
+        setValue('trainingDiscountAmount', 0);
+      }
+    }
+
+    // Set trainer payout override from offer
+    if (offer.trainerFixedPayout != null) {
+      setValue('trainerFixedPayout', offer.trainerFixedPayout);
     }
   }
 
@@ -169,6 +196,7 @@ export function MembershipPaymentStep({
     setValue('offerId', '');
     setValue('discountAmount', 0);
     setValue('trainingDiscountAmount', 0);
+    setValue('trainerFixedPayout', null);
     setManualInput(0);
   }
 
@@ -260,10 +288,13 @@ export function MembershipPaymentStep({
                       {visibleOffers.map((o) => (
                         <SelectItem key={o.id} value={o.id}>
                           {o.title}
-                          {o.discountType === 'percentage'
+                          {o.targetPrice != null
+                            ? ` — ₹${o.targetPrice.toLocaleString()} total`
+                            : o.discountType === 'percentage'
                             ? ` — ${o.discountValue}% off`
                             : ` — ₹${o.discountValue?.toLocaleString()} off`}
                           {o.appliesTo === 'both' ? ' (combo)' : o.appliesTo === 'training' ? ' (training)' : ''}
+                          {o.targetGender ? ` · ${o.targetGender}` : ''}
                           {o.code ? ` · ${o.code}` : ''}
                         </SelectItem>
                       ))}
