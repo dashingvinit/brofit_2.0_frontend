@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   IndianRupee,
   TrendingUp,
@@ -210,39 +210,48 @@ function CurrentMonthSummary() {
             ))}
           </div>
         ) : summary ? (
-          <div className="grid gap-3 grid-cols-3">
-            <div>
-              <p className="text-xs text-muted-foreground mb-0.5">Revenue</p>
-              <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center font-display">
-                <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
-                {formatCurrency(summary.revenue)}
-              </p>
+          <div className="space-y-3">
+            <div className="grid gap-3 grid-cols-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Revenue</p>
+                <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center font-display">
+                  <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
+                  {formatCurrency(summary.revenue)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Expenses</p>
+                <p className="text-base font-bold text-red-600 dark:text-red-400 inline-flex items-center font-display">
+                  <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
+                  {formatCurrency(summary.expenses)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Net Profit</p>
+                <p
+                  className={`text-base font-bold inline-flex items-center font-display ${
+                    summary.netProfit >= 0
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-red-600 dark:text-red-400'
+                  }`}
+                >
+                  {summary.netProfit >= 0 ? (
+                    <TrendingUp className="h-3.5 w-3.5 mr-1" />
+                  ) : (
+                    <TrendingDown className="h-3.5 w-3.5 mr-1" />
+                  )}
+                  <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
+                  {formatCurrency(Math.abs(summary.netProfit))}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-0.5">Expenses</p>
-              <p className="text-base font-bold text-red-600 dark:text-red-400 inline-flex items-center font-display">
-                <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
-                {formatCurrency(summary.expenses)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-0.5">Net Profit</p>
-              <p
-                className={`text-base font-bold inline-flex items-center font-display ${
-                  summary.netProfit >= 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-red-600 dark:text-red-400'
-                }`}
-              >
-                {summary.netProfit >= 0 ? (
-                  <TrendingUp className="h-3.5 w-3.5 mr-1" />
-                ) : (
-                  <TrendingDown className="h-3.5 w-3.5 mr-1" />
-                )}
-                <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
-                {formatCurrency(Math.abs(summary.netProfit))}
-              </p>
-            </div>
+            <Link
+              to={`/financials/month/${month}`}
+              className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              View all expenses
+              <ChevronRight className="h-3 w-3 ml-0.5" />
+            </Link>
           </div>
         ) : null}
       </CardContent>
