@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Users,
   UserCheck,
@@ -10,6 +11,8 @@ import {
   RotateCcw,
   PiggyBank,
   AlertTriangle,
+  Tag,
+  ArrowRight,
 } from 'lucide-react';
 import {
   Card,
@@ -22,6 +25,8 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
   type ChartConfig,
 } from '@/shared/components/ui/chart';
 import {
@@ -57,7 +62,9 @@ import {
   useMembershipDurationPreference,
   useUnitEconomics,
   useProjection,
+  useDiscounts,
 } from '../hooks/use-analytics';
+import { Button } from '@/shared/components/ui/button';
 import { useMemberStats } from '@/features/members/hooks/use-members';
 import { useMembershipStats } from '@/features/memberships/hooks/use-memberships';
 import { useTrainingStats } from '@/features/training/hooks/use-training';
@@ -500,6 +507,17 @@ const revenueChartConfig = {
   },
 } satisfies ChartConfig;
 
+const discountChartConfig = {
+  offer: {
+    label: 'From Offers',
+    color: '#8b5cf6',
+  },
+  flat: {
+    label: 'Flat Discount',
+    color: '#f59e0b',
+  },
+} satisfies ChartConfig;
+
 function RevenueBreakdownCard() {
   const [window, setWindow] = useState<TimeWindow>(6);
   const { data: revenueRes, isLoading } = useRevenueBreakdown(window);
@@ -558,8 +576,12 @@ function RevenueBreakdownCard() {
               />
               <ChartTooltip
                 cursor={false}
-                content={
+                content={(props) => (
                   <ChartTooltipContent
+                    {...props}
+                    payload={[...(props.payload ?? [])].sort((a, b) =>
+                      a.dataKey === 'training' ? -1 : b.dataKey === 'training' ? 1 : 0
+                    )}
                     indicator="dot"
                     formatter={(value, name) => (
                       <div className="flex items-center justify-between gap-4 w-full">
@@ -572,12 +594,147 @@ function RevenueBreakdownCard() {
                       </div>
                     )}
                   />
-                }
+                )}
               />
-              <Bar dataKey="membership" fill="var(--color-membership)" radius={[4, 4, 0, 0]} stackId="a" />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Bar dataKey="membership" fill="var(--color-membership)" radius={[0, 0, 0, 0]} stackId="a" />
               <Bar dataKey="training" fill="var(--color-training)" radius={[4, 4, 0, 0]} stackId="a" />
             </BarChart>
           </ChartContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Discounts Given Card ─────────────────────────────────────────────────────
+
+function DiscountsCard() {
+  const navigate = useNavigate();
+  const [window, setWindow] = useState<TimeWindow>(6);
+  const { data: res, isLoading } = useDiscounts(window);
+  const d = res?.data;
+
+  const chartData = (d?.byMonth ?? []).map((p) => ({
+    month: new Date(p.year, p.month - 1, 1).toLocaleString('default', { month: 'short', year: '2-digit' }),
+    offer: p.offer,
+    flat: p.flat,
+  }));
+
+  const formatYTick = (v: number) => {
+    if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`;
+    if (v >= 1000) return `₹${(v / 1000).toFixed(0)}k`;
+    return `₹${v}`;
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Tag className="h-4 w-4 text-muted-foreground" />
+          Discounts Given
+          <div className="ml-auto">
+            <TimeToggle value={window} onChange={setWindow} options={[3, 6, 12]} />
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isLoading || !d ? (
+          <>
+            <div className="grid gap-3 grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full" />
+              ))}
+            </div>
+            <Skeleton className="h-[180px] w-full" />
+          </>
+        ) : (
+          <>
+            {/* Summary stats */}
+            <div className="grid gap-3 grid-cols-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Total</p>
+                <p className="text-base font-bold text-amber-600 dark:text-amber-400 inline-flex items-center font-display">
+                  <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
+                  {formatCurrency(d.total)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">From Offers</p>
+                <p className="text-base font-bold text-violet-600 dark:text-violet-400 inline-flex items-center font-display">
+                  <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
+                  {formatCurrency(d.totalOfferDriven)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Flat</p>
+                <p className="text-base font-bold text-amber-600 dark:text-amber-400 inline-flex items-center font-display">
+                  <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
+                  {formatCurrency(d.totalFlat)}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              {d.discountedCount} of {d.totalSales} sales were discounted
+              {d.totalSales > 0 ? ` · ${d.discountRate}%` : ''}
+            </p>
+
+            {/* Stacked chart */}
+            {d.total > 0 ? (
+              <ChartContainer config={discountChartConfig} className="h-[180px] w-full">
+                <BarChart data={chartData} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="month"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={4}
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={formatYTick}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={
+                      <ChartTooltipContent
+                        indicator="dot"
+                        formatter={(value, name) => (
+                          <div className="flex items-center justify-between gap-4 w-full">
+                            <span className="text-muted-foreground">
+                              {discountChartConfig[name as keyof typeof discountChartConfig]?.label ?? name}
+                            </span>
+                            <span className="font-mono font-medium tabular-nums text-foreground">
+                              ₹{formatCurrency(Number(value))}
+                            </span>
+                          </div>
+                        )}
+                      />
+                    }
+                  />
+                  <Bar dataKey="offer" fill="var(--color-offer)" radius={[0, 0, 0, 0]} stackId="a" />
+                  <Bar dataKey="flat" fill="var(--color-flat)" radius={[4, 4, 0, 0]} stackId="a" />
+                </BarChart>
+              </ChartContainer>
+            ) : (
+              <EmptyState message="No discounts given in this window" />
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => navigate('/members?hasDiscount=true')}
+            >
+              View discounted memberships
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </>
         )}
       </CardContent>
     </Card>
@@ -1450,6 +1607,7 @@ export function AnalyticsPage() {
         <MemberGrowthCard />
         <RevenueBreakdownCard />
       </div>
+      <DiscountsCard />
 
       {/* Unit Economics & Projection */}
       <SectionLabel>Unit Economics & Projection</SectionLabel>

@@ -177,8 +177,10 @@ export function CreateTrainingForm({
   const selectedOffer = discountOffers.find((o) => o.id === offerId);
   const finalPrice = selectedVariant ? Math.max(0, selectedVariant.price - discountAmount) : 0;
   const splitPercent = selectedTrainer?.splitPercent ?? 60;
-  const suggestedPayout = selectedTrainer && finalPrice > 0
-    ? Math.round((finalPrice * splitPercent) / 100)
+  // Trainer payout is calculated on the gross plan price, not the discounted price.
+  // Discounts come out of the gym's share, not the trainer's.
+  const suggestedPayout = selectedTrainer && selectedVariant
+    ? Math.round((selectedVariant.price * splitPercent) / 100)
     : 0;
   const isFixedPayoutActive = trainerFixedPayout != null;
 

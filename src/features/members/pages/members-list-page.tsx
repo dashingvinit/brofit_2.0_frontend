@@ -46,6 +46,7 @@ import {
   useBatchUpdateMembers,
   useBatchDeleteMembers,
 } from "../hooks/use-members";
+import { usePlanTypes } from "@/features/plans/hooks/use-plan-types";
 import { useDuesReport } from "../hooks/use-member-detail";
 import { useRecentlyViewed, type RecentMember } from "../hooks/use-recently-viewed";
 import { ROUTES } from "@/shared/lib/constants";
@@ -140,6 +141,8 @@ export function MembersListPage() {
   const { isAdmin } = useRole();
   const [searchParams, setSearchParams] = useSearchParams();
   const showDues = searchParams.get("dues") === "true";
+  const hasDiscountParam = searchParams.get("hasDiscount") === "true";
+  const planTypeIdParam = searchParams.get("planTypeId");
   const { getRecent } = useRecentlyViewed();
   const [recentMembers] = useState<RecentMember[]>(() => getRecent());
 
@@ -181,7 +184,10 @@ export function MembersListPage() {
   // Reset to page 1 when filter changes
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, dateRange]);
+  }, [statusFilter, dateRange, planTypeIdParam, hasDiscountParam]);
+
+  const { data: planTypes } = usePlanTypes();
+  const selectedPlanType = planTypes?.find((p) => p.id === planTypeIdParam);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -204,6 +210,8 @@ export function MembersListPage() {
     isActiveParam,
     dateRange?.from ?? null,
     dateRange?.to ?? null,
+    planTypeIdParam,
+    hasDiscountParam,
   );
   const { data: searchResponse, isLoading: isSearching } = useSearchMembers({
     q: debouncedSearch,
@@ -224,7 +232,18 @@ export function MembersListPage() {
 
   const stats = statsResponse?.data;
   const hasActiveFilters =
-    statusFilter !== "all" || !!debouncedSearch || !!dateRange;
+    statusFilter !== "all" ||
+    !!debouncedSearch ||
+    !!dateRange ||
+    !!planTypeIdParam ||
+    hasDiscountParam;
+
+  const updateSearchParam = (key: string, value: string | null) => {
+    const next = new URLSearchParams(searchParams);
+    if (value === null || value === "") next.delete(key);
+    else next.set(key, value);
+    setSearchParams(next);
+  };
   const filterLabel =
     statusOptions.find((o) => o.value === statusFilter)?.label ?? "Filter";
 
@@ -651,6 +670,49 @@ export function MembersListPage() {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Plan type filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 gap-2 shrink-0"
+                >
+                  <span className="hidden sm:inline">
+                    {selectedPlanType ? selectedPlanType.name : "Plan"}
+                  </span>
+                  <span className="sm:hidden">Plan</span>
+                  {planTypeIdParam && (
+                    <Badge
+                      variant="secondary"
+                      className="h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold"
+                    >
+                      1
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Filter by plan</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup
+                  value={planTypeIdParam ?? ""}
+                  onValueChange={(v) =>
+                    updateSearchParam("planTypeId", v || null)
+                  }
+                >
+                  <DropdownMenuRadioItem value="">
+                    All plans
+                  </DropdownMenuRadioItem>
+                  {planTypes?.map((p) => (
+                    <DropdownMenuRadioItem key={p.id} value={p.id}>
+                      {p.name}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {hasActiveFilters && (
               <Button
                 variant="ghost"
@@ -661,6 +723,10 @@ export function MembersListPage() {
                   setDebouncedSearch("");
                   setStatusFilter("all");
                   setDateRange(null);
+                  const next = new URLSearchParams(searchParams);
+                  next.delete("planTypeId");
+                  next.delete("hasDiscount");
+                  setSearchParams(next);
                 }}
               >
                 Reset
@@ -692,6 +758,27 @@ export function MembersListPage() {
               </p>
             )}
           </div>
+
+          {/* Discount filter banner */}
+          {hasDiscountParam && (
+            <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/30 px-3 py-2">
+              <div className="flex items-center gap-2 text-sm">
+                <IndianRupee className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                <span className="font-medium text-amber-900 dark:text-amber-100">
+                  Showing members on discounted memberships
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => updateSearchParam("hasDiscount", null)}
+              >
+                <X className="h-3.5 w-3.5 mr-1" />
+                Clear
+              </Button>
+            </div>
+          )}
 
           {/* Bulk Action Toolbar */}
           {selectedIds.size > 0 && (

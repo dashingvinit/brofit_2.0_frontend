@@ -12,10 +12,13 @@ export function useMembers(
   isActive?: boolean | null,
   joinedFrom?: string | null,
   joinedTo?: string | null,
+  planTypeId?: string | null,
+  hasDiscount?: boolean,
 ) {
   return useQuery({
-    queryKey: ['members', page, limit, isActive, joinedFrom, joinedTo],
-    queryFn: () => membersApi.getAllMembers(page, limit, isActive, joinedFrom, joinedTo),
+    queryKey: ['members', page, limit, isActive, joinedFrom, joinedTo, planTypeId, hasDiscount ?? false],
+    queryFn: () =>
+      membersApi.getAllMembers(page, limit, isActive, joinedFrom, joinedTo, planTypeId, hasDiscount),
   });
 }
 

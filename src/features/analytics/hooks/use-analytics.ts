@@ -70,3 +70,10 @@ export function useProjection(window = 3, horizon = 12, fixedCost = 0) {
     queryFn: () => analyticsApi.getProjection(window, horizon, fixedCost),
   });
 }
+
+export function useDiscounts(months = 6) {
+  return useQuery({
+    queryKey: ['analytics', 'discounts', months],
+    queryFn: () => analyticsApi.getDiscounts(months),
+  });
+}

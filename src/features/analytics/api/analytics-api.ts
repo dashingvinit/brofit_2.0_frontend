@@ -13,6 +13,23 @@ import type {
   ProjectionData,
 } from '@/shared/types/common.types';
 
+export interface DiscountBreakdown {
+  window: number;
+  totalOfferDriven: number;
+  totalFlat: number;
+  total: number;
+  discountedCount: number;
+  totalSales: number;
+  discountRate: number;
+  byMonth: Array<{
+    year: number;
+    month: number;
+    offer: number;
+    flat: number;
+    total: number;
+  }>;
+}
+
 export const analyticsApi = {
   getTopPlans: async (months = 6): Promise<ApiResponse<TopPlanItem[]>> => {
     const response = await apiClient.get('/analytics/top-plans', { params: { months } });
@@ -61,6 +78,11 @@ export const analyticsApi = {
 
   getProjection: async (window = 3, horizon = 12, fixedCost = 0): Promise<ApiResponse<ProjectionData>> => {
     const response = await apiClient.get('/analytics/projection', { params: { window, horizon, fixedCost } });
+    return response.data;
+  },
+
+  getDiscounts: async (months = 6): Promise<ApiResponse<DiscountBreakdown>> => {
+    const response = await apiClient.get('/analytics/discounts', { params: { months } });
     return response.data;
   },
 };

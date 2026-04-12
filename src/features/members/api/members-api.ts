@@ -41,12 +41,16 @@ export const membersApi = {
     isActive?: boolean | null,
     joinedFrom?: string | null,
     joinedTo?: string | null,
+    planTypeId?: string | null,
+    hasDiscount?: boolean,
   ): Promise<GetAllMembersResponse> => {
     const params: Record<string, unknown> = { page, limit };
     if (isActive === true) params.isActive = 'true';
     else if (isActive === false) params.isActive = 'false';
     if (joinedFrom) params.joinedFrom = joinedFrom;
     if (joinedTo) params.joinedTo = joinedTo;
+    if (planTypeId) params.planTypeId = planTypeId;
+    if (hasDiscount) params.hasDiscount = 'true';
     const response = await apiClient.get('/members', { params });
     return response.data;
   },
