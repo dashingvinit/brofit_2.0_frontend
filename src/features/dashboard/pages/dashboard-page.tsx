@@ -50,6 +50,7 @@ import {
 } from "@/features/attendance/hooks/use-attendance";
 import { usePingMember } from "@/features/settings/hooks/use-notification-settings";
 import { ROUTES } from "@/shared/lib/constants";
+import { useFromState } from "@/shared/hooks/use-return-to";
 import { formatCurrency, daysUntil } from "@/shared/lib/utils";
 import { cn } from "@/shared/lib/utils";
 import type { Membership, Training } from "@/shared/types/common.types";
@@ -210,6 +211,7 @@ function SectionHeader({
 export function DashboardPage() {
   const { user } = useUser();
   const navigate = useNavigate();
+  const fromState = useFromState();
   const [valuesHidden, setValuesHidden] = useState(true);
   // memberId → "sending" | "sent" | "error"
   const [pingState, setPingState] = useState<Record<string, "sending" | "sent" | "error">>({});
@@ -312,7 +314,7 @@ export function DashboardPage() {
           <Button
             size="sm"
             className="gap-1.5 h-8 bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-xs"
-            onClick={() => navigate(ROUTES.CREATE_MEMBERSHIP)}
+            onClick={() => navigate(ROUTES.CREATE_MEMBERSHIP, fromState)}
           >
             <Plus className="h-3.5 w-3.5" />
             Membership
@@ -320,7 +322,7 @@ export function DashboardPage() {
           <Button
             size="sm"
             className="gap-1.5 h-8 bg-violet-600 hover:bg-violet-700 text-white border-0 text-xs"
-            onClick={() => navigate(ROUTES.CREATE_TRAINING)}
+            onClick={() => navigate(ROUTES.CREATE_TRAINING, fromState)}
           >
             <Plus className="h-3.5 w-3.5" />
             Training
@@ -485,8 +487,8 @@ export function DashboardPage() {
                       role="button"
                       tabIndex={0}
                       className="flex items-center justify-between py-2.5 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      onClick={() => navigate(item.path)}
-                      onKeyDown={(e) => e.key === "Enter" && navigate(item.path)}
+                      onClick={() => navigate(item.path, fromState)}
+                      onKeyDown={(e) => e.key === "Enter" && navigate(item.path, fromState)}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className={cn(
@@ -565,7 +567,7 @@ export function DashboardPage() {
                         </span>
                         <button
                           className="text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity hover:underline whitespace-nowrap"
-                          onClick={(e) => { e.stopPropagation(); navigate(ROUTES.CREATE_MEMBERSHIP); }}
+                          onClick={(e) => { e.stopPropagation(); navigate(`${ROUTES.CREATE_MEMBERSHIP}?memberId=${member.id}`, fromState); }}
                         >
                           + Add
                         </button>

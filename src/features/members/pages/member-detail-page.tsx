@@ -40,6 +40,7 @@ import {
 } from '@/shared/components/ui/table';
 import { PageHeader } from '@/shared/components/page-header';
 import { ROUTES } from '@/shared/lib/constants';
+import { useFromState } from '@/shared/hooks/use-return-to';
 import { useMember, useUpdateMember } from '../hooks/use-members';
 import { useRecentlyViewed } from '../hooks/use-recently-viewed';
 import { useMemberMemberships } from '@/features/memberships/hooks/use-memberships';
@@ -73,6 +74,7 @@ function formatDate(dateStr: string) {
 export function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const fromState = useFromState();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const { data: memberResponse, isLoading: memberLoading } = useMember(id!);
@@ -388,7 +390,7 @@ export function MemberDetailPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => navigate(`/memberships/create?memberId=${id}`)}
+              onClick={() => navigate(`/memberships/create?memberId=${id}`, fromState)}
             >
               Add Membership
             </Button>
@@ -424,7 +426,7 @@ export function MemberDetailPage() {
                         <TableRow
                           key={ms.id}
                           className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => navigate(`/memberships/${ms.id}`)}
+                          onClick={() => navigate(`/memberships/${ms.id}`, fromState)}
                         >
                           <TableCell>
                             <div>
@@ -475,7 +477,7 @@ export function MemberDetailPage() {
                     <div
                       key={ms.id}
                       className="rounded-lg border p-3 space-y-2 cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => navigate(`/memberships/${ms.id}`)}
+                      onClick={() => navigate(`/memberships/${ms.id}`, fromState)}
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -517,7 +519,7 @@ export function MemberDetailPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => navigate(`/memberships/create?memberId=${id}`)}
+                onClick={() => navigate(`/memberships/create?memberId=${id}`, fromState)}
               >
                 Add Membership
               </Button>
@@ -541,7 +543,7 @@ export function MemberDetailPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => navigate(`/trainings/create?memberId=${id}`)}
+              onClick={() => navigate(`/trainings/create?memberId=${id}`, fromState)}
             >
               Add Training
             </Button>
@@ -578,7 +580,7 @@ export function MemberDetailPage() {
                         <TableRow
                           key={tr.id}
                           className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => navigate(`/trainings/${tr.id}`)}
+                          onClick={() => navigate(`/trainings/${tr.id}`, fromState)}
                         >
                           <TableCell>
                             <div>
@@ -632,7 +634,7 @@ export function MemberDetailPage() {
                     <div
                       key={tr.id}
                       className="rounded-lg border p-3 space-y-2 cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => navigate(`/trainings/${tr.id}`)}
+                      onClick={() => navigate(`/trainings/${tr.id}`, fromState)}
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -674,7 +676,7 @@ export function MemberDetailPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => navigate(`/trainings/create?memberId=${id}`)}
+                onClick={() => navigate(`/trainings/create?memberId=${id}`, fromState)}
               >
                 Add Training
               </Button>

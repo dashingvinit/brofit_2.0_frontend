@@ -3,23 +3,17 @@ import { Card } from '@/shared/components/ui/card';
 import { PageHeader } from '@/shared/components/page-header';
 import { CreateMembershipForm } from '../components/create-membership-form';
 import { ROUTES } from '@/shared/lib/constants';
+import { useReturnTo } from '@/shared/hooks/use-return-to';
 
 export function CreateMembershipPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectedMemberId = searchParams.get('memberId') ?? undefined;
 
-  const returnTo = preselectedMemberId
-    ? `${ROUTES.MEMBERS}/${preselectedMemberId}`
-    : ROUTES.MEMBERSHIPS;
-
-  const handleSuccess = () => {
-    navigate(returnTo);
-  };
-
-  const handleCancel = () => {
-    navigate(returnTo);
-  };
+  const returnTo = useReturnTo(
+    preselectedMemberId ? `${ROUTES.MEMBERS}/${preselectedMemberId}` : ROUTES.MEMBERSHIPS
+  );
+  const goBack = () => navigate(returnTo);
 
   return (
     <div className="space-y-4">
@@ -30,8 +24,8 @@ export function CreateMembershipPage() {
 
       <Card>
         <CreateMembershipForm
-          onSuccess={handleSuccess}
-          onCancel={handleCancel}
+          onSuccess={goBack}
+          onCancel={goBack}
           preselectedMemberId={preselectedMemberId}
         />
       </Card>

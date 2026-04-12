@@ -69,6 +69,7 @@ import { EditMembershipDialog } from '../components/edit-membership-dialog';
 import { RenewMembershipDialog } from '../components/renew-membership-dialog';
 import { FreezeMembershipDialog } from '../components/freeze-membership-dialog';
 import { ROUTES } from '@/shared/lib/constants';
+import { useReturnTo } from '@/shared/hooks/use-return-to';
 import type {
   MembershipStatus,
   PaymentMethod,
@@ -129,6 +130,7 @@ export function MembershipDetailPage() {
   const deleteMembership = useDeleteMembership();
   const deletePayment = useDeletePayment();
   const recordPayment = useRecordPayment();
+  const returnTo = useReturnTo(ROUTES.MEMBERSHIPS);
 
   const membership = membershipResponse?.data;
   const dues = duesResponse?.data;
@@ -156,8 +158,8 @@ export function MembershipDetailPage() {
             <p className="text-muted-foreground mb-4">
               The membership you're looking for doesn't exist.
             </p>
-            <Button onClick={() => navigate(ROUTES.MEMBERSHIPS)}>
-              Back to Memberships
+            <Button onClick={() => navigate(returnTo)}>
+              Back
             </Button>
           </CardContent>
         </Card>
@@ -193,7 +195,7 @@ export function MembershipDetailPage() {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              onClick={() => navigate(ROUTES.MEMBERSHIPS)}
+              onClick={() => navigate(returnTo)}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
@@ -807,7 +809,7 @@ export function MembershipDetailPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() =>
                 deleteMembership.mutate(membership.id, {
-                  onSuccess: () => navigate(ROUTES.MEMBERSHIPS),
+                  onSuccess: () => navigate(returnTo),
                 })
               }
               disabled={deleteMembership.isPending}

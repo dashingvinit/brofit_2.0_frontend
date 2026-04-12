@@ -16,6 +16,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { PageHeader } from "@/shared/components/page-header";
 import { ExpiringItem } from "@/shared/components/expiring-item";
+import { useFromState } from "@/shared/hooks/use-return-to";
 import { EmptyState } from "@/shared/components/empty-state";
 import {
   useExpiringMemberships,
@@ -34,6 +35,7 @@ import type { Membership, Training } from "@/shared/types/common.types";
 export function ReceptionPage() {
   const { user } = useUser();
   const navigate = useNavigate();
+  const fromState = useFromState();
 
   const { data: expiringMembershipsRes } = useExpiringMemberships(7);
   const { data: expiringTrainingsRes } = useExpiringTrainings(7);
@@ -103,7 +105,7 @@ export function ReceptionPage() {
                     plan={item.plan}
                     endDate={item.endDate}
                     type={item.type}
-                    onClick={() => navigate(item.path)}
+                    onClick={() => navigate(item.path, fromState)}
                   />
                 ))}
               </div>

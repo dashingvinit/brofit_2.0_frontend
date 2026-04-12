@@ -67,6 +67,7 @@ import {
 import { RecordPaymentDialog } from '@/shared/components/record-payment-dialog';
 import { RenewTrainingDialog } from '../components/renew-training-dialog';
 import { ROUTES } from '@/shared/lib/constants';
+import { useReturnTo } from '@/shared/hooks/use-return-to';
 import type {
   TrainingStatus,
   PaymentMethod,
@@ -124,6 +125,7 @@ export function TrainingDetailPage() {
   const unfreezeTraining = useUnfreezeTraining();
   const deleteTraining = useDeleteTraining();
   const deletePayment = useDeleteTrainingPayment();
+  const returnTo = useReturnTo(ROUTES.TRAININGS);
   const recordPayment = useRecordTrainingPayment();
 
   const training = trainingResponse?.data;
@@ -152,8 +154,8 @@ export function TrainingDetailPage() {
             <p className="text-muted-foreground mb-4">
               The training you're looking for doesn't exist.
             </p>
-            <Button onClick={() => navigate(ROUTES.TRAININGS)}>
-              Back to Trainings
+            <Button onClick={() => navigate(returnTo)}>
+              Back
             </Button>
           </CardContent>
         </Card>
@@ -189,7 +191,7 @@ export function TrainingDetailPage() {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              onClick={() => navigate(ROUTES.TRAININGS)}
+              onClick={() => navigate(returnTo)}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
@@ -767,7 +769,7 @@ export function TrainingDetailPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() =>
                 deleteTraining.mutate(training.id, {
-                  onSuccess: () => navigate(ROUTES.TRAININGS),
+                  onSuccess: () => navigate(returnTo),
                 })
               }
               disabled={deleteTraining.isPending}

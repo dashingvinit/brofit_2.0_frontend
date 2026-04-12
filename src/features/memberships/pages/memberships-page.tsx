@@ -57,6 +57,7 @@ import {
 import { RenewMembershipDialog } from '../components/renew-membership-dialog';
 import { BulkFreezeDialog } from '../components/bulk-freeze-dialog';
 import { ROUTES } from '@/shared/lib/constants';
+import { useFromState } from '@/shared/hooks/use-return-to';
 import { getThisMonthDateRange } from '@/shared/lib/utils';
 import type { Membership, MembershipStatus } from '@/shared/types/common.types';
 import { SUBSCRIPTION_STATUS_CONFIG } from '@/shared/lib/constants';
@@ -264,6 +265,7 @@ function MembershipCard({
 
 export function MembershipsPage() {
   const navigate = useNavigate();
+  const fromState = useFromState();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [dateRange, setDateRange] = useState<{ from: string; to: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -663,7 +665,7 @@ export function MembershipsPage() {
                     <MembershipRow
                       key={membership.id}
                       membership={membership}
-                      onClick={() => navigate(`/memberships/${membership.id}`)}
+                      onClick={() => navigate(`/memberships/${membership.id}`, fromState)}
                       onRenew={setRenewMembership}
                       selected={selectedIds.has(membership.id)}
                       onSelect={handleSelectOne}
@@ -680,7 +682,7 @@ export function MembershipsPage() {
               <MembershipCard
                 key={membership.id}
                 membership={membership}
-                onClick={() => navigate(`/memberships/${membership.id}`)}
+                onClick={() => navigate(`/memberships/${membership.id}`, fromState)}
                 onRenew={setRenewMembership}
                 selected={selectedIds.has(membership.id)}
                 onSelect={handleSelectOne}

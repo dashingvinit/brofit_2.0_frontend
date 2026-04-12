@@ -48,6 +48,7 @@ import { PageHeader } from '@/shared/components/page-header';
 import { useTrainings, useTrainingStats } from '../hooks/use-training';
 import { RenewTrainingDialog } from '../components/renew-training-dialog';
 import { ROUTES } from '@/shared/lib/constants';
+import { useFromState } from '@/shared/hooks/use-return-to';
 import type { Training, TrainingStatus } from '@/shared/types/common.types';
 import { SUBSCRIPTION_STATUS_CONFIG } from '@/shared/lib/constants';
 
@@ -228,6 +229,7 @@ function TrainingCard({
 
 export function TrainingsPage() {
   const navigate = useNavigate();
+  const fromState = useFromState();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [renewTraining, setRenewTraining] = useState<Training | null>(null);
@@ -492,7 +494,7 @@ export function TrainingsPage() {
                     <TrainingRow
                       key={training.id}
                       training={training}
-                      onClick={() => navigate(`/trainings/${training.id}`)}
+                      onClick={() => navigate(`/trainings/${training.id}`, fromState)}
                       onRenew={setRenewTraining}
                     />
                   ))}
@@ -507,7 +509,7 @@ export function TrainingsPage() {
               <TrainingCard
                 key={training.id}
                 training={training}
-                onClick={() => navigate(`/trainings/${training.id}`)}
+                onClick={() => navigate(`/trainings/${training.id}`, fromState)}
                 onRenew={setRenewTraining}
               />
             ))}

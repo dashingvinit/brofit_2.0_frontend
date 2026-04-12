@@ -3,19 +3,17 @@ import { Card } from '@/shared/components/ui/card';
 import { PageHeader } from '@/shared/components/page-header';
 import { CreateTrainingForm } from '../components/create-training-form';
 import { ROUTES } from '@/shared/lib/constants';
+import { useReturnTo } from '@/shared/hooks/use-return-to';
 
 export function CreateTrainingPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectedMemberId = searchParams.get('memberId') ?? undefined;
 
-  const handleSuccess = () => {
-    navigate(ROUTES.TRAININGS || '/trainings');
-  };
-
-  const handleCancel = () => {
-    navigate(ROUTES.TRAININGS || '/trainings');
-  };
+  const returnTo = useReturnTo(
+    preselectedMemberId ? `${ROUTES.MEMBERS}/${preselectedMemberId}` : ROUTES.TRAININGS
+  );
+  const goBack = () => navigate(returnTo);
 
   return (
     <div className="space-y-4">
@@ -26,8 +24,8 @@ export function CreateTrainingPage() {
 
       <Card className="max-w-4xl">
         <CreateTrainingForm
-          onSuccess={handleSuccess}
-          onCancel={handleCancel}
+          onSuccess={goBack}
+          onCancel={goBack}
           preselectedMemberId={preselectedMemberId}
         />
       </Card>
