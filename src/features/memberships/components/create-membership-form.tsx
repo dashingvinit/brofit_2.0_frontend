@@ -12,7 +12,7 @@ import { PlanVariantPicker } from '@/shared/components/plan-variant-picker';
 import { MembershipDetailsStep } from './membership-details-step';
 import { TrainingStep } from './training-step';
 import { MembershipPaymentStep } from './membership-payment-step';
-import { useMembers } from '@/features/members/hooks/use-members';
+import { useMembers, useMember } from '@/features/members/hooks/use-members';
 import { usePlanTypesByCategory } from '@/features/plans/hooks/use-plan-types';
 import { usePlanVariantsByType } from '@/features/plans/hooks/use-plan-variants';
 import { useCreateMembership, useActiveMembership } from '../hooks/use-memberships';
@@ -130,7 +130,8 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
     );
   }, [members, memberSearch]);
 
-  const selectedMember = members.find((m) => m.id === selectedMemberId);
+  const { data: selectedMemberResponse } = useMember(selectedMemberId || '');
+  const selectedMember = selectedMemberResponse?.data ?? members.find((m) => m.id === selectedMemberId);
   const selectedPlanType = planTypes?.find((p) => p.id === selectedPlanTypeId);
   const selectedVariant = planVariants?.find((v) => v.id === selectedPlanVariantId);
   const selectedTrainingVariant = trainingPlanVariants?.find((v) => v.id === trainingPlanVariantId);
