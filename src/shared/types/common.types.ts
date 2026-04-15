@@ -682,6 +682,7 @@ export interface ProjectionInputs {
   churnPercent: number;
   avgNewJoinsPerMonth: number;
   fixedCostPerMonth: number;
+  fixedCostSource: 'actual_avg' | 'override';
   capex: number;
   window: number;
   horizon: number;

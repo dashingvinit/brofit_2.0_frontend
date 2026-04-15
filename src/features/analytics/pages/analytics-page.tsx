@@ -1485,11 +1485,18 @@ function ProjectionCard() {
         </div>
         {inp && (
           <p className="text-xs text-muted-foreground mt-1">
-            {scenarioConfig[scenario].desc} · Based on {inp.activeMembers} active members, ₹{formatCurrency(inp.arpu)} ARPU, {inp.churnPercent.toFixed(1)}% churn
+            {scenarioConfig[scenario].desc} · {inp.activeMembers} active members · ₹{formatCurrency(inp.arpu)} ARPU · {inp.churnPercent.toFixed(1)}% churn · ₹{formatCurrency(inp.fixedCostPerMonth)}/mo fixed cost
+            {inp.fixedCostSource === 'actual_avg' ? ` (avg of last ${window}mo expenses)` : ''}
           </p>
         )}
+        {inp && inp.fixedCostSource === 'actual_avg' && inp.fixedCostPerMonth === 0 && (
+          <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 mt-1">
+            <AlertTriangle className="h-3 w-3 shrink-0" />
+            No expenses logged in the last {window} months — projection treats cost as zero. Log expenses in Financials for a realistic projection.
+          </div>
+        )}
         {inp && inp.dataPoints < window && (
-          <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+          <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 mt-1">
             <AlertTriangle className="h-3 w-3 shrink-0" />
             Only {inp.dataPoints} month{inp.dataPoints !== 1 ? 's' : ''} of data — projection confidence is low
           </div>
