@@ -121,6 +121,13 @@ export function useMonthlySummary(month?: string) {
   });
 }
 
+export function useMonthlySummaryWithDelta() {
+  return useQuery({
+    queryKey: ['financials', 'summary-delta'],
+    queryFn: () => financialsApi.getSummaryWithDelta(),
+  });
+}
+
 export function useRoi() {
   return useQuery({
     queryKey: ['financials', 'roi'],

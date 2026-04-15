@@ -49,6 +49,7 @@ import {
   useAttendanceInside,
 } from "@/features/attendance/hooks/use-attendance";
 import { usePingMember } from "@/features/settings/hooks/use-notification-settings";
+import { useMonthlySummaryWithDelta } from "@/features/financials/hooks/use-financials";
 import { ROUTES } from "@/shared/lib/constants";
 import { useFromState } from "@/shared/hooks/use-return-to";
 import { formatCurrency, daysUntil } from "@/shared/lib/utils";
@@ -239,13 +240,40 @@ export function DashboardPage() {
   const { data: duesReportRes, isLoading: isLoadingDues } = useDuesReport(1, 10);
   const { data: attendanceStatsRes, isLoading: isLoadingAttendance } = useAttendanceTodayStats();
   const { data: attendanceInsideRes } = useAttendanceInside();
+  const { data: summaryDeltaRes, isLoading: isLoadingSummaryDelta } = useMonthlySummaryWithDelta();
 
   const memberStats = memberStatsRes?.data;
   const membershipStats = membershipStatsRes?.data;
   const trainingStats = trainingStatsRes?.data;
 
-  const totalRevenue = (membershipStats?.totalCollected ?? 0) + (trainingStats?.totalCollected ?? 0);
-  const revenueThisMonth = (membershipStats?.collectedThisMonth ?? 0) + (trainingStats?.collectedThisMonth ?? 0);
+  const summaryDelta = summaryDeltaRes?.data;
+  const netThisMonth = summaryDelta?.thisMonth.netProfit ?? 0;
+
+  // Delta: prefer YoY (same month last year) when available, otherwise MoM,
+  // otherwise none (new gyms with <1 month of data).
+  const deltaSubtext = (() => {
+    if (!summaryDelta) return undefined;
+    const pickBaseline = () => {
+      const yoy = summaryDelta.sameMonthLastYear;
+      if (yoy && (yoy.revenue > 0 || yoy.expenses > 0)) {
+        const d = new Date(yoy.from);
+        const label = d.toLocaleString("en-US", { month: "short", year: "numeric" });
+        return { net: yoy.netProfit, label: `vs ${label}` };
+      }
+      const mom = summaryDelta.lastMonth;
+      if (mom && (mom.revenue > 0 || mom.expenses > 0)) {
+        const d = new Date(mom.from);
+        const label = d.toLocaleString("en-US", { month: "short" });
+        return { net: mom.netProfit, label: `vs ${label}` };
+      }
+      return null;
+    };
+    const baseline = pickBaseline();
+    if (!baseline) return undefined;
+    const diff = netThisMonth - baseline.net;
+    const sign = diff >= 0 ? "+" : "−";
+    return `${sign}₹${formatCurrency(Math.abs(diff))} ${baseline.label}`;
+  })();
 
   const inactiveSubMembers = inactiveSubRes?.data ?? [];
   const duesMembers = duesReportRes?.data ?? [];
@@ -360,13 +388,13 @@ export function DashboardPage() {
           isLoading={isLoadingTrainings} animationDelay={150} hidden={valuesHidden}
         />
         <StatCard
-          label="Total Revenue" shortLabel="Revenue"
-          value={totalRevenue}
-          subtext={revenueThisMonth > 0 ? `₹${formatCurrency(revenueThisMonth)} this month` : undefined}
+          label="Net This Month" shortLabel="Net"
+          value={netThisMonth}
+          subtext={deltaSubtext}
           icon={TrendingUp}
-          accentClass="border-l-amber-500"
-          valueClass="text-amber-600 dark:text-amber-400"
-          isLoading={isLoadingMemberships || isLoadingTrainings} isCurrency animationDelay={225} hidden={valuesHidden}
+          accentClass={netThisMonth < 0 ? "border-l-red-500" : "border-l-amber-500"}
+          valueClass={netThisMonth < 0 ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}
+          isLoading={isLoadingSummaryDelta} isCurrency animationDelay={225} hidden={valuesHidden}
         />
       </div>
 

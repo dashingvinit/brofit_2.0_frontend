@@ -527,6 +527,21 @@ export interface MonthlySummary {
   netProfit: number;
 }
 
+export interface PeriodSummary {
+  from: string;
+  to: string;
+  revenue: number;
+  expenses: number;
+  netProfit: number;
+}
+
+export interface MonthlySummaryWithDelta {
+  period: string; // "YYYY-MM"
+  thisMonth: PeriodSummary;
+  lastMonth: PeriodSummary | null;
+  sameMonthLastYear: PeriodSummary | null;
+}
+
 export interface RoiMetrics {
   totalInvested: number;
   totalRevenue: number;

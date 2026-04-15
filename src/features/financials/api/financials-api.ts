@@ -3,6 +3,7 @@ import type {
   Expense,
   Investment,
   MonthlySummary,
+  MonthlySummaryWithDelta,
   RoiMetrics,
   TrendPoint,
   CreateExpenseData,
@@ -70,6 +71,11 @@ export const financialsApi = {
     const response = await apiClient.get('/financials/summary', {
       params: month ? { month } : undefined,
     });
+    return response.data;
+  },
+
+  getSummaryWithDelta: async (): Promise<ApiResponse<MonthlySummaryWithDelta>> => {
+    const response = await apiClient.get('/financials/summary-delta');
     return response.data;
   },
 
