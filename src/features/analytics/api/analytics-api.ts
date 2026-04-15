@@ -76,8 +76,10 @@ export const analyticsApi = {
     return response.data;
   },
 
-  getProjection: async (window = 3, horizon = 12, fixedCost = 0): Promise<ApiResponse<ProjectionData>> => {
-    const response = await apiClient.get('/analytics/projection', { params: { window, horizon, fixedCost } });
+  getProjection: async (window = 3, horizon = 12, fixedCost?: number): Promise<ApiResponse<ProjectionData>> => {
+    const params: Record<string, number> = { window, horizon };
+    if (fixedCost !== undefined) params.fixedCost = fixedCost;
+    const response = await apiClient.get('/analytics/projection', { params });
     return response.data;
   },
 
