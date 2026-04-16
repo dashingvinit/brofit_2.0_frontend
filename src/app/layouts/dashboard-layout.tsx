@@ -32,6 +32,7 @@ import { Separator } from "@/shared/components/ui/separator";
 import { ThemeToggle } from "@/shared/components/theme-toggle";
 import { PwaInstallPrompt } from "@/shared/components/pwa-install-prompt";
 import { NavFlat } from "@/shared/components/nav-flat";
+import { PageBreadcrumbs } from "@/shared/components/page-breadcrumbs";
 import { NavMain } from "@/shared/components/nav-main";
 import { ViewSwitcher } from "@/shared/components/view-switcher";
 import { ROUTES } from "@/shared/lib/constants";
@@ -120,35 +121,6 @@ export function DashboardLayout() {
       ? [{ name: "Trainings", href: ROUTES.TRAININGS, icon: Dumbbell, isActive: isActive(ROUTES.TRAININGS) }]
       : []),
   ];
-
-  const allFlatItems = showAdminNav
-    ? [...adminTopItems, ...adminPeopleItems, ...adminBusinessItems, ...adminRecordsGroup.items, ...adminCatalogGroup.items, { name: "Trainers", href: ROUTES.TRAINERS, icon: UserRound, isActive: isActive(ROUTES.TRAINERS) }]
-    : staffFlatItems;
-
-  const detailTitles: [string, string][] = [
-    [ROUTES.REGISTER_MEMBER, "Register Member"],
-    [ROUTES.CREATE_MEMBERSHIP, "Create Membership"],
-    [ROUTES.CREATE_TRAINING, "Create Training"],
-    [ROUTES.PROFILE, "Profile"],
-    [ROUTES.SETTINGS_STAFF, "Settings"],
-    [ROUTES.SETTINGS_WHATSAPP, "Settings"],
-    [ROUTES.SETTINGS_BROADCAST, "Settings"],
-    [ROUTES.INBOX, "Inbox"],
-  ];
-  const detailPrefixes: [string, string][] = [
-    ["/members/", "Member Details"],
-    ["/memberships/", "Membership Details"],
-    ["/trainings/", "Training Details"],
-  ];
-  const detailPageTitle =
-    detailTitles.find(([path]) => location.pathname === path)?.[1] ??
-    detailPrefixes.find(([prefix]) => location.pathname.startsWith(prefix))?.[1] ??
-    null;
-
-  const currentPageName =
-    allFlatItems.find((i) => i.isActive)?.name ??
-    detailPageTitle ??
-    "Brofit 2.0";
 
   return (
     <SidebarProvider>
@@ -292,7 +264,7 @@ export function DashboardLayout() {
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <div className="flex flex-1 items-center justify-between gap-2">
-              <h1 className="truncate text-sm font-medium text-foreground/80">{currentPageName}</h1>
+              <PageBreadcrumbs />
               <div className="flex items-center gap-2 md:gap-3">
                 <OrganizationSwitcher
                   hidePersonal
