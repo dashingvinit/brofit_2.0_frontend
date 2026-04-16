@@ -755,17 +755,17 @@ export function RetentionCard() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="flex flex-col items-center gap-4">
-            <Skeleton className="h-36 w-36 rounded-full" />
-            <div className="space-y-2 w-full">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-28 w-28 rounded-full shrink-0" />
+            <div className="space-y-2 flex-1">
               {Array.from({ length: 3 }).map((_, i) => (
                 <Skeleton key={i} className="h-4 w-full" />
               ))}
             </div>
           </div>
         ) : r ? (
-          <div className="flex flex-col items-center gap-4">
-            <ChartContainer config={retentionPieConfig} className="h-[180px] w-[180px] shrink-0">
+          <div className="flex items-center gap-4">
+            <ChartContainer config={retentionPieConfig} className="h-[140px] w-[140px] shrink-0">
               <PieChart>
                 <ChartTooltip
                   content={({ active, payload }) => {
@@ -785,8 +785,8 @@ export function RetentionCard() {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  innerRadius={52}
-                  outerRadius={80}
+                  innerRadius={40}
+                  outerRadius={62}
                   strokeWidth={2}
                 >
                   {pieData.map((entry, i) => (
@@ -796,7 +796,7 @@ export function RetentionCard() {
               </PieChart>
             </ChartContainer>
 
-            <div className="w-full space-y-2.5">
+            <div className="flex-1 space-y-2.5">
               {[
                 { label: 'Repeat', value: r.repeatCount, color: 'bg-emerald-500', textColor: 'text-emerald-600 dark:text-emerald-400' },
                 { label: 'One-time', value: r.oneTimeCount, color: 'bg-amber-400', textColor: 'text-amber-600 dark:text-amber-400' },
