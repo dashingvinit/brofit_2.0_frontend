@@ -64,10 +64,10 @@ export function useUnitEconomics(window = 3) {
   });
 }
 
-export function useProjection(window = 3, horizon = 12, fixedCost?: number) {
+export function useProjection(window = 3, horizon = 12) {
   return useQuery({
-    queryKey: ['analytics', 'projection', window, horizon, fixedCost ?? 'auto'],
-    queryFn: () => analyticsApi.getProjection(window, horizon, fixedCost),
+    queryKey: ['analytics', 'projection', window, horizon],
+    queryFn: () => analyticsApi.getProjection(window, horizon),
   });
 }
 

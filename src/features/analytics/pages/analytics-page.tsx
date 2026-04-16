@@ -22,6 +22,7 @@ import {
   UnitEconomicsCard,
   LifetimeEarningsPieCard,
   SectionLabel,
+  TimeToggle,
 } from './analytics-cards';
 
 // ─── Stat Strip ───────────────────────────────────────────────────────────────
@@ -153,24 +154,11 @@ function StatStrip() {
 
 type TimeWindow = 3 | 6 | 12 | 24 | 36;
 
-function TimeToggle({ value, onChange, options }: { value: TimeWindow; onChange: (v: TimeWindow) => void; options: TimeWindow[] }) {
-  return (
-    <div className="flex items-center gap-0.5 rounded-md border bg-muted/50 p-0.5">
-      {options.map((o) => (
-        <button key={o} onClick={() => onChange(o)}
-          className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${value === o ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
-          {o}M
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function ForecastBanner() {
-  const [window, setWindow] = useState<TimeWindow>(3);
+  const [dataWindow, setDataWindow] = useState<TimeWindow>(3);
   const [horizon, setHorizon] = useState<TimeWindow>(12);
   const [scenario, setScenario] = useState<'worst' | 'base' | 'best'>('base');
-  const { data: res, isLoading } = useProjection(window, horizon);
+  const { data: res, isLoading } = useProjection(dataWindow, horizon);
   const proj = res?.data;
   const scenarioData = proj?.[scenario];
   const inp = proj?.inputs;
@@ -191,12 +179,12 @@ function ForecastBanner() {
           <div>
             <h2 className="text-sm font-semibold">Where you're headed</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Based on last {window} months of data · projecting {horizon} months ahead
+              Based on last {dataWindow} months of data · projecting {horizon} months ahead
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap text-xs">
             <span className="text-muted-foreground">Learn from</span>
-            <TimeToggle value={window} onChange={setWindow} options={[3, 6, 12]} />
+            <TimeToggle value={dataWindow} onChange={setDataWindow} options={[3, 6, 12]} />
             <span className="text-muted-foreground">Project</span>
             <TimeToggle value={horizon} onChange={setHorizon} options={[12, 24, 36]} />
           </div>
@@ -222,7 +210,7 @@ function ForecastBanner() {
             No expenses logged — projection treats costs as zero. Add expenses in Financials for accuracy.
           </div>
         )}
-        {inp && inp.dataPoints < window && (
+        {inp && inp.dataPoints < dataWindow && (
           <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2 mb-4">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
             Only {inp.dataPoints} month{inp.dataPoints !== 1 ? 's' : ''} of data — low confidence.

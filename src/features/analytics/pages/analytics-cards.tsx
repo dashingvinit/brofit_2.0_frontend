@@ -4,11 +4,9 @@ import {
   Users,
   UserCheck,
   TrendingUp,
-  TrendingDown,
   IndianRupee,
   BarChart3,
   RefreshCw,
-  PiggyBank,
   AlertTriangle,
   Tag,
   ArrowRight,
@@ -37,7 +35,6 @@ import {
   Pie,
   PieChart,
   Cell,
-  Tooltip,
   LabelList,
 } from 'recharts';
 import {
@@ -98,7 +95,7 @@ export function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function TimeToggle({
+export function TimeToggle({
   value,
   onChange,
   options,
@@ -121,121 +118,6 @@ function TimeToggle({
         >
           {o}M
         </button>
-      ))}
-    </div>
-  );
-}
-
-// ─── Stat Cards ───────────────────────────────────────────────────────────────
-
-export function AnalyticsStatCards() {
-  const { data: memberStatsRes, isLoading: memberLoading } = useMemberStats();
-  const { data: membershipStatsRes, isLoading: membershipLoading } = useMembershipStats();
-  const { data: trainingStatsRes, isLoading: trainingLoading } = useTrainingStats();
-
-  const isLoading = memberLoading || membershipLoading || trainingLoading;
-
-  const membershipCollected = membershipStatsRes?.data?.collectedThisMonth ?? 0;
-  const trainingCollected = trainingStatsRes?.data?.collectedThisMonth ?? 0;
-  const monthlyRevenue = membershipCollected + trainingCollected;
-
-  const cards = [
-    {
-      label: 'Total Members',
-      shortLabel: 'Members',
-      value: memberStatsRes?.data ? String(memberStatsRes.data.total) : '—',
-      icon: Users,
-      colorClass: 'text-blue-600 dark:text-blue-400',
-      bgClass: 'bg-blue-50 dark:bg-blue-950/50',
-    },
-    {
-      label: 'Active Members',
-      shortLabel: 'Active',
-      value: memberStatsRes?.data ? String(memberStatsRes.data.active) : '—',
-      icon: UserCheck,
-      colorClass: 'text-emerald-600 dark:text-emerald-400',
-      bgClass: 'bg-emerald-50 dark:bg-emerald-950/50',
-    },
-    {
-      label: 'Active Memberships',
-      shortLabel: 'Memberships',
-      value: membershipStatsRes?.data ? String(membershipStatsRes.data.active) : '—',
-      icon: TrendingUp,
-      colorClass: 'text-violet-600 dark:text-violet-400',
-      bgClass: 'bg-violet-50 dark:bg-violet-950/50',
-    },
-    {
-      label: 'Monthly Revenue',
-      shortLabel: 'Revenue',
-      value: isLoading ? '—' : `₹${formatCurrency(monthlyRevenue)}`,
-      icon: IndianRupee,
-      colorClass: 'text-amber-600 dark:text-amber-400',
-      bgClass: 'bg-amber-50 dark:bg-amber-950/50',
-    },
-  ];
-
-  if (isLoading) {
-    return (
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="overflow-hidden">
-            <div className="p-3 lg:hidden">
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
-                <div className="space-y-1.5 flex-1">
-                  <Skeleton className="h-3 w-14" />
-                  <Skeleton className="h-5 w-20" />
-                </div>
-              </div>
-            </div>
-            <div className="hidden lg:block">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-8 w-8 rounded-lg" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-7 w-24 mb-1" />
-              </CardContent>
-            </div>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-      {cards.map(({ label, shortLabel, value, icon: Icon, colorClass, bgClass }) => (
-        <Card key={label} className="overflow-hidden transition-shadow hover:shadow-md">
-          {/* Mobile */}
-          <div className="p-3 lg:hidden">
-            <div className="flex items-center gap-2.5">
-              <div className={`rounded-lg p-2 shrink-0 ${bgClass}`}>
-                <Icon className={`h-4 w-4 ${colorClass}`} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-medium text-muted-foreground leading-tight truncate">
-                  {shortLabel}
-                </p>
-                <p className="text-base font-bold leading-tight tracking-tight truncate font-display">
-                  {value}
-                </p>
-              </div>
-            </div>
-          </div>
-          {/* Desktop */}
-          <div className="hidden lg:block">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-              <div className={`rounded-lg p-2 ${bgClass}`}>
-                <Icon className={`h-4 w-4 ${colorClass}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold tracking-tight font-display">{value}</div>
-            </CardContent>
-          </div>
-        </Card>
       ))}
     </div>
   );
@@ -431,8 +313,8 @@ const memberGrowthChartConfig = {
 } satisfies ChartConfig;
 
 export function MemberGrowthCard() {
-  const [window, setWindow] = useState<TimeWindow>(12);
-  const { data: growthRes, isLoading } = useMemberGrowth(window);
+  const [dataWindow, setDataWindow] = useState<TimeWindow>(12);
+  const { data: growthRes, isLoading } = useMemberGrowth(dataWindow);
   const points = growthRes?.data ?? [];
 
   const chartData = points.map((p) => ({
@@ -447,14 +329,14 @@ export function MemberGrowthCard() {
           <Users className="h-4 w-4 text-muted-foreground" />
           New members over time
           <div className="ml-auto">
-            <TimeToggle value={window} onChange={setWindow} options={[3, 6, 12]} />
+            <TimeToggle value={dataWindow} onChange={setDataWindow} options={[3, 6, 12]} />
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="flex items-end gap-2 h-40">
-            {Array.from({ length: window }).map((_, i) => (
+            {Array.from({ length: dataWindow }).map((_, i) => (
               <div key={i} className="flex-1 flex flex-col gap-1 items-center">
                 <Skeleton className="w-full" style={{ height: `${20 + i * 4}px` }} />
                 <Skeleton className="h-2.5 w-5" />
@@ -517,8 +399,8 @@ const discountChartConfig = {
 } satisfies ChartConfig;
 
 export function RevenueBreakdownCard() {
-  const [window, setWindow] = useState<TimeWindow>(6);
-  const { data: revenueRes, isLoading } = useRevenueBreakdown(window);
+  const [dataWindow, setDataWindow] = useState<TimeWindow>(6);
+  const { data: revenueRes, isLoading } = useRevenueBreakdown(dataWindow);
   const points = revenueRes?.data ?? [];
 
   const chartData = points.map((p) => ({
@@ -540,14 +422,14 @@ export function RevenueBreakdownCard() {
           <BarChart3 className="h-4 w-4 text-muted-foreground" />
           Revenue month by month
           <div className="ml-auto">
-            <TimeToggle value={window} onChange={setWindow} options={[3, 6, 12]} />
+            <TimeToggle value={dataWindow} onChange={setDataWindow} options={[3, 6, 12]} />
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="flex items-end gap-2 h-40">
-            {Array.from({ length: window }).map((_, i) => (
+            {Array.from({ length: dataWindow }).map((_, i) => (
               <div key={i} className="flex-1 flex flex-col gap-1 items-center">
                 <Skeleton className="w-full" style={{ height: `${30 + i * 6}px` }} />
                 <Skeleton className="h-2.5 w-6" />
@@ -609,8 +491,8 @@ export function RevenueBreakdownCard() {
 
 export function DiscountsCard() {
   const navigate = useNavigate();
-  const [window, setWindow] = useState<TimeWindow>(6);
-  const { data: res, isLoading } = useDiscounts(window);
+  const [dataWindow, setDataWindow] = useState<TimeWindow>(6);
+  const { data: res, isLoading } = useDiscounts(dataWindow);
   const d = res?.data;
 
   const chartData = (d?.byMonth ?? []).map((p) => ({
@@ -632,7 +514,7 @@ export function DiscountsCard() {
           <Tag className="h-4 w-4 text-muted-foreground" />
           Money you gave away in discounts
           <div className="ml-auto">
-            <TimeToggle value={window} onChange={setWindow} options={[3, 6, 12]} />
+            <TimeToggle value={dataWindow} onChange={setDataWindow} options={[3, 6, 12]} />
           </div>
         </CardTitle>
       </CardHeader>
@@ -742,7 +624,8 @@ export function DiscountsCard() {
 // ─── Top Plans Card ────────────────────────────────────────────────────────────
 
 export function TopPlansCard() {
-  const { data: plansRes, isLoading } = useTopPlans(6);
+  const [dataWindow, setDataWindow] = useState<TimeWindow>(6);
+  const { data: plansRes, isLoading } = useTopPlans(dataWindow);
   const plans = plansRes?.data ?? [];
   const maxCount = Math.max(...plans.map((p) => p.totalCount), 1);
 
@@ -752,7 +635,9 @@ export function TopPlansCard() {
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
           Your top sellers
-          <span className="ml-auto text-xs font-normal text-muted-foreground">Last 6 months</span>
+          <div className="ml-auto">
+            <TimeToggle value={dataWindow} onChange={setDataWindow} options={[3, 6, 12]} />
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -882,7 +767,7 @@ export function RetentionCard() {
           <div className="flex flex-col items-center gap-4">
             <ChartContainer config={retentionPieConfig} className="h-[180px] w-[180px] shrink-0">
               <PieChart>
-                <Tooltip
+                <ChartTooltip
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const d = payload[0].payload;
@@ -988,7 +873,7 @@ export function PaymentMethodsCard() {
           <div className="flex flex-col items-center gap-4">
             <ChartContainer config={paymentConfig} className="h-[180px] w-[180px] shrink-0">
               <PieChart>
-                <Tooltip
+                <ChartTooltip
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const d = payload[0].payload;
@@ -1105,7 +990,7 @@ export function DemographicsCard() {
                 <div className="flex flex-col items-center gap-3">
                   <ChartContainer config={genderConfig} className="h-[150px] w-[150px]">
                     <PieChart>
-                      <Tooltip
+                      <ChartTooltip
                         content={({ active, payload }) => {
                           if (!active || !payload?.length) return null;
                           const d = payload[0].payload;
@@ -1169,7 +1054,7 @@ export function DemographicsCard() {
                       tick={{ fontSize: 10 }}
                       allowDecimals={false}
                     />
-                    <Tooltip
+                    <ChartTooltip
                       cursor={{ fill: 'hsl(var(--muted))' }}
                       content={({ active, payload }) => {
                         if (!active || !payload?.length) return null;
@@ -1182,12 +1067,12 @@ export function DemographicsCard() {
                       }}
                     />
                     <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]}>
-                        <LabelList
-                          dataKey="count"
-                          position="top"
-                          style={{ fontSize: 10, fill: 'hsl(var(--foreground))', fontWeight: 500 }}
-                        />
-                      </Bar>
+                      <LabelList
+                        dataKey="count"
+                        position="top"
+                        style={{ fontSize: 10, fill: 'hsl(var(--foreground))', fontWeight: 500 }}
+                      />
+                    </Bar>
                   </BarChart>
                 </ChartContainer>
               ) : (
@@ -1389,8 +1274,8 @@ export function MembershipDurationCard() {
 // ─── Unit Economics Card ───────────────────────────────────────────────────────
 
 export function UnitEconomicsCard() {
-  const [window, setWindow] = useState<TimeWindow>(3);
-  const { data: res, isLoading } = useUnitEconomics(window);
+  const [dataWindow, setDataWindow] = useState<TimeWindow>(3);
+  const { data: res, isLoading } = useUnitEconomics(dataWindow);
   const ue = res?.data;
 
   const metrics = ue
@@ -1410,9 +1295,9 @@ export function UnitEconomicsCard() {
             <BarChart3 className="h-4 w-4 text-violet-500" />
             What each member is worth
           </CardTitle>
-          <TimeToggle value={window} onChange={setWindow} options={[3, 6, 12]} />
+          <TimeToggle value={dataWindow} onChange={setDataWindow} options={[3, 6, 12]} />
         </div>
-        {ue && ue.dataPoints < window && (
+        {ue && ue.dataPoints < dataWindow && (
           <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 mt-1">
             <AlertTriangle className="h-3 w-3 shrink-0" />
             Only {ue.dataPoints} month{ue.dataPoints !== 1 ? 's' : ''} of data — confidence is low
@@ -1440,142 +1325,4 @@ export function UnitEconomicsCard() {
   );
 }
 
-// ─── Projection Card ───────────────────────────────────────────────────────────
-
-export function ProjectionCard() {
-  const [window, setWindow] = useState<TimeWindow>(3);
-  const [horizon, setHorizon] = useState<TimeWindow>(12);
-  const [scenario, setScenario] = useState<'base' | 'worst' | 'best'>('base');
-  const { data: res, isLoading } = useProjection(window, horizon);
-  const proj = res?.data;
-
-  const scenarioData = proj?.[scenario];
-  const inp = proj?.inputs;
-
-  const scenarioConfig = {
-    worst: { label: 'Worst', color: 'text-red-600 dark:text-red-400', desc: '−20% joins, +20% churn' },
-    base:  { label: 'Base',  color: 'text-blue-600 dark:text-blue-400', desc: 'Current pace' },
-    best:  { label: 'Best',  color: 'text-emerald-600 dark:text-emerald-400', desc: '+30% joins, −20% churn' },
-  };
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <PiggyBank className="h-4 w-4 text-amber-500" />
-            Where you're headed
-          </CardTitle>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-0.5 rounded-md border bg-muted/50 p-0.5">
-              {(['worst', 'base', 'best'] as const).map((s) => (
-                <button key={s} onClick={() => setScenario(s)}
-                  className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${scenario === s ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
-                  {scenarioConfig[s].label}
-                </button>
-              ))}
-            </div>
-            <span className="text-xs text-muted-foreground">Learn from</span>
-            <TimeToggle value={window} onChange={setWindow} options={[3, 6, 12]} />
-            <span className="text-xs text-muted-foreground">Project</span>
-            <TimeToggle value={horizon} onChange={setHorizon} options={[12, 24, 36]} />
-          </div>
-        </div>
-        {inp && (
-          <p className="text-xs text-muted-foreground mt-1">
-            {scenarioConfig[scenario].desc} · {inp.activeMembers} active members · ₹{formatCurrency(inp.arpu)} ARPU · {inp.churnPercent.toFixed(1)}% churn · ₹{formatCurrency(inp.fixedCostPerMonth)}/mo fixed cost
-            {inp.fixedCostSource === 'actual_avg' ? ` (avg of last ${window}mo expenses)` : ''}
-          </p>
-        )}
-        {inp && inp.fixedCostSource === 'actual_avg' && inp.fixedCostPerMonth === 0 && (
-          <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 mt-1">
-            <AlertTriangle className="h-3 w-3 shrink-0" />
-            No expenses logged in the last {window} months — projection treats cost as zero. Log expenses in Financials for a realistic projection.
-          </div>
-        )}
-        {inp && inp.dataPoints < window && (
-          <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 mt-1">
-            <AlertTriangle className="h-3 w-3 shrink-0" />
-            Only {inp.dataPoints} month{inp.dataPoints !== 1 ? 's' : ''} of data — projection confidence is low
-          </div>
-        )}
-      </CardHeader>
-      <CardContent className="p-4 pt-0">
-        {isLoading ? (
-          <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
-        ) : scenarioData ? (
-          <div className="space-y-4">
-            {/* Summary KPIs */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div className="rounded-lg border p-3">
-                <p className="text-xs text-muted-foreground mb-0.5">Payback Period</p>
-                <p className="text-lg font-bold font-display text-amber-600 dark:text-amber-400">
-                  {scenarioData.paybackMonth ? `${scenarioData.paybackMonth} mo` : '> horizon'}
-                </p>
-              </div>
-              <div className="rounded-lg border p-3">
-                <p className="text-xs text-muted-foreground mb-0.5">ROI at {horizon}M</p>
-                <p className={`text-lg font-bold font-display ${(scenarioData.roiAtHorizon ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {scenarioData.roiAtHorizon != null ? `${scenarioData.roiAtHorizon.toFixed(1)}%` : '—'}
-                </p>
-              </div>
-              <div className="rounded-lg border p-3">
-                <p className="text-xs text-muted-foreground mb-0.5">Members at {horizon}M</p>
-                <p className="text-lg font-bold font-display text-blue-600 dark:text-blue-400">
-                  {scenarioData.months[scenarioData.months.length - 1]?.members ?? '—'}
-                </p>
-              </div>
-            </div>
-
-            {/* Month table — desktop only */}
-            <div className="hidden sm:block overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Month</TableHead>
-                    <TableHead className="text-xs text-right">Members</TableHead>
-                    <TableHead className="text-xs text-right">Revenue</TableHead>
-                    <TableHead className="text-xs text-right">Profit</TableHead>
-                    <TableHead className="text-xs text-right">Cumulative</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {scenarioData.months.map((m) => (
-                    <TableRow key={m.month} className={m.month === scenarioData.paybackMonth ? 'bg-emerald-50 dark:bg-emerald-950/30' : ''}>
-                      <TableCell className="text-xs font-medium">M{m.month}{m.month === scenarioData.paybackMonth ? ' ✓' : ''}</TableCell>
-                      <TableCell className="text-xs text-right">{m.members}</TableCell>
-                      <TableCell className="text-xs text-right">₹{formatCurrency(m.revenue)}</TableCell>
-                      <TableCell className={`text-xs text-right font-medium ${m.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {m.profit >= 0 ? <TrendingUp className="inline h-3 w-3 mr-0.5" /> : <TrendingDown className="inline h-3 w-3 mr-0.5" />}
-                        ₹{formatCurrency(Math.abs(m.profit))}
-                      </TableCell>
-                      <TableCell className={`text-xs text-right ${m.cumulativeProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
-                        ₹{formatCurrency(Math.abs(m.cumulativeProfit))}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Mobile: just summary rows */}
-            <div className="sm:hidden space-y-2">
-              {scenarioData.months.filter((_, i) => i % 3 === 2).map((m) => (
-                <div key={m.month} className={`flex items-center justify-between rounded-lg border p-3 ${m.month === scenarioData.paybackMonth ? 'border-emerald-500' : ''}`}>
-                  <span className="text-xs font-medium">Month {m.month}</span>
-                  <div className="text-right">
-                    <p className="text-xs font-semibold">₹{formatCurrency(m.revenue)} rev</p>
-                    <p className={`text-[11px] ${m.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                      ₹{formatCurrency(Math.abs(m.profit))} profit
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
-  );
-}
 
