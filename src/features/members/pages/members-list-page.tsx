@@ -16,6 +16,7 @@ import {
   Upload,
   RefreshCw,
   Trash2,
+  UserMinus,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -29,6 +30,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
@@ -142,6 +144,7 @@ export function MembersListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const showDues = searchParams.get("dues") === "true";
   const hasDiscountParam = searchParams.get("hasDiscount") === "true";
+  const noMembershipParam = searchParams.get("noMembership") === "true";
   const planTypeIdParam = searchParams.get("planTypeId");
   const statusParam = searchParams.get("status") as StatusFilter | null;
   const { getRecent } = useRecentlyViewed();
@@ -187,9 +190,10 @@ export function MembersListPage() {
   // Reset to page 1 when filter changes
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, dateRange, planTypeIdParam, hasDiscountParam]);
+  }, [statusFilter, dateRange, planTypeIdParam, hasDiscountParam, noMembershipParam]);
 
   const { data: planTypes } = usePlanTypes();
+  const membershipPlanTypes = planTypes?.filter((p) => p.category === "membership");
   const selectedPlanType = planTypes?.find((p) => p.id === planTypeIdParam);
 
   useEffect(() => {
@@ -215,6 +219,7 @@ export function MembersListPage() {
     dateRange?.to ?? null,
     planTypeIdParam,
     hasDiscountParam,
+    noMembershipParam,
   );
   const { data: searchResponse, isLoading: isSearching } = useSearchMembers({
     q: debouncedSearch,
@@ -239,7 +244,8 @@ export function MembersListPage() {
     !!debouncedSearch ||
     !!dateRange ||
     !!planTypeIdParam ||
-    hasDiscountParam;
+    hasDiscountParam ||
+    noMembershipParam;
 
   const updateSearchParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(searchParams);
@@ -633,23 +639,25 @@ export function MembersListPage() {
                 >
                   <SlidersHorizontal className="h-4 w-4" />
                   <span className="hidden sm:inline">
-                    {dateRange
-                      ? "Date Range"
-                      : statusFilter === "all"
-                        ? "Filter"
-                        : filterLabel}
+                    {noMembershipParam
+                      ? "No Membership"
+                      : dateRange
+                        ? "Date Range"
+                        : statusFilter === "all"
+                          ? "Filter"
+                          : filterLabel}
                   </span>
-                  {(statusFilter !== "all" || !!dateRange) && (
+                  {(statusFilter !== "all" || !!dateRange || noMembershipParam) && (
                     <Badge
                       variant="secondary"
                       className="h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold"
                     >
-                      1
+                      {[statusFilter !== "all" || !!dateRange, noMembershipParam].filter(Boolean).length}
                     </Badge>
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuRadioGroup
@@ -670,6 +678,17 @@ export function MembersListPage() {
                     </DropdownMenuRadioItem>
                   ))}
                 </DropdownMenuRadioGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={noMembershipParam}
+                  onCheckedChange={(checked) =>
+                    updateSearchParam("noMembership", checked ? "true" : null)
+                  }
+                  className="gap-2"
+                >
+                  <UserMinus className="h-4 w-4 text-muted-foreground" />
+                  No Membership
+                </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -707,7 +726,7 @@ export function MembersListPage() {
                   <DropdownMenuRadioItem value="">
                     All plans
                   </DropdownMenuRadioItem>
-                  {planTypes?.map((p) => (
+                  {membershipPlanTypes?.map((p) => (
                     <DropdownMenuRadioItem key={p.id} value={p.id}>
                       {p.name}
                     </DropdownMenuRadioItem>
@@ -729,6 +748,7 @@ export function MembersListPage() {
                   const next = new URLSearchParams(searchParams);
                   next.delete("planTypeId");
                   next.delete("hasDiscount");
+                  next.delete("noMembership");
                   setSearchParams(next);
                 }}
               >
@@ -761,6 +781,27 @@ export function MembersListPage() {
               </p>
             )}
           </div>
+
+          {/* No Membership filter banner */}
+          {noMembershipParam && (
+            <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30 px-3 py-2">
+              <div className="flex items-center gap-2 text-sm">
+                <UserMinus className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                <span className="font-medium text-red-900 dark:text-red-100">
+                  Showing active members with no membership
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => updateSearchParam("noMembership", null)}
+              >
+                <X className="h-3.5 w-3.5 mr-1" />
+                Clear
+              </Button>
+            </div>
+          )}
 
           {/* Discount filter banner */}
           {hasDiscountParam && (

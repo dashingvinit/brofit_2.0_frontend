@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
   Loader2,
 } from "lucide-react";
+import { Switch } from "@/shared/components/ui/switch";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
@@ -25,7 +26,7 @@ import {
 import type { Member } from "@/shared/types/common.types";
 import { ROUTES } from "@/shared/lib/constants";
 import { EditMemberDialog } from "./edit-member-dialog";
-import { useDeleteMember } from "../hooks/use-members";
+import { useDeleteMember, useUpdateMember } from "../hooks/use-members";
 import {
   Table,
   TableBody,
@@ -69,6 +70,7 @@ export function MembersList({ members, isLoading, isAdmin = true, selectedIds, o
   const navigate = useNavigate();
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const deleteMember = useDeleteMember();
+  const updateMember = useUpdateMember();
 
   const handleDeleteMember = (member: Member) => {
     deleteMember.mutate(member);
@@ -282,22 +284,37 @@ export function MembersList({ members, isLoading, isAdmin = true, selectedIds, o
                     {formatDate(member.joinDate)}
                   </div>
                 </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={member.isActive ? "default" : "secondary"}
-                    className={
-                      member.isActive
-                        ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-300 border-0"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 border-0"
-                    }
-                  >
-                    <span
-                      className={`mr-1.5 h-1.5 w-1.5 rounded-full inline-block ${
-                        member.isActive ? "bg-emerald-500" : "bg-gray-400"
-                      }`}
-                    />
-                    {member.isActive ? "Active" : "Inactive"}
-                  </Badge>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  {isAdmin ? (
+                    <div className="flex items-center gap-2">
+                      {updateMember.isPending && updateMember.variables?.memberId === member.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      ) : (
+                        <Switch
+                          checked={member.isActive}
+                          onCheckedChange={(checked) =>
+                            updateMember.mutate({ memberId: member.id, data: { isActive: checked } })
+                          }
+                          aria-label={`Toggle ${member.firstName} active status`}
+                        />
+                      )}
+                      <span className={`text-xs ${member.isActive ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>
+                        {member.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                  ) : (
+                    <Badge
+                      variant={member.isActive ? "default" : "secondary"}
+                      className={
+                        member.isActive
+                          ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-300 border-0"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 border-0"
+                      }
+                    >
+                      <span className={`mr-1.5 h-1.5 w-1.5 rounded-full inline-block ${member.isActive ? "bg-emerald-500" : "bg-gray-400"}`} />
+                      {member.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  )}
                 </TableCell>
                 {isAdmin && (
                   <TableCell className="text-right">
@@ -381,17 +398,31 @@ export function MembersList({ members, isLoading, isAdmin = true, selectedIds, o
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
-                    <Badge
-                      variant={member.isActive ? "default" : "secondary"}
-                      className={`text-[10px] px-2 py-0 h-5 ${
-                        member.isActive
-                          ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-300 border-0"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 border-0"
-                      }`}
-                    >
-                      {member.isActive ? "Active" : "Inactive"}
-                    </Badge>
+                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    {isAdmin ? (
+                      updateMember.isPending && updateMember.variables?.memberId === member.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      ) : (
+                        <Switch
+                          checked={member.isActive}
+                          onCheckedChange={(checked) =>
+                            updateMember.mutate({ memberId: member.id, data: { isActive: checked } })
+                          }
+                          aria-label={`Toggle ${member.firstName} active status`}
+                        />
+                      )
+                    ) : (
+                      <Badge
+                        variant={member.isActive ? "default" : "secondary"}
+                        className={`text-[10px] px-2 py-0 h-5 ${
+                          member.isActive
+                            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-300 border-0"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 border-0"
+                        }`}
+                      >
+                        {member.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    )}
                     {isAdmin && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

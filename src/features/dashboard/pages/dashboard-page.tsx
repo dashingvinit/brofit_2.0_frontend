@@ -553,7 +553,7 @@ export function DashboardPage() {
               iconClass="text-red-600 dark:text-red-400"
               title="No Active Membership"
               badge={inactiveTotalCount}
-              action={inactiveTotalCount > 5 ? { label: `View all ${inactiveTotalCount}`, onClick: () => navigate(`${ROUTES.MEMBERS}?status=inactive`) } : undefined}
+              action={inactiveTotalCount > 5 ? { label: `View all ${inactiveTotalCount}`, onClick: () => navigate(`${ROUTES.MEMBERS}?noMembership=true`) } : undefined}
             />
 
             {inactiveSubMembers.length === 0 ? (
