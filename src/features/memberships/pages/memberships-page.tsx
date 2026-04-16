@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { EmptyState } from '@/shared/components/empty-state';
 import {
   Plus,
@@ -51,6 +51,7 @@ import { PageHeader } from '@/shared/components/page-header';
 import {
   useMemberships,
   useMembershipStats,
+  useExpiringMemberships,
   useBatchCancelMemberships,
   useBatchUnfreezeMemberships,
 } from '../hooks/use-memberships';
@@ -266,6 +267,8 @@ function MembershipCard({
 export function MembershipsPage() {
   const navigate = useNavigate();
   const fromState = useFromState();
+  const [searchParams] = useSearchParams();
+  const showExpiring = searchParams.get('expiring') === 'true';
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [dateRange, setDateRange] = useState<{ from: string; to: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -279,12 +282,17 @@ export function MembershipsPage() {
     statusFilter !== 'all' ? statusFilter : null,
     dateRange?.from ?? null,
     dateRange?.to ?? null,
+    !showExpiring,
   );
+  const { data: expiringResponse, isLoading: isLoadingExpiring } = useExpiringMemberships(7);
   const { data: statsResponse, isLoading: isLoadingStats } = useMembershipStats();
   const batchCancel = useBatchCancelMemberships();
   const batchUnfreeze = useBatchUnfreezeMemberships();
 
-  const allMemberships = membershipsResponse?.data ?? [];
+  const allMemberships = showExpiring
+    ? (expiringResponse?.data ?? [])
+    : (membershipsResponse?.data ?? []);
+  const isLoadingList = showExpiring ? isLoadingExpiring : isLoading;
   const stats = statsResponse?.data;
 
   const searchLower = searchQuery.toLowerCase();
@@ -352,13 +360,19 @@ export function MembershipsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Memberships"
-        description="Manage gym memberships"
+        title={showExpiring ? "Expiring Soon" : "Memberships"}
+        description={showExpiring ? "Memberships expiring in the next 7 days" : "Manage gym memberships"}
         actions={
-          <Button onClick={() => navigate(ROUTES.CREATE_MEMBERSHIP)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Membership
-          </Button>
+          showExpiring ? (
+            <Button variant="outline" onClick={() => navigate(ROUTES.MEMBERSHIPS)}>
+              View all memberships
+            </Button>
+          ) : (
+            <Button onClick={() => navigate(ROUTES.CREATE_MEMBERSHIP)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Membership
+            </Button>
+          )
         }
       />
 
@@ -547,7 +561,7 @@ export function MembershipsPage() {
           </Button>
         )}
 
-        {!isLoading && (
+        {!isLoadingList && (
           <p className="text-sm text-muted-foreground ml-auto hidden sm:block tabular-nums">
             <span className="font-medium text-foreground">{memberships.length}</span>{' '}
             {memberships.length === 1 ? 'membership' : 'memberships'}
@@ -611,7 +625,7 @@ export function MembershipsPage() {
       )}
 
       {/* Memberships List */}
-      {isLoading ? (
+      {isLoadingList ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-16 w-full rounded-lg" />

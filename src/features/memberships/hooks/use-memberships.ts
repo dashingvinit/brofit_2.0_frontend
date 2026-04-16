@@ -12,10 +12,12 @@ export function useMemberships(
   status?: string | null,
   createdFrom?: string | null,
   createdTo?: string | null,
+  enabled = true,
 ) {
   return useQuery({
     queryKey: ['memberships', page, limit, status, createdFrom, createdTo],
     queryFn: () => membershipsApi.getAllMemberships(page, limit, status, createdFrom, createdTo),
+    enabled,
   });
 }
 

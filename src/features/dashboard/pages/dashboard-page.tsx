@@ -4,7 +4,6 @@ import { useUser } from "@clerk/clerk-react";
 import {
   Users,
   UserCheck,
-  CreditCard,
   Dumbbell,
   IndianRupee,
   TrendingUp,
@@ -32,10 +31,7 @@ import {
 import { Badge } from "@/shared/components/ui/badge";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { useMemberStats } from "@/features/members/hooks/use-members";
-import {
-  useMembershipStats,
-  useExpiringMemberships,
-} from "@/features/memberships/hooks/use-memberships";
+import { useExpiringMemberships } from "@/features/memberships/hooks/use-memberships";
 import {
   useTrainingStats,
   useExpiringTrainings,
@@ -232,18 +228,16 @@ export function DashboardPage() {
   }, [pingMember, pingState]);
 
   const { data: memberStatsRes, isLoading: isLoadingMembers } = useMemberStats();
-  const { data: membershipStatsRes, isLoading: isLoadingMemberships } = useMembershipStats();
   const { data: trainingStatsRes, isLoading: isLoadingTrainings } = useTrainingStats();
   const { data: expiringMembershipsRes } = useExpiringMemberships(7);
   const { data: expiringTrainingsRes } = useExpiringTrainings(7);
-  const { data: inactiveSubRes } = useInactiveCandidates(1, 10);
+  const { data: inactiveSubRes } = useInactiveCandidates(1, 5);
   const { data: duesReportRes, isLoading: isLoadingDues } = useDuesReport(1, 10);
   const { data: attendanceStatsRes, isLoading: isLoadingAttendance } = useAttendanceTodayStats();
   const { data: attendanceInsideRes } = useAttendanceInside();
   const { data: summaryDeltaRes, isLoading: isLoadingSummaryDelta } = useMonthlySummaryWithDelta();
 
   const memberStats = memberStatsRes?.data;
-  const membershipStats = membershipStatsRes?.data;
   const trainingStats = trainingStatsRes?.data;
 
   const summaryDelta = summaryDeltaRes?.data;
@@ -276,6 +270,7 @@ export function DashboardPage() {
   })();
 
   const inactiveSubMembers = inactiveSubRes?.data ?? [];
+  const inactiveTotalCount = inactiveSubRes?.pagination?.total ?? 0;
   const duesMembers = duesReportRes?.data ?? [];
   const duesSummary = duesReportRes?.summary ?? { totalMembersWithDues: 0, grandTotal: 0 };
 
@@ -363,20 +358,20 @@ export function DashboardPage() {
         <StatCard
           label="Total Members" shortLabel="Members"
           value={memberStats?.total}
-          subtext={memberStats ? `${memberStats.active} active` : undefined}
+          subtext={memberStats ? `${memberStats.total - memberStats.active} inactive` : undefined}
           icon={Users}
           accentClass="border-l-blue-500"
           valueClass="text-blue-600 dark:text-blue-400"
           isLoading={isLoadingMembers} animationDelay={0} hidden={valuesHidden}
         />
         <StatCard
-          label="Active Memberships" shortLabel="Memberships"
-          value={membershipStats?.active}
-          subtext={membershipStats ? `${membershipStats.newThisMonth} new this month` : undefined}
-          icon={CreditCard}
+          label="Active Members" shortLabel="Active"
+          value={memberStats?.active}
+          subtext={memberStats ? `of ${memberStats.total} total` : undefined}
+          icon={UserCheck}
           accentClass="border-l-emerald-500"
           valueClass="text-emerald-600 dark:text-emerald-400"
-          isLoading={isLoadingMemberships} animationDelay={75} hidden={valuesHidden}
+          isLoading={isLoadingMembers} animationDelay={75} hidden={valuesHidden}
         />
         <StatCard
           label="Active Trainings" shortLabel="Trainings"
@@ -492,6 +487,7 @@ export function DashboardPage() {
               iconClass="text-amber-600 dark:text-amber-400"
               title="Expiring in 7 Days"
               badge={expiringItems.length}
+              action={expiringItems.length > 5 ? { label: `View all ${expiringItems.length}`, onClick: () => navigate(`${ROUTES.MEMBERSHIPS}?expiring=true`) } : undefined}
             />
 
             {expiringItems.length === 0 ? (
@@ -505,7 +501,7 @@ export function DashboardPage() {
               </div>
             ) : (
               <div className="divide-y">
-                {expiringItems.slice(0, 10).map((item) => {
+                {expiringItems.slice(0, 5).map((item) => {
                   const days = daysUntil(item.endDate);
                   const urgent = days <= 2;
                   const UrgencyIcon = urgent ? AlertTriangle : Clock;
@@ -556,7 +552,8 @@ export function DashboardPage() {
               icon={UserX}
               iconClass="text-red-600 dark:text-red-400"
               title="No Active Membership"
-              badge={inactiveSubMembers.length}
+              badge={inactiveTotalCount}
+              action={inactiveTotalCount > 5 ? { label: `View all ${inactiveTotalCount}`, onClick: () => navigate(`${ROUTES.MEMBERS}?status=inactive`) } : undefined}
             />
 
             {inactiveSubMembers.length === 0 ? (

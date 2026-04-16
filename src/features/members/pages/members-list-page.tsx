@@ -143,12 +143,15 @@ export function MembersListPage() {
   const showDues = searchParams.get("dues") === "true";
   const hasDiscountParam = searchParams.get("hasDiscount") === "true";
   const planTypeIdParam = searchParams.get("planTypeId");
+  const statusParam = searchParams.get("status") as StatusFilter | null;
   const { getRecent } = useRecentlyViewed();
   const [recentMembers] = useState<RecentMember[]>(() => getRecent());
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(
+    statusParam && ["all", "active", "inactive"].includes(statusParam) ? statusParam : "all"
+  );
   const [dateRange, setDateRange] = useState<{
     from: string;
     to: string;

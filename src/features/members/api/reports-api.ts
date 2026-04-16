@@ -67,7 +67,7 @@ export const reportsApi = {
   getInactiveCandidates: async (
     page = 1,
     limit = 10
-  ): Promise<{ success: boolean; data: InactiveCandidate[] }> => {
+  ): Promise<{ success: boolean; data: InactiveCandidate[]; pagination: { page: number; limit: number; total: number; pages: number; hasNext: boolean; hasPrev: boolean } }> => {
     const response = await apiClient.get('/reports/inactive-candidates', {
       params: { page, limit },
     });
