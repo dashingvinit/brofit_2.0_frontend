@@ -31,8 +31,8 @@ function StatStrip() {
   const { data: mRes, isLoading: mLoading } = useMemberStats();
   const { data: msRes, isLoading: msLoading } = useMembershipStats();
   const { data: tRes, isLoading: tLoading } = useTrainingStats();
-  const { data: growthRes } = useMemberGrowth(3);
-  const { data: revRes } = useRevenueBreakdown(3);
+  const { data: growthRes } = useMemberGrowth(12);
+  const { data: revRes } = useRevenueBreakdown(6);
 
   const members = mRes?.data;
   const ms = msRes?.data;
