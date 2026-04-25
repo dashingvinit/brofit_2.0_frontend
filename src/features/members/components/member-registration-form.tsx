@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -7,7 +7,11 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/shared/components/ui/collapsible";
 import {
   Select,
   SelectContent,
@@ -52,6 +56,7 @@ export function MemberRegistrationForm({
   const { data: membersResponse } = useMembers();
   const allMembers = membersResponse?.data ?? [];
   const [gender, setGender] = useState<string>("");
+  const generatedEmailRef = useRef("");
 
   const form = useForm<MemberRegistrationFormData>({
     resolver: zodResolver(memberRegistrationSchema),
@@ -69,7 +74,13 @@ export function MemberRegistrationForm({
     if (firstName && lastName) {
       const sanitize = (s: string) => s.toLowerCase().replace(/\s+/g, "");
       const generatedEmail = `${sanitize(firstName)}.${sanitize(lastName)}@dummy.com`;
-      form.setValue("email", generatedEmail);
+      const currentEmail = form.getValues("email");
+
+      if (!currentEmail || currentEmail === generatedEmailRef.current) {
+        form.setValue("email", generatedEmail);
+      }
+
+      generatedEmailRef.current = generatedEmail;
     }
   }, [firstName, lastName, form]);
 
@@ -87,10 +98,12 @@ export function MemberRegistrationForm({
       referredById: data.referredById || undefined,
     };
 
-    createMemberAsync(memberData).then((response) => {
-      form.reset();
-      onSuccess?.(response.data.id);
-    }).catch(() => {});
+    createMemberAsync(memberData)
+      .then((response) => {
+        form.reset();
+        onSuccess?.(response.data.id);
+      })
+      .catch(() => {});
   };
 
   return (
@@ -103,7 +116,9 @@ export function MemberRegistrationForm({
             {...form.register("firstName")}
             placeholder="John"
             aria-invalid={!!form.formState.errors.firstName}
-            aria-describedby={form.formState.errors.firstName ? "firstName-error" : undefined}
+            aria-describedby={
+              form.formState.errors.firstName ? "firstName-error" : undefined
+            }
           />
           {form.formState.errors.firstName && (
             <p id="firstName-error" className="text-sm text-destructive">
@@ -128,7 +143,9 @@ export function MemberRegistrationForm({
             {...form.register("lastName")}
             placeholder="Doe"
             aria-invalid={!!form.formState.errors.lastName}
-            aria-describedby={form.formState.errors.lastName ? "lastName-error" : undefined}
+            aria-describedby={
+              form.formState.errors.lastName ? "lastName-error" : undefined
+            }
           />
           {form.formState.errors.lastName && (
             <p id="lastName-error" className="text-sm text-destructive">
@@ -139,13 +156,12 @@ export function MemberRegistrationForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email">Email (Auto-generated)</Label>
+        <Label htmlFor="email">Email</Label>
         <Input
           id="email"
           type="email"
           {...form.register("email")}
           placeholder="john.doe@dummy.com"
-          disabled
         />
         {form.formState.errors.email && (
           <p className="text-sm text-destructive">
@@ -162,7 +178,9 @@ export function MemberRegistrationForm({
           {...form.register("phone")}
           placeholder="+1 (555) 123-4567"
           aria-invalid={!!form.formState.errors.phone}
-          aria-describedby={form.formState.errors.phone ? "phone-error" : undefined}
+          aria-describedby={
+            form.formState.errors.phone ? "phone-error" : undefined
+          }
         />
         {form.formState.errors.phone && (
           <p id="phone-error" className="text-sm text-destructive">
@@ -180,7 +198,11 @@ export function MemberRegistrationForm({
             {...form.register("dateOfBirth")}
             max={new Date().toISOString().split("T")[0]}
             aria-invalid={!!form.formState.errors.dateOfBirth}
-            aria-describedby={form.formState.errors.dateOfBirth ? "dateOfBirth-error" : undefined}
+            aria-describedby={
+              form.formState.errors.dateOfBirth
+                ? "dateOfBirth-error"
+                : undefined
+            }
           />
           {form.formState.errors.dateOfBirth && (
             <p id="dateOfBirth-error" className="text-sm text-destructive">
@@ -222,7 +244,9 @@ export function MemberRegistrationForm({
           type="date"
           {...form.register("joinDate")}
           aria-invalid={!!form.formState.errors.joinDate}
-          aria-describedby={form.formState.errors.joinDate ? "joinDate-error" : undefined}
+          aria-describedby={
+            form.formState.errors.joinDate ? "joinDate-error" : undefined
+          }
         />
         {form.formState.errors.joinDate && (
           <p id="joinDate-error" className="text-sm text-destructive">
@@ -244,7 +268,12 @@ export function MemberRegistrationForm({
       {allMembers.length > 0 && (
         <Collapsible>
           <CollapsibleTrigger asChild>
-            <Button type="button" variant="ghost" size="sm" className="gap-2 text-muted-foreground px-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-muted-foreground px-0"
+            >
               <UserPlus className="h-4 w-4" />
               Add referral info
             </Button>
@@ -253,20 +282,20 @@ export function MemberRegistrationForm({
             <Label htmlFor="referredById">Referred By</Label>
             <Select
               value={form.watch("referredById") || "none"}
-              onValueChange={(v) => form.setValue("referredById", v === "none" ? "" : v)}
+              onValueChange={(v) =>
+                form.setValue("referredById", v === "none" ? "" : v)
+              }
             >
               <SelectTrigger id="referredById">
                 <SelectValue placeholder="No referrer" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No referrer</SelectItem>
-                {allMembers
-                  .slice(0, 50)
-                  .map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.firstName} {m.lastName} — {m.phone}
-                    </SelectItem>
-                  ))}
+                {allMembers.slice(0, 50).map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.firstName} {m.lastName} — {m.phone}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </CollapsibleContent>
