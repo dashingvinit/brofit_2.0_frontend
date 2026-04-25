@@ -144,10 +144,11 @@ export function useUnfreezeTraining() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => trainingApi.unfreezeTraining(id),
-    onSuccess: (response, id) => {
+    mutationFn: ({ id, extendEndDate = true }: { id: string; extendEndDate?: boolean }) => 
+      trainingApi.unfreezeTraining(id, { extendEndDate }),
+    onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['trainings'] });
-      queryClient.invalidateQueries({ queryKey: ['trainings', id] });
+      queryClient.invalidateQueries({ queryKey: ['trainings', variables.id] });
       toast.success(response.message || 'Training unfrozen');
     },
     onError: (error: any) => {

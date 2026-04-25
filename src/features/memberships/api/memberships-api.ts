@@ -138,8 +138,8 @@ export const membershipsApi = {
    * Unfreeze a membership
    * PUT /api/v1/memberships/:id/unfreeze
    */
-  unfreezeMembership: async (id: string): Promise<ApiResponse<Membership>> => {
-    const response = await apiClient.put(`/memberships/${id}/unfreeze`);
+  unfreezeMembership: async (id: string, data?: { extendEndDate?: boolean }): Promise<ApiResponse<Membership>> => {
+    const response = await apiClient.put(`/memberships/${id}/unfreeze`, data);
     return response.data;
   },
 
@@ -199,8 +199,8 @@ export const membershipsApi = {
    * Batch unfreeze memberships
    * PUT /api/v1/memberships/batch/unfreeze
    */
-  batchUnfreezeMemberships: async (ids: string[]): Promise<ApiResponse<{ succeeded: number; failed: number; total: number }>> => {
-    const response = await apiClient.put('/memberships/batch/unfreeze', { ids });
+  batchUnfreezeMemberships: async (ids: string[], data?: { extendEndDate?: boolean }): Promise<ApiResponse<{ succeeded: number; failed: number; total: number }>> => {
+    const response = await apiClient.put('/memberships/batch/unfreeze', { ids, ...data });
     return response.data;
   },
 

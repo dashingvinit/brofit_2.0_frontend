@@ -17,6 +17,8 @@ import {
   RefreshCw,
   Trash2,
   UserMinus,
+  AlertTriangle,
+  History,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -41,12 +43,14 @@ import {
 import { PageHeader } from "@/shared/components/page-header";
 import { StatCard } from "@/shared/components/stat-card";
 import { MembersList } from "../components/members-list";
+import { DuplicateScanDialog } from "../components/duplicate-scan-dialog";
 import {
   useMembers,
   useMemberStats,
   useSearchMembers,
   useBatchUpdateMembers,
   useBatchDeleteMembers,
+  useDuplicates,
 } from "../hooks/use-members";
 import { usePlanTypes } from "@/features/plans/hooks/use-plan-types";
 import { useDuesReport } from "../hooks/use-member-detail";
@@ -175,6 +179,7 @@ export function MembersListPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+  const [duplicateScanOpen, setDuplicateScanOpen] = useState(false);
 
   const batchUpdate = useBatchUpdateMembers();
   const batchDelete = useBatchDeleteMembers();
@@ -239,6 +244,7 @@ export function MembersListPage() {
   });
 
   const { data: statsResponse, isLoading: isLoadingStats } = useMemberStats();
+  const { data: duplicatesResponse } = useDuplicates();
   const { data: duesReportRes, isLoading: isLoadingDues } = useDuesReport(
     duesPage,
     PAGE_SIZE,
@@ -330,6 +336,29 @@ export function MembersListPage() {
               >
                 <Upload className="h-4 w-4" />
                 <span className="hidden sm:inline ml-2">Import</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDuplicateScanOpen(true)}
+                className="relative"
+                title="Scan for duplicate members"
+              >
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <span className="hidden sm:inline ml-2">Scan</span>
+                {duplicatesResponse?.data && duplicatesResponse.data.length > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white border-2 border-background animate-pulse">
+                    {duplicatesResponse.data.length}
+                  </span>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate(ROUTES.RECYCLE_BIN)}
+                title="View archived members"
+              >
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">Recycle Bin</span>
               </Button>
               <ExportDropdown
                 title="Members"
@@ -870,7 +899,7 @@ export function MembersListPage() {
                 disabled={batchUpdate.isPending || batchDelete.isPending}
               >
                 <UserX className="h-3.5 w-3.5 text-amber-500" />
-                Deactivate
+                Archive
               </Button>
               <Button
                 size="sm"
@@ -880,7 +909,7 @@ export function MembersListPage() {
                 disabled={batchDelete.isPending || batchUpdate.isPending}
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                Delete
+                Purge
               </Button>
               <Button
                 size="sm"
@@ -973,6 +1002,11 @@ export function MembersListPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DuplicateScanDialog 
+        open={duplicateScanOpen} 
+        onOpenChange={setDuplicateScanOpen} 
+      />
     </div>
   );
 }

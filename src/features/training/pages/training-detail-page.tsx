@@ -115,6 +115,7 @@ export function TrainingDetailPage() {
   const [unfreezeDialogOpen, setUnfreezeDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
+  const [extendEndDate, setExtendEndDate] = useState(true);
 
   const { data: trainingResponse, isLoading: trainingLoading } =
     useTraining(id!);
@@ -667,12 +668,16 @@ export function TrainingDetailPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel this training?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently cancel{' '}
-              <span className="font-medium text-foreground">
-                {memberName}
-              </span>
-              's {planName} training with {training.trainer?.name}. This action cannot be undone.
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  This will permanently cancel{' '}
+                  <span className="font-medium text-foreground">
+                    {memberName}
+                  </span>
+                  's {planName} training with {training.trainer?.name}. This action cannot be undone.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -695,12 +700,16 @@ export function TrainingDetailPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Freeze this training?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Freezing will temporarily pause{' '}
-              <span className="font-medium text-foreground">
-                {memberName}
-              </span>
-              's training. You can unfreeze it anytime.
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Freezing will temporarily pause{' '}
+                  <span className="font-medium text-foreground">
+                    {memberName}
+                  </span>
+                  's training. You can unfreeze it anytime.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -725,18 +734,42 @@ export function TrainingDetailPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Unfreeze this training?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will reactivate{' '}
-              <span className="font-medium text-foreground">
-                {memberName}
-              </span>
-              's training sessions.
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  This will reactivate{' '}
+                  <span className="font-medium text-foreground">
+                    {memberName}
+                  </span>
+                  's training sessions.
+                </p>
+                <div className="flex items-center space-x-2 rounded-lg border p-3 bg-muted/30">
+                  <input
+                    type="checkbox"
+                    id="extendEndDate"
+                    checked={extendEndDate}
+                    onChange={(e) => setExtendEndDate(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="extendEndDate"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Extend end date by frozen days
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      Compensate the member for the paused duration.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => unfreezeTraining.mutate(training.id)}
+              onClick={() => unfreezeTraining.mutate({ id: training.id, extendEndDate })}
               disabled={unfreezeTraining.isPending}
             >
               {unfreezeTraining.isPending
@@ -751,16 +784,20 @@ export function TrainingDetailPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this training?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete{' '}
-              <span className="font-medium text-foreground">
-                {memberName}
-              </span>
-              's {planName} training with {training.trainer?.name}
-              {dues && dues.payments.length > 0
-                ? ` along with ${dues.payments.length} payment record${dues.payments.length !== 1 ? 's' : ''} (${'\u20B9'}${dues.totalPaid.toLocaleString()} total). This will affect revenue totals.`
-                : '.'}{' '}
-              This cannot be undone.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  This will permanently delete{' '}
+                  <span className="font-medium text-foreground">
+                    {memberName}
+                  </span>
+                  's {planName} training with {training.trainer?.name}
+                  {dues && dues.payments.length > 0
+                    ? ` along with ${dues.payments.length} payment record${dues.payments.length !== 1 ? 's' : ''} (${'\u20B9'}${dues.totalPaid.toLocaleString()} total). This will affect revenue totals.`
+                    : '.'}{' '}
+                  This cannot be undone.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -788,8 +825,12 @@ export function TrainingDetailPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this payment?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently remove this payment record. The balance due on this training will be recalculated. This cannot be undone.
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  This will permanently remove this payment record. The balance due on this training will be recalculated. This cannot be undone.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

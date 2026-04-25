@@ -30,6 +30,9 @@ export interface Member {
       planType: { name: string; category: string };
     };
   }>;
+  attendances?: Array<{
+    entryTime: string;
+  }>;
 }
 
 export interface ApiResponse<T> {
@@ -153,6 +156,7 @@ export interface CreateMemberData {
   notes?: string;
   clerkUserId?: string;
   referredById?: string;
+  bypassDuplicateCheck?: boolean;
 }
 
 /**

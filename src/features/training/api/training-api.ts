@@ -81,8 +81,8 @@ export const trainingApi = {
     return response.data;
   },
 
-  unfreezeTraining: async (id: string): Promise<ApiResponse<Training>> => {
-    const response = await apiClient.put(`/trainings/${id}/unfreeze`);
+  unfreezeTraining: async (id: string, data?: { extendEndDate?: boolean }): Promise<ApiResponse<Training>> => {
+    const response = await apiClient.put(`/trainings/${id}/unfreeze`, data);
     return response.data;
   },
 

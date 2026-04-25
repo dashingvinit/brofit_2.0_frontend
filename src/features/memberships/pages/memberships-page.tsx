@@ -354,7 +354,9 @@ export function MembershipsPage() {
     const ids = selectedMemberships
       .filter((m) => m.status === 'frozen')
       .map((m) => m.id);
-    batchUnfreeze.mutate(ids, { onSuccess: clearSelection });
+    
+    const extend = window.confirm("Extend end date by frozen days for all selected memberships?");
+    batchUnfreeze.mutate({ ids, extendEndDate: extend }, { onSuccess: clearSelection });
   };
 
   return (

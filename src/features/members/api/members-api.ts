@@ -153,4 +153,16 @@ export const membersApi = {
     const response = await apiClient.post('/members/import', { rows });
     return response.data;
   },
+
+  /**
+   * Merge two members
+   * POST /api/v1/members/merge
+   */
+  mergeMembers: async (
+    sourceId: string,
+    targetId: string,
+  ): Promise<ApiResponse<void>> => {
+    const response = await apiClient.post('/members/merge', { sourceId, targetId });
+    return response.data;
+  },
 };

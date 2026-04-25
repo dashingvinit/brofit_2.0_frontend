@@ -118,6 +118,7 @@ export function MembershipDetailPage() {
   const [unfreezeDialogOpen, setUnfreezeDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
+  const [extendEndDate, setExtendEndDate] = useState(true);
 
   const { data: membershipResponse, isLoading: membershipLoading } =
     useMembership(id!);
@@ -765,18 +766,40 @@ export function MembershipDetailPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Unfreeze this membership?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will reactivate{' '}
-              <span className="font-medium text-foreground">
-                {memberName}
-              </span>
-              's membership and restore their access.
+            <AlertDialogDescription className="space-y-4">
+              <p>
+                This will reactivate{' '}
+                <span className="font-medium text-foreground">
+                  {memberName}
+                </span>
+                's membership and restore their access.
+              </p>
+              <div className="flex items-center space-x-2 rounded-lg border p-3 bg-muted/30">
+                <input
+                  type="checkbox"
+                  id="extendEndDate"
+                  checked={extendEndDate}
+                  onChange={(e) => setExtendEndDate(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <label
+                    htmlFor="extendEndDate"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    Extend end date by frozen days
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    Compensate the member for the time their membership was paused.
+                  </p>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => unfreezeMembership.mutate(membership.id)}
+              onClick={() => unfreezeMembership.mutate({ id: membership.id, extendEndDate })}
               disabled={unfreezeMembership.isPending}
             >
               {unfreezeMembership.isPending

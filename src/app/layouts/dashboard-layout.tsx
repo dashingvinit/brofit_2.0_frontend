@@ -58,6 +58,7 @@ import {
   Tag,
   MessageCircle,
   Radio,
+  Trash2,
 } from "lucide-react";
 
 export function DashboardLayout() {
@@ -81,6 +82,7 @@ export function DashboardLayout() {
   const adminPeopleItems = [
     { name: "Members", href: ROUTES.MEMBERS, icon: Users, isActive: isActive(ROUTES.MEMBERS) },
     { name: "Attendance", href: ROUTES.ATTENDANCE, icon: ScanLine, isActive: isActive(ROUTES.ATTENDANCE) },
+    { name: "Recycle Bin", href: ROUTES.RECYCLE_BIN, icon: Trash2, isActive: isActive(ROUTES.RECYCLE_BIN) },
   ];
 
   const adminBusinessItems = [

@@ -359,6 +359,22 @@ export function AttendancePage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-medium text-sm">{member.firstName} {member.lastName}</span>
+                            {(() => {
+                              const lastEntry = member.attendances?.[0]?.entryTime;
+                              const hasSharedPhone = searchResults.filter(m => m.phone === member.phone).length > 1;
+                              if (!hasSharedPhone || !lastEntry) return null;
+                              
+                              const isMostRecent = searchResults
+                                .filter(m => m.phone === member.phone && m.id !== member.id)
+                                .every(m => !m.attendances?.[0]?.entryTime || m.attendances[0].entryTime < lastEntry);
+                              
+                              if (isMostRecent) {
+                                return (
+                                  <Badge variant="outline" className="text-[9px] h-4 border-blue-200 text-blue-600 uppercase font-bold bg-blue-50/50">Last Used</Badge>
+                                );
+                              }
+                              return null;
+                            })()}
                             {alreadyIn && (
                               <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                                 <span className="relative flex h-1.5 w-1.5">

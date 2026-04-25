@@ -186,10 +186,11 @@ export function useUnfreezeMembership() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => membershipsApi.unfreezeMembership(id),
-    onSuccess: (response, id) => {
+    mutationFn: ({ id, extendEndDate = true }: { id: string; extendEndDate?: boolean }) => 
+      membershipsApi.unfreezeMembership(id, { extendEndDate }),
+    onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['memberships'] });
-      queryClient.invalidateQueries({ queryKey: ['memberships', id] });
+      queryClient.invalidateQueries({ queryKey: ['memberships', variables.id] });
       toast.success(response.message || 'Membership unfrozen');
     },
     onError: (error: any) => {
@@ -302,7 +303,8 @@ export function useBatchUnfreezeMemberships() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (ids: string[]) => membershipsApi.batchUnfreezeMemberships(ids),
+    mutationFn: ({ ids, extendEndDate = true }: { ids: string[]; extendEndDate?: boolean }) => 
+      membershipsApi.batchUnfreezeMemberships(ids, { extendEndDate }),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['memberships'] });
       toast.success(response.message || 'Memberships unfrozen');

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { membersApi, type SearchMembersParams } from '../api/members-api';
+import { reportsApi } from '../api/reports-api';
 import type { CreateMemberData, UpdateMemberData, Member } from '@/shared/types/common.types';
 
 /**
@@ -142,5 +143,74 @@ export function useDeleteMember() {
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete member');
     },
+  });
+}
+
+/**
+ * Hook to archive a member (move to recycle bin)
+ */
+export function useArchiveMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (memberId: string) => membersApi.updateMember(memberId, { isActive: false }),
+    onSuccess: (response, memberId) => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['members', memberId] });
+      queryClient.invalidateQueries({ queryKey: ['members', 'stats'] });
+      toast.success(response.message || 'Member moved to recycle bin');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to archive member');
+    },
+  });
+}
+
+/**
+ * Hook to restore a member from recycle bin
+ */
+export function useRestoreMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (memberId: string) => membersApi.updateMember(memberId, { isActive: true }),
+    onSuccess: (response, memberId) => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['members', memberId] });
+      queryClient.invalidateQueries({ queryKey: ['members', 'stats'] });
+      toast.success(response.message || 'Member restored from recycle bin');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to restore member');
+    },
+  });
+}
+
+/**
+ * Hook to merge two members
+ */
+export function useMergeMembers() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ sourceId, targetId }: { sourceId: string; targetId: string }) =>
+      membersApi.mergeMembers(sourceId, targetId),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      toast.success(response.message || 'Members merged successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to merge members');
+    },
+  });
+}
+
+/**
+ * Hook to fetch potential duplicate members
+ */
+export function useDuplicates() {
+  return useQuery({
+    queryKey: ['members', 'duplicates'],
+    queryFn: () => reportsApi.getDuplicates(),
   });
 }

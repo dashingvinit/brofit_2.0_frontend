@@ -15,6 +15,16 @@ import {
 } from "@/shared/components/ui/select";
 import { useMemberRegistration } from "../hooks/use-member-registration";
 import type { CreateMemberData } from "@/shared/types/common.types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog";
 
 const memberRegistrationSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -46,6 +56,7 @@ export function MemberRegistrationForm({
 }: MemberRegistrationFormProps) {
   const { createMemberAsync, isLoading } = useMemberRegistration();
   const [gender, setGender] = useState<string>("");
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
   const generatedEmailRef = useRef("");
 
   const form = useForm<MemberRegistrationFormData>({
@@ -74,7 +85,7 @@ export function MemberRegistrationForm({
     }
   }, [firstName, lastName, form]);
 
-  const onSubmit = (data: MemberRegistrationFormData) => {
+  const onSubmit = (data: MemberRegistrationFormData, bypass = false) => {
     const memberData: CreateMemberData = {
       firstName: data.firstName,
       middleName: data.middleName || undefined,
@@ -85,6 +96,7 @@ export function MemberRegistrationForm({
       gender: data.gender,
       joinDate: data.joinDate,
       notes: data.notes,
+      bypassDuplicateCheck: bypass,
     };
 
     createMemberAsync(memberData)
@@ -92,7 +104,11 @@ export function MemberRegistrationForm({
         form.reset();
         onSuccess?.(response.data.id);
       })
-      .catch(() => {});
+      .catch((error) => {
+        if (error.response?.status === 409) {
+          setDuplicateError(error.response.data.message);
+        }
+      });
   };
 
   return (
@@ -269,6 +285,34 @@ export function MemberRegistrationForm({
           </Button>
         )}
       </div>
+
+
+      <AlertDialog open={!!duplicateError} onOpenChange={(open) => !open && setDuplicateError(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Possible Duplicate Member</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>{duplicateError}</p>
+                <p>
+                  Is this a new member (e.g. family member sharing a phone) or did you mean to use the existing record?
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const values = form.getValues();
+                onSubmit(values, true);
+              }}
+            >
+              Continue Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 }

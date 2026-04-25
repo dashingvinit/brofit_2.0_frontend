@@ -16,6 +16,9 @@ import {
   Activity,
   Pencil,
   Trash2,
+  XCircle,
+  MoreHorizontal,
+  RefreshCcw,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { InlineEditField } from '@/shared/components/inline-edit-field';
@@ -40,9 +43,16 @@ import {
   TableRow,
 } from '@/shared/components/ui/table';
 import { PageHeader } from '@/shared/components/page-header';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu';
 import { ROUTES } from '@/shared/lib/constants';
 import { useFromState } from '@/shared/hooks/use-return-to';
-import { useMember, useUpdateMember, useDeleteMember } from '../hooks/use-members';
+import { useMember, useUpdateMember, useDeleteMember, useArchiveMember } from '../hooks/use-members';
 import { useRecentlyViewed } from '../hooks/use-recently-viewed';
 import { useMemberMemberships } from '@/features/memberships/hooks/use-memberships';
 import { useMemberTrainings } from '@/features/training/hooks/use-training';
@@ -98,6 +108,7 @@ export function MemberDetailPage() {
   const { data: attendanceResponse, isLoading: attendanceLoading } = useAttendanceMemberHistory(id!, 1, 60);
   const updateMember = useUpdateMember();
   const deleteMember = useDeleteMember();
+  const archiveMember = useArchiveMember();
   const { record: recordRecentlyViewed } = useRecentlyViewed();
 
   const member = memberResponse?.data;
@@ -213,14 +224,38 @@ export function MemberDetailPage() {
               <Pencil className="h-4 w-4 mr-2" />
               Edit
             </Button>
-            <Button
-              variant="outline"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="text-amber-600 focus:text-amber-700 focus:bg-amber-50"
+                  onClick={() => {
+                    if (window.confirm("Move this member to the Recycle Bin? They will be deactivated but their data will be preserved.")) {
+                      archiveMember.mutate(member.id, {
+                        onSuccess: () => navigate(ROUTES.MEMBERS)
+                      });
+                    }
+                  }}
+                  disabled={archiveMember.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Archive Member
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Purge Data (Permanent)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         }
       />
@@ -735,24 +770,26 @@ export function MemberDetailPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              <p>
-                This action <span className="font-bold text-destructive">cannot</span> be undone. 
-                This will permanently delete the member <strong>{fullName}</strong> and all associated data.
-              </p>
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20">
-                <p className="font-semibold mb-1">Warning: The following will be removed:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>All memberships they bought</li>
-                  <li>All training sessions and history</li>
-                  <li>All payments they did</li>
-                  <li>All data in the revenue/analytics related to them</li>
-                  <li>Attendance records</li>
-                </ul>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  This action <span className="font-bold text-destructive">cannot</span> be undone. 
+                  This will permanently delete the member <strong>{fullName}</strong> and all associated data.
+                </p>
+                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20">
+                  <p className="font-semibold mb-1">Warning: The following will be removed:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>All memberships they bought</li>
+                    <li>All training sessions and history</li>
+                    <li>All payments they did</li>
+                    <li>All data in the revenue/analytics related to them</li>
+                    <li>Attendance records</li>
+                  </ul>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Only use this for duplicate accounts or garbage data. For regular departures, simply deactivate the member instead.
+                </p>
               </div>
-              <p className="text-muted-foreground text-xs">
-                Only use this for duplicate accounts or garbage data. For regular departures, simply deactivate the member instead.
-              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -115,4 +115,22 @@ export const reportsApi = {
     });
     return response.data;
   },
+
+  /**
+   * Get potential duplicate members by phone number
+   * GET /api/v1/reports/duplicates
+   */
+  getDuplicates: async (): Promise<{
+    success: boolean;
+    data: {
+      phone: string;
+      count: number;
+      ids: string[];
+      names: string[];
+      join_dates: string[];
+    }[];
+  }> => {
+    const response = await apiClient.get('/reports/duplicates');
+    return response.data;
+  },
 };
