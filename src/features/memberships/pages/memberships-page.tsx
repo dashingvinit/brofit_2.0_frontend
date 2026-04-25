@@ -73,7 +73,7 @@ const statusOptions: {
   icon: typeof CreditCard;
 }[] = [
   { value: 'all', label: 'All Memberships', icon: CreditCard },
-  { value: 'scheduled', label: 'Scheduled', icon: CalendarClock },
+  { value: 'upcoming', label: 'Upcoming', icon: CalendarClock },
   { value: 'active', label: 'Active', icon: CheckCircle2 },
   { value: 'expired', label: 'Expired', icon: Clock },
   { value: 'cancelled', label: 'Cancelled', icon: XCircle },
@@ -338,7 +338,7 @@ export function MembershipsPage() {
 
   // Determine which bulk actions are valid for the selection
   const canBulkCancel = selectedMemberships.some(
-    (m) => m.status === 'active' || m.status === 'expired' || m.status === 'scheduled'
+    (m) => m.status === 'active' || m.status === 'expired' || m.status === 'upcoming'
   );
   const canBulkFreeze = selectedMemberships.some((m) => m.status === 'active');
   const canBulkUnfreeze = selectedMemberships.some((m) => m.status === 'frozen');

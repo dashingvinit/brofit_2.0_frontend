@@ -9,7 +9,7 @@ export const SUBSCRIPTION_STATUS_CONFIG: Record<
   MembershipStatus | TrainingStatus,
   { label: string; variant: BadgeVariant }
 > = {
-  scheduled: { label: 'Scheduled', variant: 'outline' },
+  upcoming: { label: 'Upcoming', variant: 'outline' },
   active: { label: 'Active', variant: 'default' },
   expired: { label: 'Expired', variant: 'secondary' },
   cancelled: { label: 'Cancelled', variant: 'destructive' },

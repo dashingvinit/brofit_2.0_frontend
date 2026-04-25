@@ -143,9 +143,9 @@ export function MemberDetailPage() {
   const trainingDuesTotal = duesData?.trainingDuesTotal || 0;
   const hasDues = totalDue > 0;
 
-  const statusOrder: Record<string, number> = { active: 0, scheduled: 1, frozen: 2, expired: 3, cancelled: 4 };
+  const statusOrder: Record<string, number> = { active: 0, upcoming: 1, frozen: 2, expired: 3, cancelled: 4 };
 
-  // Sort: active first, scheduled second, then by endDate desc
+  // Sort: active first, upcoming second, then by endDate desc
   const sortedMemberships = [...memberships].sort((a, b) => {
     const diff = (statusOrder[a.status] ?? 5) - (statusOrder[b.status] ?? 5);
     if (diff !== 0) return diff;

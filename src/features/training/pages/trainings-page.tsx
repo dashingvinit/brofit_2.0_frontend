@@ -62,7 +62,7 @@ const statusOptions: {
   icon: typeof Dumbbell;
 }[] = [
   { value: 'all', label: 'All Trainings', icon: Dumbbell },
-  { value: 'scheduled', label: 'Scheduled', icon: CalendarClock },
+  { value: 'upcoming', label: 'Upcoming', icon: CalendarClock },
   { value: 'active', label: 'Active', icon: CheckCircle2 },
   { value: 'expired', label: 'Expired', icon: Clock },
   { value: 'cancelled', label: 'Cancelled', icon: XCircle },

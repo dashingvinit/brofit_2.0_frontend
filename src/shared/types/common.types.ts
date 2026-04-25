@@ -185,7 +185,7 @@ export interface MemberStats {
 /**
  * Shared status for memberships and trainings.
  */
-export type SubscriptionStatus = "scheduled" | "active" | "expired" | "cancelled" | "frozen";
+export type SubscriptionStatus = "upcoming" | "active" | "expired" | "cancelled" | "frozen";
 
 /** @alias SubscriptionStatus */
 export type MembershipStatus = SubscriptionStatus;
@@ -240,6 +240,7 @@ export interface Membership {
   freezeReason?: string | null;
   freezeStartDate?: string | null;
   freezeEndDate?: string | null;
+  freezeCount: number;
   offerId?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -364,6 +365,10 @@ export interface Training {
   finalPrice: number;
   autoRenew: boolean;
   notes?: string | null;
+  freezeReason?: string | null;
+  freezeStartDate?: string | null;
+  freezeEndDate?: string | null;
+  freezeCount: number;
   offerId?: string | null;
   trainerFixedPayout?: number | null;
   createdAt: string;

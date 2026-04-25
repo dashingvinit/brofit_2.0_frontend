@@ -20,6 +20,8 @@ import {
   Bell,
   BellRing,
   Loader2,
+  Snowflake,
+  CalendarClock,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -31,7 +33,7 @@ import {
 import { Badge } from "@/shared/components/ui/badge";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { useMemberStats } from "@/features/members/hooks/use-members";
-import { useExpiringMemberships } from "@/features/memberships/hooks/use-memberships";
+import { useExpiringMemberships, useMemberships } from "@/features/memberships/hooks/use-memberships";
 import {
   useTrainingStats,
   useExpiringTrainings,
@@ -236,6 +238,9 @@ export function DashboardPage() {
   const { data: attendanceStatsRes, isLoading: isLoadingAttendance } = useAttendanceTodayStats();
   const { data: attendanceInsideRes } = useAttendanceInside();
   const { data: summaryDeltaRes, isLoading: isLoadingSummaryDelta } = useMonthlySummaryWithDelta();
+  // Frozen and upcoming memberships — always need visibility even though they're excluded from "no membership"
+  const { data: frozenMembershipsRes } = useMemberships(1, 50, 'frozen');
+  const { data: upcomingMembershipsRes } = useMemberships(1, 50, 'upcoming');
 
   const memberStats = memberStatsRes?.data;
   const trainingStats = trainingStatsRes?.data;
@@ -273,6 +278,13 @@ export function DashboardPage() {
   const inactiveTotalCount = inactiveSubRes?.pagination?.total ?? 0;
   const duesMembers = duesReportRes?.data ?? [];
   const duesSummary = duesReportRes?.summary ?? { totalMembersWithDues: 0, grandTotal: 0 };
+  const frozenMemberships = frozenMembershipsRes?.data ?? [];
+  const upcomingMemberships = upcomingMembershipsRes?.data ?? [];
+  const pausedItems = [
+    ...frozenMemberships.map((m) => ({ ...m, _tag: 'frozen' as const })),
+    ...upcomingMemberships.map((m) => ({ ...m, _tag: 'upcoming' as const })),
+  ];
+  const pausedCount = frozenMemberships.length + upcomingMemberships.length;
 
   const attendanceStats = attendanceStatsRes?.data;
   const currentlyInside = attendanceInsideRes?.data?.records ?? [];
@@ -545,84 +557,190 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* No Active Membership */}
+        {/* Attention Required — Frozen/Upcoming + No Active Membership */}
         <Card className="overflow-hidden">
-          <CardContent className="p-4">
-            <SectionHeader
-              icon={UserX}
-              iconClass="text-red-600 dark:text-red-400"
-              title="No Active Membership"
-              badge={inactiveTotalCount}
-              action={inactiveTotalCount > 5 ? { label: `View all ${inactiveTotalCount}`, onClick: () => navigate(`${ROUTES.MEMBERS}?noMembership=true`) } : undefined}
-            />
+          <CardContent className="p-4 space-y-4">
 
-            {inactiveSubMembers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center min-h-[120px] gap-2">
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                  <UserCheck className="h-4 w-4 text-muted-foreground" />
+            {/* ── Sub-section 1: Frozen & Upcoming ── */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Snowflake className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                  <h3 className="text-sm font-semibold">Frozen / Upcoming</h3>
+                  {pausedCount > 0 && (
+                    <span className="inline-flex items-center justify-center h-4.5 min-w-[1.125rem] px-1 rounded-full bg-muted text-[10px] font-semibold text-muted-foreground leading-none">
+                      {pausedCount}
+                    </span>
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground text-center">
-                  All active members have a membership
-                </p>
+                {pausedCount > 0 && (
+                  <button
+                    onClick={() => navigate(`${ROUTES.MEMBERSHIPS}`)}
+                    className="text-xs font-medium text-primary/80 hover:text-primary inline-flex items-center gap-1 transition-colors"
+                  >
+                    View all
+                    <ArrowRight className="h-3 w-3" />
+                  </button>
+                )}
               </div>
-            ) : (
-              <div className="divide-y">
-                {inactiveSubMembers.map((member) => {
-                  const expiredAgo = member.lastSubscriptionEnd
-                    ? Math.abs(daysUntil(member.lastSubscriptionEnd))
-                    : null;
-                  return (
-                    <div
-                      key={member.id}
-                      className="flex items-center justify-between py-2.5 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors group"
-                      onClick={() => navigate(`/members/${member.id}`)}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="h-7 w-7 rounded-full bg-red-100 dark:bg-red-950/50 border border-red-200 dark:border-red-900 flex items-center justify-center text-[10px] font-bold text-red-700 dark:text-red-400 shrink-0">
-                          {member.firstName[0]}{member.lastName[0]}
+
+              {pausedCount === 0 ? (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                  <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <Snowflake className="h-3 w-3 text-muted-foreground" />
+                  </div>
+                  No frozen or upcoming memberships
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {pausedItems.slice(0, 4).map((m) => {
+                    const memberName = m.member
+                      ? `${m.member.firstName} ${m.member.lastName}`
+                      : 'Unknown';
+                    const planName = m.planVariant?.planType?.name ?? 'N/A';
+                    const isFrozen = m._tag === 'frozen';
+                    const dateLabel = isFrozen
+                      ? (m.freezeEndDate ? `Until ${new Date(m.freezeEndDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : 'Frozen')
+                      : `Starts ${new Date(m.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`;
+                    return (
+                      <div
+                        key={m.id}
+                        className="flex items-center justify-between py-2 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors"
+                        onClick={() => navigate(`/memberships/${m.id}`, fromState)}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className={cn(
+                            "h-6 w-6 rounded-full flex items-center justify-center shrink-0",
+                            isFrozen
+                              ? "bg-blue-100 dark:bg-blue-950/50"
+                              : "bg-violet-100 dark:bg-violet-950/50"
+                          )}>
+                            {isFrozen
+                              ? <Snowflake className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                              : <CalendarClock className="h-3 w-3 text-violet-600 dark:text-violet-400" />}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{memberName}</p>
+                            <p className="text-xs text-muted-foreground truncate">{planName}</p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{member.firstName} {member.lastName}</p>
-                          <p className="text-xs text-muted-foreground truncate">{member.phone}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                        <span className="text-xs font-medium text-red-600 dark:text-red-400 whitespace-nowrap tabular-nums">
-                          {expiredAgo !== null ? `${expiredAgo}d ago` : "Never"}
+                        <span className={cn(
+                          "text-xs font-semibold whitespace-nowrap tabular-nums shrink-0 ml-2",
+                          isFrozen
+                            ? "text-blue-600 dark:text-blue-400"
+                            : "text-violet-600 dark:text-violet-400"
+                        )}>
+                          {dateLabel}
                         </span>
-                        <button
-                          className="text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity hover:underline whitespace-nowrap"
-                          onClick={(e) => { e.stopPropagation(); navigate(`${ROUTES.CREATE_MEMBERSHIP}?memberId=${member.id}`, fromState); }}
-                        >
-                          + Add
-                        </button>
-                        {member.phone && (
-                          <button
-                            className={cn(
-                              "opacity-0 group-hover:opacity-100 transition-all p-1 rounded-md",
-                              pingState[member.id] === "sent"
-                                ? "opacity-100 text-green-600 dark:text-green-400"
-                                : pingState[member.id] === "error"
-                                ? "opacity-100 text-destructive"
-                                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                            )}
-                            title={pingState[member.id] === "sent" ? "Reminder sent" : pingState[member.id] === "error" ? "Failed to send" : "Send WhatsApp reminder"}
-                            onClick={(e) => handlePing(member.id, "no-subscription", e)}
-                            disabled={pingState[member.id] === "sending" || pingState[member.id] === "sent"}
-                          >
-                            {pingState[member.id] === "sending"
-                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              : pingState[member.id] === "sent"
-                              ? <BellRing className="h-3.5 w-3.5" />
-                              : <Bell className="h-3.5 w-3.5" />}
-                          </button>
-                        )}
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                  {pausedCount > 4 && (
+                    <p className="text-xs text-muted-foreground pt-2 text-center">
+                      +{pausedCount - 4} more —{" "}
+                      <button
+                        className="text-primary/80 hover:text-primary font-medium"
+                        onClick={() => navigate(ROUTES.MEMBERSHIPS)}
+                      >
+                        view all
+                      </button>
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t" />
+
+            {/* ── Sub-section 2: No Active Membership ── */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <UserX className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  <h3 className="text-sm font-semibold">No Membership</h3>
+                  {inactiveTotalCount > 0 && (
+                    <span className="inline-flex items-center justify-center h-4.5 min-w-[1.125rem] px-1 rounded-full bg-muted text-[10px] font-semibold text-muted-foreground leading-none">
+                      {inactiveTotalCount}
+                    </span>
+                  )}
+                </div>
+                {inactiveTotalCount > 4 && (
+                  <button
+                    onClick={() => navigate(`${ROUTES.MEMBERS}?noMembership=true`)}
+                    className="text-xs font-medium text-primary/80 hover:text-primary inline-flex items-center gap-1 transition-colors"
+                  >
+                    View all {inactiveTotalCount}
+                    <ArrowRight className="h-3 w-3" />
+                  </button>
+                )}
               </div>
-            )}
+
+              {inactiveSubMembers.length === 0 ? (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                  <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <UserCheck className="h-3 w-3 text-muted-foreground" />
+                  </div>
+                  All active members have a membership
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {inactiveSubMembers.map((member) => {
+                    const daysDiff = member.lastSubscriptionEnd ? daysUntil(member.lastSubscriptionEnd) : null;
+                    const expiredAgo = daysDiff !== null && daysDiff < 0 ? Math.abs(daysDiff) : null;
+                    return (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between py-2 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors group"
+                        onClick={() => navigate(`/members/${member.id}`)}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="h-6 w-6 rounded-full bg-red-100 dark:bg-red-950/50 border border-red-200 dark:border-red-900 flex items-center justify-center text-[10px] font-bold text-red-700 dark:text-red-400 shrink-0">
+                            {member.firstName[0]}{member.lastName[0]}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{member.firstName} {member.lastName}</p>
+                            <p className="text-xs text-muted-foreground truncate">{member.phone}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          <span className="text-xs font-medium text-red-600 dark:text-red-400 whitespace-nowrap tabular-nums">
+                            {expiredAgo !== null ? `${expiredAgo}d ago` : "Never"}
+                          </span>
+                          <button
+                            className="text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity hover:underline whitespace-nowrap"
+                            onClick={(e) => { e.stopPropagation(); navigate(`${ROUTES.CREATE_MEMBERSHIP}?memberId=${member.id}`, fromState); }}
+                          >
+                            + Add
+                          </button>
+                          {member.phone && (
+                            <button
+                              className={cn(
+                                "opacity-0 group-hover:opacity-100 transition-all p-1 rounded-md",
+                                pingState[member.id] === "sent"
+                                  ? "opacity-100 text-green-600 dark:text-green-400"
+                                  : pingState[member.id] === "error"
+                                  ? "opacity-100 text-destructive"
+                                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                              )}
+                              title={pingState[member.id] === "sent" ? "Reminder sent" : pingState[member.id] === "error" ? "Failed to send" : "Send WhatsApp reminder"}
+                              onClick={(e) => handlePing(member.id, "no-subscription", e)}
+                              disabled={pingState[member.id] === "sending" || pingState[member.id] === "sent"}
+                            >
+                              {pingState[member.id] === "sending"
+                                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                : pingState[member.id] === "sent"
+                                ? <BellRing className="h-3.5 w-3.5" />
+                                : <Bell className="h-3.5 w-3.5" />}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
           </CardContent>
         </Card>
       </div>
