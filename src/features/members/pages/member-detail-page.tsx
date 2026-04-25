@@ -15,6 +15,7 @@ import {
   StickyNote,
   Activity,
   Pencil,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { InlineEditField } from '@/shared/components/inline-edit-field';
@@ -41,13 +42,23 @@ import {
 import { PageHeader } from '@/shared/components/page-header';
 import { ROUTES } from '@/shared/lib/constants';
 import { useFromState } from '@/shared/hooks/use-return-to';
-import { useMember, useUpdateMember } from '../hooks/use-members';
+import { useMember, useUpdateMember, useDeleteMember } from '../hooks/use-members';
 import { useRecentlyViewed } from '../hooks/use-recently-viewed';
 import { useMemberMemberships } from '@/features/memberships/hooks/use-memberships';
 import { useMemberTrainings } from '@/features/training/hooks/use-training';
 import { useMemberDues } from '../hooks/use-member-detail';
 import { useAttendanceMemberHistory } from '@/features/attendance/hooks/use-attendance';
 import { EditMemberDialog } from '../components/edit-member-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/components/ui/alert-dialog';
 import type {
   MembershipStatus,
   TrainingStatus,
@@ -76,6 +87,7 @@ export function MemberDetailPage() {
   const navigate = useNavigate();
   const fromState = useFromState();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data: memberResponse, isLoading: memberLoading } = useMember(id!);
   const { data: membershipsResponse, isLoading: membershipsLoading } =
@@ -85,6 +97,7 @@ export function MemberDetailPage() {
   const { data: duesResponse, isLoading: duesLoading } = useMemberDues(id!);
   const { data: attendanceResponse, isLoading: attendanceLoading } = useAttendanceMemberHistory(id!, 1, 60);
   const updateMember = useUpdateMember();
+  const deleteMember = useDeleteMember();
   const { record: recordRecentlyViewed } = useRecentlyViewed();
 
   const member = memberResponse?.data;
@@ -170,6 +183,15 @@ export function MemberDetailPage() {
     updateMember.mutate({ memberId: member.id, data: { [field]: value } });
   };
 
+  const handleDelete = () => {
+    deleteMember.mutate(member.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        navigate(ROUTES.MEMBERS);
+      },
+    });
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -190,6 +212,14 @@ export function MemberDetailPage() {
             >
               <Pencil className="h-4 w-4 mr-2" />
               Edit
+            </Button>
+            <Button
+              variant="outline"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
             </Button>
           </div>
         }
@@ -699,6 +729,47 @@ export function MemberDetailPage() {
           onOpenChange={setEditDialogOpen}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                This action <span className="font-bold text-destructive">cannot</span> be undone. 
+                This will permanently delete the member <strong>{fullName}</strong> and all associated data.
+              </p>
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20">
+                <p className="font-semibold mb-1">Warning: The following will be removed:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>All memberships they bought</li>
+                  <li>All training sessions and history</li>
+                  <li>All payments they did</li>
+                  <li>All data in the revenue/analytics related to them</li>
+                  <li>Attendance records</li>
+                </ul>
+              </div>
+              <p className="text-muted-foreground text-xs">
+                Only use this for duplicate accounts or garbage data. For regular departures, simply deactivate the member instead.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMember.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={deleteMember.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMember.isPending ? 'Deleting...' : 'Delete Permanently'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

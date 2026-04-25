@@ -59,6 +59,16 @@ import { membersApi } from "../api/members-api";
 import { reportsApi } from "../api/reports-api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRole } from "@/shared/hooks/use-role";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog";
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -164,6 +174,7 @@ export function MembersListPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
 
   const batchUpdate = useBatchUpdateMembers();
   const batchDelete = useBatchDeleteMembers();
@@ -865,11 +876,7 @@ export function MembersListPage() {
                 size="sm"
                 variant="outline"
                 className="h-7 gap-1.5 text-xs text-destructive hover:text-destructive"
-                onClick={() =>
-                  batchDelete.mutate(Array.from(selectedIds), {
-                    onSuccess: clearSelection,
-                  })
-                }
+                onClick={() => setBatchDeleteOpen(true)}
                 disabled={batchDelete.isPending || batchUpdate.isPending}
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -925,6 +932,47 @@ export function MembersListPage() {
           )}
         </>
       )}
+      {/* Batch Delete Confirmation */}
+      <AlertDialog open={batchDeleteOpen} onOpenChange={setBatchDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} Members Permanently?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                This action <span className="font-bold text-destructive">cannot</span> be undone. 
+                You are about to permanently delete <strong>{selectedIds.size}</strong> selected members and ALL their associated data.
+              </p>
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20">
+                <p className="font-semibold mb-1">For each member, the following will be removed:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>All memberships and trainings</li>
+                  <li>All payment records and history</li>
+                  <li>Analytics and revenue data</li>
+                  <li>Attendance records</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={batchDelete.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                batchDelete.mutate(Array.from(selectedIds), {
+                  onSuccess: () => {
+                    clearSelection();
+                    setBatchDeleteOpen(false);
+                  },
+                });
+              }}
+              disabled={batchDelete.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {batchDelete.isPending ? "Deleting..." : "Delete Permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

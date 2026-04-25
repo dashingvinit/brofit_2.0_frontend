@@ -130,30 +130,14 @@ export function useBatchDeleteMembers() {
   });
 }
 
-/**
- * Hook to delete a member (soft delete) with 5-second undo toast
- */
 export function useDeleteMember() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (member: Member) => membersApi.deleteMember(member.id),
-    onSuccess: (_, member) => {
+    mutationFn: (memberId: string) => membersApi.deleteMember(memberId),
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['members'] });
-      const fullName = `${member.firstName} ${member.lastName}`;
-      toast(`${fullName} deleted`, {
-        description: 'Member has been soft-deleted.',
-        duration: 5000,
-        action: {
-          label: 'Undo',
-          onClick: () => {
-            membersApi.updateMember(member.id, { isActive: true }).then(() => {
-              queryClient.invalidateQueries({ queryKey: ['members'] });
-              toast.success(`${fullName} restored`);
-            });
-          },
-        },
-      });
+      toast.success(response.message || 'Member permanently deleted');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete member');
