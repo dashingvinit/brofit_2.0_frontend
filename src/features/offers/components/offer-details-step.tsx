@@ -313,7 +313,7 @@ export function OfferDetailsStep({ form }: OfferDetailsStepProps) {
       <div className="space-y-3">
         <FieldGroup>
           <FieldRow
-            label="Referrer reward"
+            label="Referral reward"
             hint="Credited to the referrer. Apply manually on their next renewal."
           >
             <div className="relative w-36">

@@ -28,7 +28,8 @@ interface MembershipPaymentStepProps {
   trainingPlanTypes: PlanType[] | undefined;
   trainingPlanTypeId: string;
   trainingFinalPrice: number;
-  discountOffers: Offer[];
+  offers: Offer[];
+  members: Member[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   register: UseFormRegister<any>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,7 +77,8 @@ export function MembershipPaymentStep({
   trainingPlanTypes,
   trainingPlanTypeId,
   trainingFinalPrice,
-  discountOffers,
+  offers,
+  members,
   register,
   watch,
   setValue,
@@ -84,6 +86,9 @@ export function MembershipPaymentStep({
 }: MembershipPaymentStepProps) {
   const collectPayment = watch('collectPayment');
   const offerId = watch('offerId') || '';
+  const referredById = watch('referredById') || '';
+
+  const [referrerSearch, setReferrerSearch] = useState('');
 
   const membershipBase = selectedVariant?.price ?? 0;
   const trainingBase = selectedTrainingVariant?.price ?? 0;
@@ -94,27 +99,40 @@ export function MembershipPaymentStep({
   const totalDiscount = membershipDiscount + trainingDiscount;
   const totalDue = Math.max(0, subtotal - totalDiscount);
 
-  // Filter offers by context, gender, and plan variant match
-  const visibleOffers = discountOffers.filter((o) => {
+  // Filter discount offers by purchase context. Referral rewards only need to be active.
+  const visibleOffers = offers.filter((o) => {
+    const isReferralOffer = o.type === 'referral';
+
     // Hide training-only offers when no training is selected
-    if (!addTraining && o.appliesTo === 'training') return false;
+    if (!isReferralOffer && !addTraining && o.appliesTo === 'training') return false;
+
+    // Only show offers that can affect this membership flow.
+    if (
+      !isReferralOffer &&
+      o.discountValue == null &&
+      o.targetPrice == null &&
+      o.trainerFixedPayout == null &&
+      o.trainerSplitPercent == null
+    ) {
+      return false;
+    }
 
     // Gender filter
-    if (o.targetGender && selectedMember?.gender !== o.targetGender) return false;
+    if (!isReferralOffer && o.targetGender && selectedMember?.gender !== o.targetGender) return false;
 
     // Plan variant match: if offer requires a specific membership variant, it must match
-    if (o.membershipPlanVariantId && o.membershipPlanVariantId !== selectedVariant?.id) return false;
+    if (!isReferralOffer && o.membershipPlanVariantId && o.membershipPlanVariantId !== selectedVariant?.id) return false;
 
     // For training variant: only block if training IS added but wrong variant selected.
     // If training isn't added yet, still show combo offers so user knows they exist.
-    if (o.trainingPlanVariantId && addTraining && o.trainingPlanVariantId !== selectedTrainingVariant?.id) return false;
+    if (!isReferralOffer && o.trainingPlanVariantId && addTraining && o.trainingPlanVariantId !== selectedTrainingVariant?.id) return false;
 
     return true;
   });
 
   // Combo offers visible but training not yet added — show as a hint
   const comboOffersNeedingTraining = visibleOffers.filter(
-    (o) => o.appliesTo === 'both' && !addTraining
+    (o) => o.type !== 'referral' && o.appliesTo === 'both' && !addTraining
   );
 
   const selectedOffer = visibleOffers.find((o) => o.id === offerId);
@@ -192,6 +210,9 @@ export function MembershipPaymentStep({
         setValue('discountAmount', Math.min(computed, membershipBase));
         setValue('trainingDiscountAmount', 0);
       }
+    } else {
+      setValue('discountAmount', 0);
+      setValue('trainingDiscountAmount', 0);
     }
 
     // Set trainer payout override from offer
@@ -205,8 +226,22 @@ export function MembershipPaymentStep({
     setValue('discountAmount', 0);
     setValue('trainingDiscountAmount', 0);
     setValue('trainerFixedPayout', null);
+    setValue('referredById', '');
+    setReferrerSearch('');
     setManualInput(0);
   }
+
+  const filteredReferrers = members.filter((m) => {
+    if (m.id === selectedMember?.id) return false; // Cannot refer yourself
+    if (!referrerSearch.trim()) return true;
+    const q = referrerSearch.toLowerCase();
+    return (
+      m.firstName.toLowerCase().includes(q) ||
+      m.lastName.toLowerCase().includes(q) ||
+      m.phone.includes(q) ||
+      m.email.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="space-y-6 px-6 pb-6">
@@ -286,7 +321,7 @@ export function MembershipPaymentStep({
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                {visibleOffers.filter((o) => !(o.appliesTo === 'both' && !addTraining)).length > 0 ? (
+                {visibleOffers.filter((o) => !(o.type !== 'referral' && o.appliesTo === 'both' && !addTraining)).length > 0 ? (
                   <Select value="none" onValueChange={handleOfferChange}>
                     <SelectTrigger className="h-8 text-sm border-dashed flex-1">
                       <SelectValue placeholder="Apply offer…" />
@@ -294,17 +329,22 @@ export function MembershipPaymentStep({
                     <SelectContent>
                       <SelectItem value="none">No offer</SelectItem>
                       {visibleOffers
-                        .filter((o) => !(o.appliesTo === 'both' && !addTraining))
+                        .filter((o) => !(o.type !== 'referral' && o.appliesTo === 'both' && !addTraining))
                         .map((o) => (
                           <SelectItem key={o.id} value={o.id}>
                             {o.title}
-                            {o.targetPrice != null
+                            {o.type === 'referral'
+                              ? o.rewardAmount != null
+                                ? ` — ₹${o.rewardAmount.toLocaleString()} reward`
+                                : ' — referral reward'
+                              : o.targetPrice != null
                               ? ` — ₹${o.targetPrice.toLocaleString()} total`
                               : o.discountType === 'percentage'
                               ? ` — ${o.discountValue}% off`
                               : ` — ₹${o.discountValue?.toLocaleString()} off`}
-                            {o.appliesTo === 'both' ? ' (combo)' : o.appliesTo === 'training' ? ' (training)' : ''}
-                            {o.targetGender ? ` · ${o.targetGender}` : ''}
+                            {o.type !== 'referral' && o.appliesTo === 'both' ? ' (combo)' : ''}
+                            {o.type !== 'referral' && o.appliesTo === 'training' ? ' (training)' : ''}
+                            {o.type !== 'referral' && o.targetGender ? ` · ${o.targetGender}` : ''}
                             {o.code ? ` · ${o.code}` : ''}
                           </SelectItem>
                         ))}
@@ -359,7 +399,10 @@ export function MembershipPaymentStep({
                   <span className="font-medium text-emerald-600 dark:text-emerald-400 truncate">
                     {selectedOffer.title}
                   </span>
-                  {selectedOffer.appliesTo === 'both' && (
+                  {selectedOffer.type === 'referral' && (
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">referral</Badge>
+                  )}
+                  {selectedOffer.type !== 'referral' && selectedOffer.appliesTo === 'both' && (
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">combo</Badge>
                   )}
                   {selectedOffer.code && (
@@ -367,9 +410,17 @@ export function MembershipPaymentStep({
                   )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <span className="font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
-                    −₹{totalDiscount.toLocaleString()}
-                  </span>
+                  {selectedOffer.type === 'referral' ? (
+                    <span className="font-medium text-blue-600 dark:text-blue-400 tabular-nums">
+                      {selectedOffer.rewardAmount != null
+                        ? `₹${selectedOffer.rewardAmount.toLocaleString()} reward`
+                        : 'Reward'}
+                    </span>
+                  ) : (
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
+                      −₹{totalDiscount.toLocaleString()}
+                    </span>
+                  )}
                   <Button
                     type="button"
                     variant="ghost"
@@ -384,7 +435,7 @@ export function MembershipPaymentStep({
               </div>
 
               {/* Per-item split — only for combo offers */}
-              {selectedOffer.appliesTo === 'both' && addTraining && (
+              {selectedOffer.appliesTo === 'both' && selectedOffer.type !== 'referral' && addTraining && (
                 <div className="ml-5 space-y-0.5">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>↳ Membership</span>
@@ -394,6 +445,78 @@ export function MembershipPaymentStep({
                     <span>↳ Training</span>
                     <span className="tabular-nums">−₹{trainingDiscount.toLocaleString()}</span>
                   </div>
+                </div>
+              )}
+
+              {/* Referrer Selection for Referral Offers */}
+              {selectedOffer.type === 'referral' && (
+                <div className="mt-4 pt-4 border-t space-y-3">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <Label className="text-sm font-medium">Who referred them?</Label>
+                  </div>
+                  
+                  {!referredById ? (
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Search referrer by name or phone..."
+                        value={referrerSearch}
+                        onChange={(e) => setReferrerSearch(e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                      <div className="grid gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+                        {filteredReferrers.length === 0 ? (
+                          <p className="text-xs text-muted-foreground text-center py-2">No members found.</p>
+                        ) : (
+                          filteredReferrers.map((m) => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => setValue('referredById', m.id)}
+                              className="flex items-center justify-between text-left p-2 rounded-md hover:bg-muted border border-transparent transition-colors text-sm"
+                            >
+                              <div>
+                                <p className="font-medium">{m.firstName} {m.lastName}</p>
+                                <p className="text-xs text-muted-foreground">{m.phone} · {m.email}</p>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-2 rounded-md bg-muted/50 border">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-xs shrink-0">
+                          {members.find((m) => m.id === referredById)?.firstName[0]}
+                          {members.find((m) => m.id === referredById)?.lastName[0]}
+                        </div>
+                        <div className="truncate">
+                          <p className="text-sm font-medium truncate">
+                            {members.find((m) => m.id === referredById)?.firstName} {members.find((m) => m.id === referredById)?.lastName}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {members.find((m) => m.id === referredById)?.phone}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+                        onClick={() => {
+                          setValue('referredById', '');
+                          setReferrerSearch('');
+                        }}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
+                  {errors?.referredById && (
+                    <p className="text-xs text-destructive">{errors.referredById.message}</p>
+                  )}
                 </div>
               )}
             </div>

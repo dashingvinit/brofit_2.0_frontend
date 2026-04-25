@@ -133,7 +133,7 @@ const OFFER_TYPES: {
   },
   {
     value: "referral",
-    label: "Referral",
+    label: "Refer & Earn",
     description: "Refer a friend & earn reward",
     icon: Users,
     colorClass: "text-blue-600 dark:text-blue-400",
@@ -450,7 +450,7 @@ export function OfferForm({ offer, onSuccess, onCancel }: OfferFormProps) {
                     type === "event"
                       ? "e.g., Summer Fitness Camp"
                       : type === "referral"
-                      ? "e.g., Refer a Friend"
+                      ? "e.g., Refer & Earn"
                       : "e.g., 10% off Annual Memberships"
                   }
                   {...register("title")}

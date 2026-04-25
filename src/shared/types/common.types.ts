@@ -266,6 +266,7 @@ export interface CreateMembershipData {
   paymentReference?: string;
   paymentNotes?: string;
   paymentDate?: string;
+  referredById?: string;
 }
 
 /**

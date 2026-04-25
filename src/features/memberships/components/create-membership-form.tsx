@@ -43,6 +43,7 @@ const createMembershipSchema = z.object({
   trainingDiscountAmount: z.coerce.number().min(0).default(0),
   trainerFixedPayout: z.coerce.number().min(0).optional().nullable(),
   trainingNotes: z.string().optional(),
+  referredById: z.string().optional(),
 });
 
 type CreateMembershipFormData = z.infer<typeof createMembershipSchema>;
@@ -74,10 +75,7 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
   const createMembership = useCreateMembership();
   const createTraining = useCreateTraining();
 
-  // Include all active offers that can apply discounts (any type with discountValue/targetPrice, or combo packages)
-  const discountOffers = (activeOffers ?? []).filter(
-    (o) => o.discountValue != null || o.targetPrice != null
-  );
+  const membershipOffers = activeOffers ?? [];
   const trainers = trainersResponse?.data ?? [];
   const members = membersResponse?.data ?? [];
 
@@ -94,6 +92,7 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
       trainerId: '',
       trainingDiscountAmount: 0,
       paymentDate: new Date().toISOString().split('T')[0],
+      referredById: '',
     },
   });
 
@@ -190,6 +189,7 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
       // Clear offer if it was combo-only
       form.setValue('offerId', '');
       form.setValue('discountAmount', 0);
+      form.setValue('referredById', '');
     }
   };
 
@@ -224,6 +224,7 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
       notes: data.notes,
       // Pass training variant ID so backend can validate combo offers
       trainingPlanVariantId: data.addTraining ? data.trainingPlanVariantId : undefined,
+      referredById: data.referredById || undefined,
     };
 
     if (membershipPaymentAmount && data.paymentMethod) {
@@ -372,7 +373,8 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
             trainingPlanTypes={trainingPlanTypes}
             trainingPlanTypeId={trainingPlanTypeId}
             trainingFinalPrice={trainingFinalPrice}
-            discountOffers={discountOffers}
+            offers={membershipOffers}
+            members={members}
             register={form.register}
             watch={form.watch}
             setValue={form.setValue}
