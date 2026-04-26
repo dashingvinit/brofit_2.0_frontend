@@ -66,6 +66,7 @@ import {
 } from '../hooks/use-training';
 import { RecordPaymentDialog } from '@/shared/components/record-payment-dialog';
 import { RenewTrainingDialog } from '../components/renew-training-dialog';
+import { EditTrainingDialog } from '../components/edit-training-dialog';
 import { ROUTES } from '@/shared/lib/constants';
 import { useReturnTo } from '@/shared/hooks/use-return-to';
 import type {
@@ -113,6 +114,7 @@ export function TrainingDetailPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [freezeDialogOpen, setFreezeDialogOpen] = useState(false);
   const [unfreezeDialogOpen, setUnfreezeDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
   const [extendEndDate, setExtendEndDate] = useState(true);
@@ -215,6 +217,10 @@ export function TrainingDetailPage() {
                 <DropdownMenuContent align="end">
                   {isEditable && (
                     <>
+                      <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
+                        <User className="h-4 w-4 mr-2" />
+                        Edit Training
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setRenewDialogOpen(true)}>
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Renew Training
@@ -645,6 +651,15 @@ export function TrainingDetailPage() {
         <RenewTrainingDialog
           open={renewDialogOpen}
           onOpenChange={setRenewDialogOpen}
+          training={training}
+        />
+      )}
+
+      {/* Edit Training Dialog */}
+      {training && (
+        <EditTrainingDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
           training={training}
         />
       )}

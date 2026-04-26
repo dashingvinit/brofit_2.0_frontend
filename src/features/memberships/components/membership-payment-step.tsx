@@ -37,6 +37,7 @@ interface MembershipPaymentStepProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setValue: UseFormSetValue<any>;
   errors?: Record<string, { message?: string }>;
+  mode?: 'membership' | 'training';
 }
 
 /** Proportionally splits a flat discount across two items.
@@ -83,6 +84,7 @@ export function MembershipPaymentStep({
   watch,
   setValue,
   errors = {},
+  mode = 'membership',
 }: MembershipPaymentStepProps) {
   const collectPayment = watch('collectPayment');
   const offerId = watch('offerId') || '';
@@ -103,10 +105,20 @@ export function MembershipPaymentStep({
   const visibleOffers = offers.filter((o) => {
     const isReferralOffer = o.type === 'referral';
 
-    // Hide training-only offers when no training is selected
-    if (!isReferralOffer && !addTraining && o.appliesTo === 'training') return false;
+    if (mode === 'training') {
+      if (isReferralOffer) return false;
+      if (o.appliesTo === 'membership') return false;
+      if (o.trainingPlanVariantId && o.trainingPlanVariantId !== selectedVariant?.id) return false;
+    } else {
+      // Hide training-only offers when no training is selected
+      if (!isReferralOffer && !addTraining && o.appliesTo === 'training') return false;
+      // Plan variant match: if offer requires a specific membership variant, it must match
+      if (!isReferralOffer && o.membershipPlanVariantId && o.membershipPlanVariantId !== selectedVariant?.id) return false;
+      // For training variant: only block if training IS added but wrong variant selected.
+      if (!isReferralOffer && o.trainingPlanVariantId && addTraining && o.trainingPlanVariantId !== selectedTrainingVariant?.id) return false;
+    }
 
-    // Only show offers that can affect this membership flow.
+    // Only show offers that can affect this flow.
     if (
       !isReferralOffer &&
       o.discountValue == null &&
@@ -120,19 +132,12 @@ export function MembershipPaymentStep({
     // Gender filter
     if (!isReferralOffer && o.targetGender && selectedMember?.gender !== o.targetGender) return false;
 
-    // Plan variant match: if offer requires a specific membership variant, it must match
-    if (!isReferralOffer && o.membershipPlanVariantId && o.membershipPlanVariantId !== selectedVariant?.id) return false;
-
-    // For training variant: only block if training IS added but wrong variant selected.
-    // If training isn't added yet, still show combo offers so user knows they exist.
-    if (!isReferralOffer && o.trainingPlanVariantId && addTraining && o.trainingPlanVariantId !== selectedTrainingVariant?.id) return false;
-
     return true;
   });
 
   // Combo offers visible but training not yet added — show as a hint
   const comboOffersNeedingTraining = visibleOffers.filter(
-    (o) => o.type !== 'referral' && o.appliesTo === 'both' && !addTraining
+    (o) => o.type !== 'referral' && o.appliesTo === 'both' && !addTraining && mode === 'membership'
   );
 
   const selectedOffer = visibleOffers.find((o) => o.id === offerId);
@@ -438,7 +443,7 @@ export function MembershipPaymentStep({
               {selectedOffer.appliesTo === 'both' && selectedOffer.type !== 'referral' && addTraining && (
                 <div className="ml-5 space-y-0.5">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>↳ Membership</span>
+                    <span>↳ {mode === 'training' ? 'Primary' : 'Membership'}</span>
                     <span className="tabular-nums">−₹{membershipDiscount.toLocaleString()}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">

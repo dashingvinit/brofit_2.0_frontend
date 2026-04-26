@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { EmptyState } from '@/shared/components/empty-state';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { EmptyState } from "@/shared/components/empty-state";
 import {
   Plus,
   Dumbbell,
@@ -16,17 +16,17 @@ import {
   Search,
   X,
   RefreshCw,
-} from 'lucide-react';
-import { Button } from '@/shared/components/ui/button';
-import { Input } from '@/shared/components/ui/input';
+} from "lucide-react";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@/shared/components/ui/card';
-import { Badge } from '@/shared/components/ui/badge';
-import { Skeleton } from '@/shared/components/ui/skeleton';
+} from "@/shared/components/ui/card";
+import { Badge } from "@/shared/components/ui/badge";
+import { Skeleton } from "@/shared/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +35,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/shared/components/ui/dropdown-menu';
+} from "@/shared/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -43,16 +43,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/shared/components/ui/table';
-import { PageHeader } from '@/shared/components/page-header';
-import { useTrainings, useTrainingStats } from '../hooks/use-training';
-import { RenewTrainingDialog } from '../components/renew-training-dialog';
-import { ROUTES } from '@/shared/lib/constants';
-import { useFromState } from '@/shared/hooks/use-return-to';
-import type { Training, TrainingStatus } from '@/shared/types/common.types';
-import { SUBSCRIPTION_STATUS_CONFIG } from '@/shared/lib/constants';
+} from "@/shared/components/ui/table";
+import { PageHeader } from "@/shared/components/page-header";
+import { useTrainings, useTrainingStats } from "../hooks/use-training";
+import { RenewTrainingDialog } from "../components/renew-training-dialog";
+import { EditTrainingDialog } from "../components/edit-training-dialog";
+import { ROUTES } from "@/shared/lib/constants";
+import { useFromState } from "@/shared/hooks/use-return-to";
+import type { Training, TrainingStatus } from "@/shared/types/common.types";
+import { SUBSCRIPTION_STATUS_CONFIG } from "@/shared/lib/constants";
 
-type StatusFilter = 'all' | TrainingStatus;
+type StatusFilter = "all" | TrainingStatus;
 
 const statusConfig = SUBSCRIPTION_STATUS_CONFIG;
 
@@ -61,54 +62,54 @@ const statusOptions: {
   label: string;
   icon: typeof Dumbbell;
 }[] = [
-  { value: 'all', label: 'All Trainings', icon: Dumbbell },
-  { value: 'upcoming', label: 'Upcoming', icon: CalendarClock },
-  { value: 'active', label: 'Active', icon: CheckCircle2 },
-  { value: 'expired', label: 'Expired', icon: Clock },
-  { value: 'cancelled', label: 'Cancelled', icon: XCircle },
-  { value: 'frozen', label: 'Frozen', icon: Snowflake },
+  { value: "all", label: "All Trainings", icon: Dumbbell },
+  { value: "upcoming", label: "Upcoming", icon: CalendarClock },
+  { value: "active", label: "Active", icon: CheckCircle2 },
+  { value: "expired", label: "Expired", icon: Clock },
+  { value: "cancelled", label: "Cancelled", icon: XCircle },
+  { value: "frozen", label: "Frozen", icon: Snowflake },
 ];
 
 const statCards = [
   {
-    key: 'total' as const,
-    label: 'Total Trainings',
-    shortLabel: 'Total',
+    key: "total" as const,
+    label: "Total Trainings",
+    shortLabel: "Total",
     icon: Dumbbell,
-    colorClass: 'text-blue-600 dark:text-blue-400',
-    bgClass: 'bg-blue-50 dark:bg-blue-950/50',
+    colorClass: "text-blue-600 dark:text-blue-400",
+    bgClass: "bg-blue-50 dark:bg-blue-950/50",
   },
   {
-    key: 'active' as const,
-    label: 'Active Trainings',
-    shortLabel: 'Active',
+    key: "active" as const,
+    label: "Active Trainings",
+    shortLabel: "Active",
     icon: CheckCircle2,
-    colorClass: 'text-emerald-600 dark:text-emerald-400',
-    bgClass: 'bg-emerald-50 dark:bg-emerald-950/50',
+    colorClass: "text-emerald-600 dark:text-emerald-400",
+    bgClass: "bg-emerald-50 dark:bg-emerald-950/50",
   },
   {
-    key: 'expired' as const,
-    label: 'Expired',
-    shortLabel: 'Expired',
+    key: "expired" as const,
+    label: "Expired",
+    shortLabel: "Expired",
     icon: Clock,
-    colorClass: 'text-amber-600 dark:text-amber-400',
-    bgClass: 'bg-amber-50 dark:bg-amber-950/50',
+    colorClass: "text-amber-600 dark:text-amber-400",
+    bgClass: "bg-amber-50 dark:bg-amber-950/50",
   },
   {
-    key: 'newThisMonth' as const,
-    label: 'New This Month',
-    shortLabel: 'New',
+    key: "newThisMonth" as const,
+    label: "New This Month",
+    shortLabel: "New",
     icon: TrendingUp,
-    colorClass: 'text-violet-600 dark:text-violet-400',
-    bgClass: 'bg-violet-50 dark:bg-violet-950/50',
+    colorClass: "text-violet-600 dark:text-violet-400",
+    bgClass: "bg-violet-50 dark:bg-violet-950/50",
   },
 ];
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
+  return new Date(dateStr).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
   });
 }
 
@@ -116,46 +117,77 @@ function TrainingRow({
   training,
   onClick,
   onRenew,
+  onEdit,
 }: {
   training: Training;
   onClick: () => void;
   onRenew: (t: Training) => void;
+  onEdit: (t: Training) => void;
 }) {
   const status = statusConfig[training.status];
   const memberName = training.member
     ? `${training.member.firstName} ${training.member.lastName}`
-    : 'Unknown';
-  const planName = training.planVariant?.planType?.name ?? 'N/A';
-  const durationLabel = training.planVariant?.durationLabel ?? '';
-  const canRenew = training.status === 'expired' || training.status === 'cancelled';
+    : "Unknown";
+  const planName = training.planVariant?.planType?.name ?? "N/A";
+  const durationLabel = training.planVariant?.durationLabel ?? "";
+  const canRenew =
+    training.status === "expired" || training.status === "cancelled";
 
   return (
     <TableRow className="hover:bg-muted/50">
-      <TableCell className="font-medium cursor-pointer" onClick={onClick}>{memberName}</TableCell>
+      <TableCell className="font-medium cursor-pointer" onClick={onClick}>
+        {memberName}
+      </TableCell>
       <TableCell className="cursor-pointer" onClick={onClick}>
         <div>
           <p className="font-medium">{planName}</p>
           <p className="text-xs text-muted-foreground">{durationLabel}</p>
         </div>
       </TableCell>
-      <TableCell className="cursor-pointer" onClick={onClick}>{training.trainer?.name ?? '—'}</TableCell>
+      <TableCell className="cursor-pointer" onClick={onClick}>
+        {training.trainer?.name ?? "—"}
+      </TableCell>
       <TableCell className="cursor-pointer" onClick={onClick}>
         <Badge variant={status.variant}>{status.label}</Badge>
       </TableCell>
-      <TableCell className="hidden md:table-cell cursor-pointer" onClick={onClick}>{formatDate(training.startDate)}</TableCell>
-      <TableCell className="hidden md:table-cell cursor-pointer" onClick={onClick}>{formatDate(training.endDate)}</TableCell>
+      <TableCell
+        className="hidden md:table-cell cursor-pointer"
+        onClick={onClick}
+      >
+        {formatDate(training.startDate)}
+      </TableCell>
+      <TableCell
+        className="hidden md:table-cell cursor-pointer"
+        onClick={onClick}
+      >
+        {formatDate(training.endDate)}
+      </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-2">
           <span className="inline-flex items-center font-medium">
             <IndianRupee className="h-3 w-3" />
             {training.finalPrice.toLocaleString()}
           </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(training);
+            }}
+          >
+            Edit
+          </Button>
           {canRenew && (
             <Button
               size="sm"
               variant="outline"
               className="h-7 px-2 text-xs"
-              onClick={(e) => { e.stopPropagation(); onRenew(training); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRenew(training);
+              }}
             >
               <RefreshCw className="h-3 w-3 mr-1" />
               Renew
@@ -171,36 +203,45 @@ function TrainingCard({
   training,
   onClick,
   onRenew,
+  onEdit,
 }: {
   training: Training;
   onClick: () => void;
   onRenew: (t: Training) => void;
+  onEdit: (t: Training) => void;
 }) {
   const status = statusConfig[training.status];
   const memberName = training.member
     ? `${training.member.firstName} ${training.member.lastName}`
-    : 'Unknown';
-  const planName = training.planVariant?.planType?.name ?? 'N/A';
-  const durationLabel = training.planVariant?.durationLabel ?? '';
-  const canRenew = training.status === 'expired' || training.status === 'cancelled';
+    : "Unknown";
+  const planName = training.planVariant?.planType?.name ?? "N/A";
+  const durationLabel = training.planVariant?.durationLabel ?? "";
+  const canRenew =
+    training.status === "expired" || training.status === "cancelled";
 
   return (
     <Card className="transition-shadow hover:shadow-md">
       <CardContent className="p-4">
-        <div className="flex items-start justify-between cursor-pointer" onClick={onClick}>
+        <div
+          className="flex items-start justify-between cursor-pointer"
+          onClick={onClick}
+        >
           <div className="space-y-1">
             <p className="font-semibold">{memberName}</p>
             <p className="text-sm text-muted-foreground">
               {planName} - {durationLabel}
             </p>
             <p className="text-xs text-muted-foreground">
-              Trainer: {training.trainer?.name ?? '—'}
+              Trainer: {training.trainer?.name ?? "—"}
             </p>
           </div>
           <Badge variant={status.variant}>{status.label}</Badge>
         </div>
         <div className="mt-3 flex items-center justify-between text-sm">
-          <div className="flex items-center gap-1 text-muted-foreground cursor-pointer" onClick={onClick}>
+          <div
+            className="flex items-center gap-1 text-muted-foreground cursor-pointer"
+            onClick={onClick}
+          >
             <CalendarDays className="h-3.5 w-3.5" />
             {formatDate(training.startDate)} - {formatDate(training.endDate)}
           </div>
@@ -209,12 +250,26 @@ function TrainingCard({
               <IndianRupee className="h-3 w-3" />
               {training.finalPrice.toLocaleString()}
             </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(training);
+              }}
+            >
+              Edit
+            </Button>
             {canRenew && (
               <Button
                 size="sm"
                 variant="outline"
                 className="h-7 px-2 text-xs"
-                onClick={() => onRenew(training)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRenew(training);
+                }}
               >
                 <RefreshCw className="h-3 w-3 mr-1" />
                 Renew
@@ -230,9 +285,10 @@ function TrainingCard({
 export function TrainingsPage() {
   const navigate = useNavigate();
   const fromState = useFromState();
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [renewTraining, setRenewTraining] = useState<Training | null>(null);
+  const [editTraining, setEditTraining] = useState<Training | null>(null);
   const { data: trainingsResponse, isLoading } = useTrainings();
   const { data: statsResponse, isLoading: isLoadingStats } = useTrainingStats();
 
@@ -241,14 +297,14 @@ export function TrainingsPage() {
 
   const searchLower = searchQuery.toLowerCase();
   const trainings = allTrainings.filter((t) => {
-    const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || t.status === statusFilter;
     if (!matchesStatus) return false;
     if (!searchQuery) return true;
     const memberName = t.member
       ? `${t.member.firstName} ${t.member.lastName}`.toLowerCase()
-      : '';
-    const planName = (t.planVariant?.planType?.name ?? '').toLowerCase();
-    const trainerName = (t.trainer?.name ?? '').toLowerCase();
+      : "";
+    const planName = (t.planVariant?.planType?.name ?? "").toLowerCase();
+    const trainerName = (t.trainer?.name ?? "").toLowerCase();
     return (
       memberName.includes(searchLower) ||
       planName.includes(searchLower) ||
@@ -256,9 +312,9 @@ export function TrainingsPage() {
     );
   });
 
-  const hasActiveFilters = statusFilter !== 'all' || !!searchQuery;
+  const hasActiveFilters = statusFilter !== "all" || !!searchQuery;
   const filterLabel =
-    statusOptions.find((o) => o.value === statusFilter)?.label ?? 'Filter';
+    statusOptions.find((o) => o.value === statusFilter)?.label ?? "Filter";
 
   return (
     <div className="space-y-4">
@@ -301,10 +357,17 @@ export function TrainingsPage() {
             ))
           : stats
             ? statCards.map(
-                ({ key, label, shortLabel, icon: Icon, colorClass, bgClass }) => {
+                ({
+                  key,
+                  label,
+                  shortLabel,
+                  icon: Icon,
+                  colorClass,
+                  bgClass,
+                }) => {
                   const value = stats[key];
                   const percentage =
-                    stats.total > 0 && key !== 'total' && key !== 'newThisMonth'
+                    stats.total > 0 && key !== "total" && key !== "newThisMonth"
                       ? Math.round((value / stats.total) * 100)
                       : null;
 
@@ -346,7 +409,7 @@ export function TrainingsPage() {
                               {percentage}% of total
                             </p>
                           )}
-                          {key === 'newThisMonth' && (
+                          {key === "newThisMonth" && (
                             <p className="text-xs text-muted-foreground mt-1">
                               Created this month
                             </p>
@@ -373,7 +436,7 @@ export function TrainingsPage() {
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery('')}
+              onClick={() => setSearchQuery("")}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="h-3.5 w-3.5" />
@@ -383,16 +446,12 @@ export function TrainingsPage() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 gap-2 shrink-0"
-            >
+            <Button variant="outline" size="sm" className="h-9 gap-2 shrink-0">
               <SlidersHorizontal className="h-4 w-4" />
               <span className="hidden sm:inline">
-                {statusFilter === 'all' ? 'Filter' : filterLabel}
+                {statusFilter === "all" ? "Filter" : filterLabel}
               </span>
-              {statusFilter !== 'all' && (
+              {statusFilter !== "all" && (
                 <Badge
                   variant="secondary"
                   className="h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold"
@@ -429,8 +488,8 @@ export function TrainingsPage() {
             size="sm"
             className="h-9 text-xs text-muted-foreground shrink-0"
             onClick={() => {
-              setSearchQuery('');
-              setStatusFilter('all');
+              setSearchQuery("");
+              setStatusFilter("all");
             }}
           >
             Reset
@@ -439,8 +498,10 @@ export function TrainingsPage() {
 
         {!isLoading && (
           <p className="text-sm text-muted-foreground ml-auto hidden sm:block tabular-nums">
-            <span className="font-medium text-foreground">{trainings.length}</span>{' '}
-            {trainings.length === 1 ? 'training' : 'trainings'}
+            <span className="font-medium text-foreground">
+              {trainings.length}
+            </span>{" "}
+            {trainings.length === 1 ? "training" : "trainings"}
           </p>
         )}
       </div>
@@ -457,18 +518,34 @@ export function TrainingsPage() {
           <CardContent className="p-0">
             <EmptyState
               icon={<Dumbbell className="h-8 w-8 text-muted-foreground" />}
-              title={hasActiveFilters ? 'No trainings match your filters' : 'No trainings yet'}
-              description={hasActiveFilters ? 'Try adjusting your search or filter criteria.' : 'Create a training to assign a trainer and plan to a member.'}
-              action={hasActiveFilters ? (
-                <Button variant="outline" onClick={() => { setSearchQuery(''); setStatusFilter('all'); }}>
-                  Clear Filters
-                </Button>
-              ) : (
-                <Button onClick={() => navigate(ROUTES.CREATE_TRAINING)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Training
-                </Button>
-              )}
+              title={
+                hasActiveFilters
+                  ? "No trainings match your filters"
+                  : "No trainings yet"
+              }
+              description={
+                hasActiveFilters
+                  ? "Try adjusting your search or filter criteria."
+                  : "Create a training to assign a trainer and plan to a member."
+              }
+              action={
+                hasActiveFilters ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setStatusFilter("all");
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                ) : (
+                  <Button onClick={() => navigate(ROUTES.CREATE_TRAINING)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create First Training
+                  </Button>
+                )
+              }
             />
           </CardContent>
         </Card>
@@ -494,8 +571,11 @@ export function TrainingsPage() {
                     <TrainingRow
                       key={training.id}
                       training={training}
-                      onClick={() => navigate(`/trainings/${training.id}`, fromState)}
+                      onClick={() =>
+                        navigate(`/trainings/${training.id}`, fromState)
+                      }
                       onRenew={setRenewTraining}
+                      onEdit={setEditTraining}
                     />
                   ))}
                 </TableBody>
@@ -511,6 +591,7 @@ export function TrainingsPage() {
                 training={training}
                 onClick={() => navigate(`/trainings/${training.id}`, fromState)}
                 onRenew={setRenewTraining}
+                onEdit={setEditTraining}
               />
             ))}
           </div>
@@ -521,8 +602,20 @@ export function TrainingsPage() {
       {renewTraining && (
         <RenewTrainingDialog
           open={!!renewTraining}
-          onOpenChange={(open) => { if (!open) setRenewTraining(null); }}
+          onOpenChange={(open) => {
+            if (!open) setRenewTraining(null);
+          }}
           training={renewTraining}
+        />
+      )}
+
+      {editTraining && (
+        <EditTrainingDialog
+          open={!!editTraining}
+          onOpenChange={(open) => {
+            if (!open) setEditTraining(null);
+          }}
+          training={editTraining}
         />
       )}
     </div>

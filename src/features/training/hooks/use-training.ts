@@ -70,7 +70,7 @@ export function useUpdateTraining() {
       data,
     }: {
       id: string;
-      data: { notes?: string; autoRenew?: boolean; endDate?: string; trainerId?: string };
+      data: { notes?: string; autoRenew?: boolean; startDate?: string; endDate?: string; trainerId?: string; discountAmount?: number; trainerFixedPayout?: number | null };
     }) => trainingApi.updateTraining(id, data),
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['trainings'] });

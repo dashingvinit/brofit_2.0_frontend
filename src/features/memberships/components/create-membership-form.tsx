@@ -52,6 +52,7 @@ interface CreateMembershipFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
   preselectedMemberId?: string;
+  mode?: 'membership' | 'training';
 }
 
 const BASE_STEPS = [
@@ -63,12 +64,12 @@ const BASE_STEPS = [
 
 const TRAINING_STEP = { id: 'training' as const, label: 'Training', icon: Dumbbell };
 
-export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId }: CreateMembershipFormProps) {
+export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId, mode = 'membership' }: CreateMembershipFormProps) {
   const [currentStep, setCurrentStep] = useState(preselectedMemberId ? 1 : 0);
   const [memberSearch, setMemberSearch] = useState('');
 
   const { data: membersResponse, isLoading: membersLoading } = useMembers();
-  const { data: planTypes, isLoading: planTypesLoading } = usePlanTypesByCategory('membership');
+  const { data: planTypes, isLoading: planTypesLoading } = usePlanTypesByCategory(mode);
   const { data: trainingPlanTypes, isLoading: trainingPlanTypesLoading } = usePlanTypesByCategory('training');
   const { data: activeOffers } = useOffers(undefined, true);
   const { data: trainersResponse, isLoading: trainersLoading } = useTrainers();
@@ -107,9 +108,9 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
   const trainingDiscountAmount = form.watch('trainingDiscountAmount') || 0;
 
   const steps = useMemo(() => {
-    if (addTraining) return [...BASE_STEPS.slice(0, 3), TRAINING_STEP, BASE_STEPS[3]];
+    if (mode === 'membership' && addTraining) return [...BASE_STEPS.slice(0, 3), TRAINING_STEP, BASE_STEPS[3]];
     return [...BASE_STEPS];
-  }, [addTraining]);
+  }, [addTraining, mode]);
 
   const currentStepId = steps[currentStep]?.id;
 
@@ -160,7 +161,9 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
     switch (currentStepId) {
       case 'member': return !!selectedMemberId;
       case 'plan': return !!selectedPlanTypeId && !!selectedPlanVariantId;
-      case 'details': return !!startDate;
+      case 'details': 
+        if (mode === 'training') return !!startDate && !!form.watch('trainerId');
+        return !!startDate;
       case 'training': return !!trainingPlanTypeId && !!trainingPlanVariantId && !!form.watch('trainerId');
       case 'payment': return true;
       default: return false;
@@ -198,6 +201,33 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
   const onSubmit = (data: CreateMembershipFormData) => {
     // Guard: only submit when on the last step (payment)
     if (currentStepId !== 'payment') return;
+
+    if (mode === 'training') {
+      const trainingPayload: CreateTrainingData = {
+        memberId: data.memberId,
+        planVariantId: data.planVariantId,
+        trainerId: data.trainerId!,
+        startDate: data.startDate,
+        discountAmount: data.discountAmount || 0,
+        notes: data.notes,
+        trainerFixedPayout: data.trainerFixedPayout != null ? data.trainerFixedPayout : undefined,
+        autoRenew: data.autoRenew,
+      };
+
+      if (data.collectPayment && data.paymentAmount && data.paymentMethod) {
+        trainingPayload.paymentAmount = data.paymentAmount;
+        trainingPayload.paymentMethod = data.paymentMethod as PaymentMethod;
+        trainingPayload.paymentReference = data.paymentReference;
+        trainingPayload.paymentNotes = data.paymentNotes;
+        trainingPayload.paymentDate = data.paymentDate;
+      }
+
+      createTraining.mutate(trainingPayload, {
+        onSuccess: () => { form.reset(); onSuccess?.(); },
+      });
+      return;
+    }
+
     const membershipFinalPrice = finalPrice;
     const trainingFinalPriceVal = trainingFinalPrice;
     const totalDue = membershipFinalPrice + (data.addTraining ? trainingFinalPriceVal : 0);
@@ -256,7 +286,6 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
           }
           createTraining.mutate(trainingPayload, {
             onSuccess: () => { form.reset(); onSuccess?.(); },
-            onError: () => { form.reset(); onSuccess?.(); },
           });
         } else {
           form.reset();
@@ -333,8 +362,11 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
           <MembershipDetailsStep
             selectedVariant={selectedVariant}
             endDate={endDate}
-            addTraining={addTraining}
-            onToggleTraining={handleToggleTraining}
+            addTraining={mode === 'membership' ? addTraining : false}
+            onToggleTraining={mode === 'membership' ? handleToggleTraining : undefined}
+            mode={mode}
+            trainers={trainers}
+            trainersLoading={trainersLoading}
             register={form.register}
             watch={form.watch}
             setValue={form.setValue}
@@ -368,7 +400,7 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
             finalPrice={finalPrice}
             startDate={startDate}
             endDate={endDate}
-            addTraining={addTraining}
+            addTraining={mode === 'membership' ? addTraining : false}
             selectedTrainingVariant={selectedTrainingVariant}
             trainingPlanTypes={trainingPlanTypes}
             trainingPlanTypeId={trainingPlanTypeId}
@@ -379,6 +411,7 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
             watch={form.watch}
             setValue={form.setValue}
             errors={form.formState.errors as Record<string, { message?: string }>}
+            mode={mode}
           />
         )}
 
@@ -406,12 +439,18 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId 
                 <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             ) : (
-              <Button type="button" onClick={() => form.handleSubmit(onSubmit)()} disabled={isSubmitting}>
+              <Button
+                type="submit"
+                onClick={() => form.handleSubmit(onSubmit)()}
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Creating...
                   </>
+                ) : mode === 'training' ? (
+                  'Create Training'
                 ) : addTraining ? (
                   'Create Membership & Training'
                 ) : (

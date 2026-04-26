@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card } from '@/shared/components/ui/card';
 import { PageHeader } from '@/shared/components/page-header';
-import { CreateTrainingForm } from '../components/create-training-form';
+import { CreateMembershipForm } from '@/features/memberships/components/create-membership-form';
 import { ROUTES } from '@/shared/lib/constants';
 import { useReturnTo } from '@/shared/hooks/use-return-to';
 
@@ -23,10 +23,11 @@ export function CreateTrainingPage() {
       />
 
       <Card className="max-w-4xl">
-        <CreateTrainingForm
+        <CreateMembershipForm
           onSuccess={goBack}
           onCancel={goBack}
           preselectedMemberId={preselectedMemberId}
+          mode="training"
         />
       </Card>
     </div>
