@@ -112,7 +112,7 @@ export function MemberRegistrationForm({
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-6">
+    <form onSubmit={form.handleSubmit((data) => onSubmit(data))} className="space-y-6 p-6">
       <div className="grid gap-4 md:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name *</Label>
