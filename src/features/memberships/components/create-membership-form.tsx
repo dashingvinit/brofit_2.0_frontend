@@ -306,9 +306,15 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId,
       <form
         onSubmit={(e) => e.preventDefault()}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-            e.preventDefault();
-          }
+          if (e.key !== 'Enter') return;
+          const target = e.target as HTMLElement;
+          if (target.tagName === 'TEXTAREA') return;
+          e.preventDefault();
+          const focusable = Array.from(
+            e.currentTarget.querySelectorAll<HTMLElement>('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button[role="combobox"]:not([disabled])')
+          );
+          const idx = focusable.indexOf(target);
+          if (idx > -1 && idx < focusable.length - 1) focusable[idx + 1].focus();
         }}
       >
         {currentStepId === 'member' && (

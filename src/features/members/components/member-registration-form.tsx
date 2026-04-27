@@ -111,8 +111,20 @@ export function MemberRegistrationForm({
       });
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key !== 'Enter') return;
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'TEXTAREA') return;
+    e.preventDefault();
+    const focusable = Array.from(
+      e.currentTarget.querySelectorAll<HTMLElement>('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button[role="combobox"]:not([disabled])')
+    );
+    const idx = focusable.indexOf(target);
+    if (idx > -1 && idx < focusable.length - 1) focusable[idx + 1].focus();
+  };
+
   return (
-    <form onSubmit={form.handleSubmit((data) => onSubmit(data))} className="space-y-6 p-6">
+    <form onSubmit={form.handleSubmit((data) => onSubmit(data))} onKeyDown={handleKeyDown} className="space-y-6 p-6">
       <div className="grid gap-4 md:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name *</Label>
