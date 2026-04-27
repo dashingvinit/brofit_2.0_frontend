@@ -85,18 +85,24 @@ export function RecycleBinPage() {
   const { data: membersResponse, isLoading } = useMembers(
     page,
     PAGE_SIZE,
-    false // isActive = false (Recycle Bin)
+    undefined, // isActive — don't filter (archived members can be active or inactive)
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    true, // isArchived = true (Recycle Bin)
   );
 
   const { data: searchResponse, isLoading: isSearching } = useSearchMembers({
     q: debouncedSearch,
     page: 1,
     limit: 50,
+    archivedOnly: true,
   });
 
   const isSearchMode = !!debouncedSearch;
-  // Filter search results to only show inactive members
-  const members = (isSearchMode ? searchResponse?.data : membersResponse?.data)?.filter(m => !m.isActive);
+  const members = isSearchMode ? searchResponse?.data : membersResponse?.data;
   const pagination = isSearchMode ? null : membersResponse?.pagination;
 
   const handleRestore = (id: string) => {
@@ -119,9 +125,9 @@ export function RecycleBinPage() {
   };
 
   const handleBatchRestore = () => {
-    batchRestore.mutate({ 
-      ids: Array.from(selectedIds), 
-      data: { isActive: true } 
+    batchRestore.mutate({
+      ids: Array.from(selectedIds),
+      data: { isArchived: false }
     }, {
       onSuccess: () => setSelectedIds(new Set())
     });

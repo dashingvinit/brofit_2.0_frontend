@@ -20,6 +20,7 @@ export function useMembers(
   planTypeId?: string | null,
   hasDiscount?: boolean,
   noMembership?: boolean,
+  isArchived?: boolean,
 ) {
   return useQuery({
     queryKey: [
@@ -32,6 +33,7 @@ export function useMembers(
       planTypeId,
       hasDiscount ?? false,
       noMembership ?? false,
+      isArchived ?? false,
     ],
     queryFn: () =>
       membersApi.getAllMembers(
@@ -43,6 +45,7 @@ export function useMembers(
         planTypeId,
         hasDiscount,
         noMembership,
+        isArchived,
       ),
   });
 }
@@ -185,7 +188,7 @@ export function useArchiveMember() {
 
   return useMutation({
     mutationFn: (memberId: string) =>
-      membersApi.updateMember(memberId, { isActive: false }),
+      membersApi.updateMember(memberId, { isArchived: true }),
     onSuccess: (response, memberId) => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       queryClient.invalidateQueries({ queryKey: ["members", memberId] });
@@ -206,7 +209,7 @@ export function useRestoreMember() {
 
   return useMutation({
     mutationFn: (memberId: string) =>
-      membersApi.updateMember(memberId, { isActive: true }),
+      membersApi.updateMember(memberId, { isArchived: false }),
     onSuccess: (response, memberId) => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       queryClient.invalidateQueries({ queryKey: ["members", memberId] });

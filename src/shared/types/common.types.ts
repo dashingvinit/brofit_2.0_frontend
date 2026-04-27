@@ -17,6 +17,7 @@ export interface Member {
   joinDate: string; // ISO date string
   notes?: string | null;
   isActive: boolean;
+  isArchived: boolean;
   referredById?: string | null;
   referredBy?: Pick<Member, 'id' | 'firstName' | 'lastName'> | null;
   createdAt: string; // ISO date string
@@ -173,6 +174,7 @@ export interface UpdateMemberData {
   joinDate?: string;
   notes?: string;
   isActive?: boolean;
+  isArchived?: boolean;
   referredById?: string | null;
 }
 

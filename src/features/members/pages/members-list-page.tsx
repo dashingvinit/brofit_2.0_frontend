@@ -892,7 +892,7 @@ export function MembersListPage() {
                 className="h-7 gap-1.5 text-xs"
                 onClick={() =>
                   batchUpdate.mutate(
-                    { ids: Array.from(selectedIds), data: { isActive: false } },
+                    { ids: Array.from(selectedIds), data: { isArchived: true } },
                     { onSuccess: clearSelection }
                   )
                 }

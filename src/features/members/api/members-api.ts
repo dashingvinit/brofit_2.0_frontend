@@ -25,9 +25,10 @@ export interface GetAllMembersResponse extends ApiResponse<Member[]> {
 }
 
 export interface SearchMembersParams {
-  q: string; // Search query
+  q: string;
   page?: number;
   limit?: number;
+  archivedOnly?: boolean;
 }
 
 export const membersApi = {
@@ -44,6 +45,7 @@ export const membersApi = {
     planTypeId?: string | null,
     hasDiscount?: boolean,
     noMembership?: boolean,
+    isArchived?: boolean,
   ): Promise<GetAllMembersResponse> => {
     const params: Record<string, unknown> = { page, limit };
     if (isActive === true) params.isActive = 'true';
@@ -53,6 +55,7 @@ export const membersApi = {
     if (planTypeId) params.planTypeId = planTypeId;
     if (hasDiscount) params.hasDiscount = 'true';
     if (noMembership) params.noMembership = 'true';
+    if (isArchived) params.isArchived = 'true';
     const response = await apiClient.get('/members', { params });
     return response.data;
   },
@@ -64,9 +67,10 @@ export const membersApi = {
   searchMembers: async (
     params: SearchMembersParams
   ): Promise<GetAllMembersResponse> => {
-    const response = await apiClient.get('/members/search', {
-      params,
-    });
+    const { archivedOnly, ...rest } = params;
+    const queryParams: Record<string, unknown> = { ...rest };
+    if (archivedOnly) queryParams.archivedOnly = 'true';
+    const response = await apiClient.get('/members/search', { params: queryParams });
     return response.data;
   },
 
