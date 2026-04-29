@@ -15,6 +15,14 @@ export function CreateMembershipPage() {
   );
   const goBack = () => navigate(returnTo);
 
+  const handleSuccess = (membershipId?: string) => {
+    if (membershipId) {
+      navigate(`${ROUTES.MEMBERSHIPS}/${membershipId}/receipt`, { state: { from: returnTo } });
+    } else {
+      goBack();
+    }
+  };
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -24,7 +32,7 @@ export function CreateMembershipPage() {
 
       <Card>
         <CreateMembershipForm
-          onSuccess={goBack}
+          onSuccess={handleSuccess}
           onCancel={goBack}
           preselectedMemberId={preselectedMemberId}
         />

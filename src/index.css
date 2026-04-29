@@ -116,3 +116,26 @@
     font-family: 'Outfit', sans-serif;
   }
 }
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm 20mm;
+  }
+
+  /* Force light-mode CSS variables so dark-mode users get a readable print */
+  :root, .dark {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --border: 0 0% 80%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 40%;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}

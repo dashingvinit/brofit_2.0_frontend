@@ -57,6 +57,7 @@ export const ROUTES = {
   CREATE_OFFER: "/offers/new",
   EDIT_OFFER: "/offers",
   RECYCLE_BIN: "/members/recycle-bin",
+  MEMBERSHIP_RECEIPT: "/memberships",
   // Super admin platform
   PLATFORM: "/platform",
   PLATFORM_ORG_DETAIL: "/platform/orgs",

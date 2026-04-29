@@ -16,6 +16,7 @@ import { PlansPage } from "@/features/plans/pages/plans-page";
 import { MembershipsPage } from "@/features/memberships/pages/memberships-page";
 import { CreateMembershipPage } from "@/features/memberships/pages/create-membership-page";
 import { MembershipDetailPage } from "@/features/memberships/pages/membership-detail-page";
+import { MembershipReceiptPage } from "@/features/memberships/pages/membership-receipt-page";
 import { TrainingsPage } from "@/features/training/pages/trainings-page";
 import { CreateTrainingPage } from "@/features/training/pages/create-training-page";
 import { TrainingDetailPage } from "@/features/training/pages/training-detail-page";
@@ -85,6 +86,10 @@ export const protectedRoutes: RouteObject[] = [
               {
                 path: "/memberships/:id",
                 element: <MembershipDetailPage />,
+              },
+              {
+                path: "/memberships/:id/receipt",
+                element: <MembershipReceiptPage />,
               },
               {
                 path: "/trainings/:id",

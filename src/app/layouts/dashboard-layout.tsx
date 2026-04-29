@@ -126,8 +126,8 @@ export function DashboardLayout() {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full overflow-hidden">
-        <Sidebar collapsible="icon">
+      <div className="flex h-screen w-full overflow-hidden print:block print:h-auto print:overflow-visible">
+        <Sidebar collapsible="icon" className="print:hidden">
           <SidebarHeader>
             <ViewSwitcher />
           </SidebarHeader>
@@ -261,8 +261,8 @@ export function DashboardLayout() {
           </SidebarFooter>
         </Sidebar>
 
-        <SidebarInset className="flex-1 flex flex-col overflow-hidden">
-          <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur-sm px-4">
+        <SidebarInset className="flex-1 flex flex-col overflow-hidden print:block print:overflow-visible print:w-full">
+          <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur-sm px-4 print:hidden">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <div className="flex flex-1 items-center justify-between gap-2">
@@ -285,7 +285,7 @@ export function DashboardLayout() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto flex flex-col gap-4 p-3 md:p-5 bg-zinc-100 dark:bg-zinc-950">
+          <main className="flex-1 overflow-auto flex flex-col gap-4 p-3 md:p-5 bg-zinc-100 dark:bg-zinc-950 print:block print:overflow-visible print:bg-white print:p-0">
             <Outlet />
           </main>
         </SidebarInset>

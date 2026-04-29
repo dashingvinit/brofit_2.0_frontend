@@ -49,7 +49,7 @@ const createMembershipSchema = z.object({
 type CreateMembershipFormData = z.infer<typeof createMembershipSchema>;
 
 interface CreateMembershipFormProps {
-  onSuccess?: () => void;
+  onSuccess?: (membershipId?: string) => void;
   onCancel?: () => void;
   preselectedMemberId?: string;
   mode?: 'membership' | 'training';
@@ -266,7 +266,8 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId,
     }
 
     createMembership.mutate(payload, {
-      onSuccess: () => {
+      onSuccess: (response) => {
+        const membershipId = response.data.id;
         if (data.addTraining && data.trainingPlanVariantId && data.trainerId) {
           const trainingPayload: CreateTrainingData = {
             memberId: data.memberId,
@@ -285,11 +286,11 @@ export function CreateMembershipForm({ onSuccess, onCancel, preselectedMemberId,
             trainingPayload.paymentDate = data.paymentDate;
           }
           createTraining.mutate(trainingPayload, {
-            onSuccess: () => { form.reset(); onSuccess?.(); },
+            onSuccess: () => { form.reset(); onSuccess?.(membershipId); },
           });
         } else {
           form.reset();
-          onSuccess?.();
+          onSuccess?.(membershipId);
         }
       },
     });

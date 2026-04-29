@@ -28,6 +28,7 @@ export {
 export { MembershipsPage } from './pages/memberships-page';
 export { CreateMembershipPage } from './pages/create-membership-page';
 export { MembershipDetailPage } from './pages/membership-detail-page';
+export { MembershipReceiptPage } from './pages/membership-receipt-page';
 
 // API
 export { membershipsApi } from './api/memberships-api';
