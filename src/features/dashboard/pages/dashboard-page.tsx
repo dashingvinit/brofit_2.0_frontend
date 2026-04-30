@@ -13,8 +13,6 @@ import {
   Activity,
   LogIn,
   Plus,
-  Eye,
-  EyeOff,
   AlertTriangle,
   Clock,
   Bell,
@@ -50,6 +48,7 @@ import { usePingMember } from "@/features/settings/hooks/use-notification-settin
 import { useMonthlySummaryWithDelta } from "@/features/financials/hooks/use-financials";
 import { ROUTES } from "@/shared/lib/constants";
 import { useFromState } from "@/shared/hooks/use-return-to";
+import { usePrivacy } from "@/shared/hooks/use-privacy";
 import { formatCurrency, daysUntil } from "@/shared/lib/utils";
 import { cn } from "@/shared/lib/utils";
 import type { Membership, Training } from "@/shared/types/common.types";
@@ -211,7 +210,7 @@ export function DashboardPage() {
   const { user } = useUser();
   const navigate = useNavigate();
   const fromState = useFromState();
-  const [valuesHidden, setValuesHidden] = useState(true);
+  const { isPrivate } = usePrivacy();
   // memberId → "sending" | "sent" | "error"
   const [pingState, setPingState] = useState<Record<string, "sending" | "sent" | "error">>({});
   const { mutate: pingMember } = usePingMember();
@@ -327,18 +326,6 @@ export function DashboardPage() {
 
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 text-muted-foreground hover:text-foreground h-8 px-2.5"
-            onClick={() => setValuesHidden((v) => !v)}
-          >
-            {valuesHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-            <span className="hidden sm:inline text-xs">{valuesHidden ? "Show" : "Hide"}</span>
-          </Button>
-
-          <div className="h-4 w-px bg-border hidden sm:block" />
-
-          <Button
             size="sm"
             className="gap-1.5 h-8 bg-blue-600 hover:bg-blue-700 text-white border-0 text-xs"
             onClick={() => navigate(ROUTES.REGISTER_MEMBER)}
@@ -374,7 +361,7 @@ export function DashboardPage() {
           icon={Users}
           accentClass="border-l-blue-500"
           valueClass="text-blue-600 dark:text-blue-400"
-          isLoading={isLoadingMembers} animationDelay={0} hidden={valuesHidden}
+          isLoading={isLoadingMembers} animationDelay={0} hidden={isPrivate}
         />
         <StatCard
           label="Active Members" shortLabel="Active"
@@ -383,7 +370,7 @@ export function DashboardPage() {
           icon={UserCheck}
           accentClass="border-l-emerald-500"
           valueClass="text-emerald-600 dark:text-emerald-400"
-          isLoading={isLoadingMembers} animationDelay={75} hidden={valuesHidden}
+          isLoading={isLoadingMembers} animationDelay={75} hidden={isPrivate}
         />
         <StatCard
           label="Active Trainings" shortLabel="Trainings"
@@ -392,7 +379,7 @@ export function DashboardPage() {
           icon={Dumbbell}
           accentClass="border-l-violet-500"
           valueClass="text-violet-600 dark:text-violet-400"
-          isLoading={isLoadingTrainings} animationDelay={150} hidden={valuesHidden}
+          isLoading={isLoadingTrainings} animationDelay={150} hidden={isPrivate}
         />
         <StatCard
           label="Net This Month" shortLabel="Net"
@@ -401,7 +388,7 @@ export function DashboardPage() {
           icon={TrendingUp}
           accentClass={netThisMonth < 0 ? "border-l-red-500" : "border-l-amber-500"}
           valueClass={netThisMonth < 0 ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}
-          isLoading={isLoadingSummaryDelta} isCurrency animationDelay={225} hidden={valuesHidden}
+          isLoading={isLoadingSummaryDelta} isCurrency animationDelay={225} hidden={isPrivate}
         />
       </div>
 
@@ -807,7 +794,7 @@ export function DashboardPage() {
                             </div>
                             <div>
                               <p className="font-medium text-sm">{m.firstName} {m.lastName}</p>
-                              <p className="text-xs text-muted-foreground">{m.phone}</p>
+                              <p className="text-xs text-muted-foreground">{isPrivate ? "••••••••" : m.phone}</p>
                             </div>
                           </div>
                         </td>
@@ -894,7 +881,7 @@ export function DashboardPage() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground pl-8">
-                      <span>{m.phone}</span>
+                      <span>{isPrivate ? "••••••••" : m.phone}</span>
                       <span className="tabular-nums">
                         {m.membershipDuesTotal > 0 && `M: ₹${formatCurrency(m.membershipDuesTotal)}`}
                         {m.membershipDuesTotal > 0 && m.trainingDuesTotal > 0 && " · "}

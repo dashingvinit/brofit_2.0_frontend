@@ -70,6 +70,7 @@ import { RenewMembershipDialog } from '../components/renew-membership-dialog';
 import { FreezeMembershipDialog } from '../components/freeze-membership-dialog';
 import { ROUTES } from '@/shared/lib/constants';
 import { useReturnTo } from '@/shared/hooks/use-return-to';
+import { usePrivacy } from '@/shared/hooks/use-privacy';
 import type {
   MembershipStatus,
   PaymentMethod,
@@ -110,6 +111,7 @@ function formatDateTime(dateStr: string) {
 export function MembershipDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isPrivate } = usePrivacy();
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [renewDialogOpen, setRenewDialogOpen] = useState(false);
@@ -304,7 +306,7 @@ export function MembershipDetailPage() {
                   <p className="font-medium">{memberName}</p>
                   {membership.member?.email && (
                     <p className="text-xs text-muted-foreground">
-                      {membership.member.email}
+                      {isPrivate ? "••••••••" : membership.member.email}
                     </p>
                   )}
                 </div>

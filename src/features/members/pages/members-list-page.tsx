@@ -63,6 +63,7 @@ import { membersApi } from "../api/members-api";
 import { reportsApi } from "../api/reports-api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRole } from "@/shared/hooks/use-role";
+import { usePrivacy } from "@/shared/hooks/use-privacy";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -155,6 +156,7 @@ export function MembersListPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAdmin } = useRole();
+  const { isPrivate } = usePrivacy();
   const [searchParams, setSearchParams] = useSearchParams();
   const showDues = searchParams.get("dues") === "true";
   const hasDiscountParam = searchParams.get("hasDiscount") === "true";
@@ -438,6 +440,7 @@ export function MembersListPage() {
               isLoading={isLoadingStats}
               isSelected={isSelected}
               onClick={handleClick}
+              hidden={isPrivate}
             />
           );
         })}
@@ -518,7 +521,7 @@ export function MembersListPage() {
                             {m.firstName} {m.lastName}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {m.phone}
+                            {isPrivate ? "••••••••" : m.phone}
                           </p>
                         </td>
                         <td className="py-2.5 px-3 text-right">
@@ -574,7 +577,7 @@ export function MembersListPage() {
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{m.phone}</span>
+                      <span>{isPrivate ? "••••••••" : m.phone}</span>
                       <span>
                         {m.membershipDuesTotal > 0 &&
                           `Membership: ₹${m.membershipDuesTotal.toLocaleString("en-IN")}`}
@@ -637,7 +640,7 @@ export function MembersListPage() {
                       {m.name.charAt(0).toUpperCase()}
                     </span>
                     <span className="font-medium">{m.name}</span>
-                    {m.phone && (
+                    {m.phone && !isPrivate && (
                       <span className="text-muted-foreground text-xs hidden sm:inline">{m.phone}</span>
                     )}
                   </button>

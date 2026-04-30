@@ -9,9 +9,10 @@ interface InlineEditFieldProps {
   isSaving?: boolean;
   multiline?: boolean;
   placeholder?: string;
+  masked?: boolean;
 }
 
-export function InlineEditField({ value, onSave, isSaving, multiline, placeholder }: InlineEditFieldProps) {
+export function InlineEditField({ value, onSave, isSaving, multiline, placeholder, masked }: InlineEditFieldProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
@@ -91,7 +92,12 @@ export function InlineEditField({ value, onSave, isSaving, multiline, placeholde
       onClick={() => setEditing(true)}
       title="Click to edit"
     >
-      <p className="font-medium text-sm">{value || <span className="text-muted-foreground italic">Not set</span>}</p>
+      <p className="font-medium text-sm">
+        {masked
+          ? <span className="text-muted-foreground select-none tracking-widest">••••••••</span>
+          : (value || <span className="text-muted-foreground italic">Not set</span>)
+        }
+      </p>
       <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
     </div>
   );

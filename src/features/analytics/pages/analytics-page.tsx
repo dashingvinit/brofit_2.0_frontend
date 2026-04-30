@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
+import { usePrivacy } from '@/shared/hooks/use-privacy';
 import { BarChart, Bar, ResponsiveContainer } from 'recharts';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Skeleton } from '@/shared/components/ui/skeleton';
@@ -31,6 +32,7 @@ function StatStrip() {
   const { data: mRes, isLoading: mLoading } = useMemberStats();
   const { data: msRes, isLoading: msLoading } = useMembershipStats();
   const { data: tRes, isLoading: tLoading } = useTrainingStats();
+  const { isPrivate } = usePrivacy();
   const { data: growthRes } = useMemberGrowth(12);
   const { data: revRes } = useRevenueBreakdown(6);
 
@@ -64,12 +66,12 @@ function StatStrip() {
               {mLoading ? <Skeleton className="h-8 w-20 mt-1.5" /> : (
                 <>
                   <p className="text-2xl font-bold font-display tracking-tight mt-1 text-blue-600 dark:text-blue-400">
-                    {members?.total ?? 0}
+                    {isPrivate ? <span className="tracking-widest text-muted-foreground">••••</span> : (members?.total ?? 0)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {members?.active ?? 0} active · {members?.inactive ?? 0} inactive
+                    {isPrivate ? "••••" : `${members?.active ?? 0} active · ${members?.inactive ?? 0} inactive`}
                   </p>
-                  {memberTrend !== null && prevNewMembers !== null && (
+                  {!isPrivate && memberTrend !== null && prevNewMembers !== null && (
                     <p className={`text-xs mt-1 flex items-center gap-0.5 font-medium ${memberTrend >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
                       {memberTrend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                       {memberTrend >= 0 ? '+' : ''}{memberTrend} new vs {prevNewMembers} last month
@@ -95,12 +97,12 @@ function StatStrip() {
             {mLoading ? <Skeleton className="h-8 w-16 mt-1.5" /> : (
               <>
                 <p className="text-2xl font-bold font-display tracking-tight mt-1 text-emerald-600 dark:text-emerald-400">
-                  {members?.active ?? 0}
+                  {isPrivate ? <span className="tracking-widest text-muted-foreground">••••</span> : (members?.active ?? 0)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  out of {members?.total ?? 0} total members
+                  {isPrivate ? "••••" : `out of ${members?.total ?? 0} total members`}
                 </p>
-                {members && members.total > 0 && (
+                {!isPrivate && members && members.total > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
                     {Math.round((members.active / members.total) * 100)}% active rate
                   </p>
@@ -116,14 +118,14 @@ function StatStrip() {
               {msLoading || tLoading ? <Skeleton className="h-8 w-24 mt-1.5" /> : (
                 <>
                   <p className="text-2xl font-bold font-display tracking-tight mt-1 text-amber-600 dark:text-amber-400">
-                    ₹{formatCurrency(revenue)}
+                    {isPrivate ? <span className="tracking-widest text-muted-foreground">••••</span> : `₹${formatCurrency(revenue)}`}
                   </p>
-                  {ms && ts && (
+                  {!isPrivate && ms && ts && (
                     <p className="text-xs text-muted-foreground mt-0.5">
                       ₹{formatCurrency(ms.collectedThisMonth)} memberships · ₹{formatCurrency(ts.collectedThisMonth)} training
                     </p>
                   )}
-                  {revTrend !== null && prevRevTotal !== null && (
+                  {!isPrivate && revTrend !== null && prevRevTotal !== null && (
                     <p className={`text-xs mt-1 flex items-center gap-0.5 font-medium ${revTrend >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
                       {revTrend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                       {revTrend >= 0 ? '+' : '-'}₹{formatCurrency(Math.abs(revTrend))} vs ₹{formatCurrency(prevRevTotal)} last month

@@ -30,6 +30,8 @@ import {
 } from "@/shared/components/ui/sidebar";
 import { Separator } from "@/shared/components/ui/separator";
 import { ThemeToggle } from "@/shared/components/theme-toggle";
+import { Button } from "@/shared/components/ui/button";
+import { usePrivacy } from "@/shared/hooks/use-privacy";
 import { PwaInstallPrompt } from "@/shared/components/pwa-install-prompt";
 import { NavFlat } from "@/shared/components/nav-flat";
 import { PageBreadcrumbs } from "@/shared/components/page-breadcrumbs";
@@ -60,6 +62,8 @@ import {
   MessageSquare,
   Radio,
   Trash2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export function DashboardLayout() {
@@ -67,6 +71,7 @@ export function DashboardLayout() {
   const { user } = useUser();
   const { isAdmin } = useRole();
   const { view } = useView();
+  const { isPrivate, toggle: togglePrivacy } = usePrivacy();
   const { resolvedPermissions: staffPerms } = useStaffPermissions();
   const location = useLocation();
 
@@ -268,6 +273,16 @@ export function DashboardLayout() {
             <div className="flex flex-1 items-center justify-between gap-2">
               <PageBreadcrumbs />
               <div className="flex items-center gap-2 md:gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={togglePrivacy}
+                  title={isPrivate ? "Privacy mode on — click to show data" : "Privacy mode off — click to hide data"}
+                  className={isPrivate ? "text-amber-500 hover:text-amber-600" : "text-muted-foreground"}
+                >
+                  {isPrivate ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+                <ThemeToggle />
                 <OrganizationSwitcher
                   hidePersonal
                   afterCreateOrganizationUrl={ROUTES.DASHBOARD}
@@ -280,7 +295,6 @@ export function DashboardLayout() {
                     },
                   }}
                 />
-                <ThemeToggle />
               </div>
             </div>
           </header>

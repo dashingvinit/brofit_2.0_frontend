@@ -5,6 +5,7 @@ import { AppProvider } from './app/providers/app-provider'
 import { ClerkProvider } from './app/providers/clerk-provider'
 import { AxiosProvider } from './app/providers/axios-provider'
 import { ViewProvider } from './shared/hooks/use-view'
+import { PrivacyProvider } from './shared/hooks/use-privacy'
 import { AppRouter } from './app/routes'
 
 if ('serviceWorker' in navigator) {
@@ -19,7 +20,9 @@ createRoot(document.getElementById('root')!).render(
       <ClerkProvider>
         <AxiosProvider>
           <ViewProvider>
-            <AppRouter />
+            <PrivacyProvider>
+              <AppRouter />
+            </PrivacyProvider>
           </ViewProvider>
         </AxiosProvider>
       </ClerkProvider>

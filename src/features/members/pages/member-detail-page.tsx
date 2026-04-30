@@ -52,6 +52,7 @@ import {
 } from '@/shared/components/ui/dropdown-menu';
 import { ROUTES } from '@/shared/lib/constants';
 import { useFromState } from '@/shared/hooks/use-return-to';
+import { usePrivacy } from '@/shared/hooks/use-privacy';
 import { useMember, useUpdateMember, useDeleteMember, useArchiveMember } from '../hooks/use-members';
 import { useRecentlyViewed } from '../hooks/use-recently-viewed';
 import { useMemberMemberships } from '@/features/memberships/hooks/use-memberships';
@@ -96,6 +97,7 @@ export function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const fromState = useFromState();
+  const { isPrivate } = usePrivacy();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -311,6 +313,7 @@ export function MemberDetailPage() {
                     onSave={(v) => saveField('email', v)}
                     isSaving={updateMember.isPending}
                     placeholder="Add email"
+                    masked={isPrivate}
                   />
                 </div>
               </div>
@@ -326,6 +329,7 @@ export function MemberDetailPage() {
                     onSave={(v) => saveField('phone', v)}
                     isSaving={updateMember.isPending}
                     placeholder="Add phone"
+                    masked={isPrivate}
                   />
                 </div>
               </div>

@@ -1,4 +1,5 @@
 import { useNavigate, Link } from 'react-router-dom';
+import { usePrivacy } from '@/shared/hooks/use-privacy';
 import {
   IndianRupee,
   TrendingUp,
@@ -58,6 +59,7 @@ import type { Investment } from '@/shared/types/common.types';
 function RoiCard() {
   const { data: roiRes, isLoading } = useRoi();
   const roi = roiRes?.data;
+  const { isPrivate } = usePrivacy();
 
   const cards = [
     {
@@ -152,7 +154,7 @@ function RoiCard() {
                   {shortLabel}
                 </p>
                 <p className="text-base font-bold leading-tight tracking-tight truncate">
-                  {value}
+                  {isPrivate ? <span className="tracking-widest text-muted-foreground">••••</span> : value}
                 </p>
               </div>
             </div>
@@ -166,7 +168,9 @@ function RoiCard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold tracking-tight font-display">{value}</div>
+              <div className="text-2xl font-bold tracking-tight font-display">
+                {isPrivate ? <span className="tracking-widest text-muted-foreground">••••</span> : value}
+              </div>
             </CardContent>
           </div>
         </Card>
@@ -185,6 +189,7 @@ function CurrentMonthSummary() {
   const { data: summaryRes, isLoading } = useMonthlySummary(month);
   const summary = summaryRes?.data;
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { isPrivate } = usePrivacy();
 
   const monthLabel = now.toLocaleString('default', { month: 'long', year: 'numeric' });
 
@@ -215,15 +220,13 @@ function CurrentMonthSummary() {
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">Revenue</p>
                 <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center font-display">
-                  <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
-                  {formatCurrency(summary.revenue)}
+                  {isPrivate ? <span className="tracking-widest text-muted-foreground">••••</span> : <><IndianRupee className="h-3.5 w-3.5 mr-0.5" />{formatCurrency(summary.revenue)}</>}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">Expenses</p>
                 <p className="text-base font-bold text-red-600 dark:text-red-400 inline-flex items-center font-display">
-                  <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
-                  {formatCurrency(summary.expenses)}
+                  {isPrivate ? <span className="tracking-widest text-muted-foreground">••••</span> : <><IndianRupee className="h-3.5 w-3.5 mr-0.5" />{formatCurrency(summary.expenses)}</>}
                 </p>
               </div>
               <div>
@@ -235,13 +238,17 @@ function CurrentMonthSummary() {
                       : 'text-red-600 dark:text-red-400'
                   }`}
                 >
-                  {summary.netProfit >= 0 ? (
-                    <TrendingUp className="h-3.5 w-3.5 mr-1" />
-                  ) : (
-                    <TrendingDown className="h-3.5 w-3.5 mr-1" />
+                  {isPrivate ? <span className="tracking-widest text-muted-foreground">••••</span> : (
+                    <>
+                      {summary.netProfit >= 0 ? (
+                        <TrendingUp className="h-3.5 w-3.5 mr-1" />
+                      ) : (
+                        <TrendingDown className="h-3.5 w-3.5 mr-1" />
+                      )}
+                      <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
+                      {formatCurrency(Math.abs(summary.netProfit))}
+                    </>
                   )}
-                  <IndianRupee className="h-3.5 w-3.5 mr-0.5" />
-                  {formatCurrency(Math.abs(summary.netProfit))}
                 </p>
               </div>
             </div>
@@ -271,6 +278,7 @@ function MonthlyExpensesGrid() {
   const navigate = useNavigate();
   const { data: trendsRes, isLoading } = useTrends(12);
   const trends = trendsRes?.data ?? [];
+  const { isPrivate } = usePrivacy();
 
   if (isLoading) {
     return (
@@ -328,14 +336,10 @@ function MonthlyExpensesGrid() {
               <CardContent className="p-4">
                 <p className="text-xs font-medium text-muted-foreground mb-2 truncate">{monthLabel}</p>
                 <p className="text-sm font-semibold text-red-600 dark:text-red-400 inline-flex items-center">
-                  <IndianRupee className="h-3 w-3 mr-0.5" />
-                  {formatCurrency(t.expenses)}
-                  <span className="ml-1 text-xs font-normal text-muted-foreground">expenses</span>
+                  {isPrivate ? <span className="tracking-widest text-muted-foreground">••••</span> : <><IndianRupee className="h-3 w-3 mr-0.5" />{formatCurrency(t.expenses)}<span className="ml-1 text-xs font-normal text-muted-foreground">expenses</span></>}
                 </p>
                 <div className={`mt-1 text-xs font-medium inline-flex items-center ${isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {isProfit ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-                  <IndianRupee className="h-3 w-3 mr-0.5" />
-                  {formatCurrency(Math.abs(t.netProfit))} net
+                  {isPrivate ? <span className="tracking-widest text-muted-foreground">••••</span> : <>{isProfit ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}<IndianRupee className="h-3 w-3 mr-0.5" />{formatCurrency(Math.abs(t.netProfit))} net</>}
                 </div>
                 <div className="mt-2 flex items-center text-xs text-muted-foreground">
                   <span>View expenses</span>
@@ -356,6 +360,7 @@ function InvestmentsSection() {
   const { data: investmentsRes, isLoading } = useInvestments();
   const deleteInvestment = useDeleteInvestment();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { isPrivate } = usePrivacy();
   const [editing, setEditing] = useState<Investment | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
@@ -426,8 +431,7 @@ function InvestmentsSection() {
                       </TableCell>
                       <TableCell className="text-right font-semibold whitespace-nowrap">
                         <span className="inline-flex items-center">
-                          <IndianRupee className="h-3 w-3" />
-                          {formatCurrency(inv.amount)}
+                          {isPrivate ? <span className="tracking-widest text-muted-foreground">••••</span> : <><IndianRupee className="h-3 w-3" />{formatCurrency(inv.amount)}</>}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -470,8 +474,7 @@ function InvestmentsSection() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="font-semibold text-sm inline-flex items-center">
-                      <IndianRupee className="h-3 w-3" />
-                      {formatCurrency(inv.amount)}
+                      {isPrivate ? <span className="tracking-widest text-muted-foreground">••••</span> : <><IndianRupee className="h-3 w-3" />{formatCurrency(inv.amount)}</>}
                     </span>
                     <Button
                       variant="ghost"

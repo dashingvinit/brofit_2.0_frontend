@@ -25,6 +25,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 import type { Member } from "@/shared/types/common.types";
 import { ROUTES } from "@/shared/lib/constants";
+import { usePrivacy } from "@/shared/hooks/use-privacy";
 import { EditMemberDialog } from "./edit-member-dialog";
 import { useDeleteMember, useUpdateMember } from "../hooks/use-members";
 import {
@@ -71,6 +72,7 @@ export function MembersList({ members, isLoading, isAdmin = true, selectedIds, o
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const deleteMember = useDeleteMember();
   const updateMember = useUpdateMember();
+  const { isPrivate } = usePrivacy();
 
   const handleDeleteMember = (member: Member) => {
     deleteMember.mutate(member);
@@ -262,12 +264,12 @@ export function MembersList({ members, isLoading, isAdmin = true, selectedIds, o
                     <div className="flex items-center gap-1.5 text-sm">
                       <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span className="truncate max-w-[200px]">
-                        {member.email}
+                        {isPrivate ? <span className="text-muted-foreground select-none">••••••••</span> : member.email}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       <Phone className="h-3.5 w-3.5 shrink-0" />
-                      {member.phone}
+                      {isPrivate ? <span className="select-none">••••••••</span> : member.phone}
                     </div>
                   </div>
                 </TableCell>
@@ -462,11 +464,11 @@ export function MembersList({ members, isLoading, isAdmin = true, selectedIds, o
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Mail className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{member.email}</span>
+                    <span className="truncate">{isPrivate ? <span className="select-none">••••••••</span> : member.email}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Phone className="h-3 w-3 shrink-0" />
-                    {member.phone}
+                    {isPrivate ? <span className="select-none">••••••••</span> : member.phone}
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Calendar className="h-3 w-3 shrink-0" />
