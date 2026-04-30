@@ -5,6 +5,9 @@ import {
   UserX,
   IndianRupee,
   ArrowRight,
+  UserPlus,
+  CreditCard,
+  Dumbbell,
 } from "lucide-react";
 import {
   Card,
@@ -18,29 +21,30 @@ import { PageHeader } from "@/shared/components/page-header";
 import { ExpiringItem } from "@/shared/components/expiring-item";
 import { useFromState } from "@/shared/hooks/use-return-to";
 import { EmptyState } from "@/shared/components/empty-state";
-import {
-  useExpiringMemberships,
-} from "@/features/memberships/hooks/use-memberships";
-import {
-  useExpiringTrainings,
-} from "@/features/training/hooks/use-training";
+import { useExpiringMemberships } from "@/features/memberships/hooks/use-memberships";
+import { useExpiringTrainings } from "@/features/training/hooks/use-training";
 import {
   useDuesReport,
   useInactiveCandidates,
 } from "@/features/members/hooks/use-member-detail";
 import { formatCurrency, daysUntil } from "@/shared/lib/utils";
+import { useStaffPermissions } from "@/features/settings/hooks/use-staff-permissions";
+import { Button } from "@/shared/components/ui/button";
 import type { Membership, Training } from "@/shared/types/common.types";
-
 
 export function ReceptionPage() {
   const { user } = useUser();
   const navigate = useNavigate();
   const fromState = useFromState();
+  const { resolvedPermissions: perms } = useStaffPermissions();
 
   const { data: expiringMembershipsRes } = useExpiringMemberships(7);
   const { data: expiringTrainingsRes } = useExpiringTrainings(7);
   const { data: inactiveSubRes } = useInactiveCandidates(1, 10);
-  const { data: duesReportRes, isLoading: isLoadingDues } = useDuesReport(1, 10);
+  const { data: duesReportRes, isLoading: isLoadingDues } = useDuesReport(
+    1,
+    10,
+  );
 
   const expiringMemberships: Membership[] = expiringMembershipsRes?.data ?? [];
   const expiringTrainings: Training[] = expiringTrainingsRes?.data ?? [];
@@ -79,6 +83,38 @@ export function ReceptionPage() {
         title="Reception"
         description={`Welcome, ${user?.firstName || "Staff"}!`}
       />
+
+      {/* Quick Actions — one button per enabled permission */}
+      {(perms.canRegisterMember ||
+        perms.canCreateMembership ||
+        perms.canCreateTraining) && (
+        <div className="flex flex-wrap gap-2">
+          {perms.canRegisterMember && (
+            <Button onClick={() => navigate("/members/register")}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Register Member
+            </Button>
+          )}
+          {perms.canCreateMembership && (
+            <Button
+              variant="outline"
+              onClick={() => navigate("/memberships/create")}
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              New Membership
+            </Button>
+          )}
+          {perms.canCreateTraining && (
+            <Button
+              variant="outline"
+              onClick={() => navigate("/trainings/create")}
+            >
+              <Dumbbell className="h-4 w-4 mr-2" />
+              New Training
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Expiring Soon + No Active Membership */}
       <div className="grid gap-4 lg:grid-cols-2">

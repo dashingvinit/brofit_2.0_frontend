@@ -114,15 +114,6 @@ export function DashboardLayout() {
     ...(staffPerms.canTakeAttendance
       ? [{ name: "Attendance", href: ROUTES.ATTENDANCE, icon: ScanLine, isActive: isActive(ROUTES.ATTENDANCE) }]
       : []),
-    ...(staffPerms.canViewMembers
-      ? [{ name: "Members", href: ROUTES.MEMBERS, icon: Users, isActive: isActive(ROUTES.MEMBERS) }]
-      : []),
-    ...(staffPerms.canCreateMembership
-      ? [{ name: "Memberships", href: ROUTES.MEMBERSHIPS, icon: CreditCard, isActive: isActive(ROUTES.MEMBERSHIPS) }]
-      : []),
-    ...(staffPerms.canCreateTraining
-      ? [{ name: "Trainings", href: ROUTES.TRAININGS, icon: Dumbbell, isActive: isActive(ROUTES.TRAININGS) }]
-      : []),
   ];
 
   return (

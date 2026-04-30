@@ -14,7 +14,6 @@ const DEFAULTS: PermissionFlags = {
   canCreateMembership: false,
   canCreateTraining: false,
   canRecordPayment: false,
-  canViewMembers: true,
   canViewReports: false,
 };
 

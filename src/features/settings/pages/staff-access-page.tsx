@@ -17,7 +17,6 @@ import type { PermissionFlags } from "../api/staff-permissions-api";
 
 const PERMISSION_ROWS: { key: keyof PermissionFlags; label: string; desc: string }[] = [
   { key: "canTakeAttendance", label: "Take Attendance", desc: "Check members in and out" },
-  { key: "canViewMembers", label: "View Members", desc: "Browse the members list and member details" },
   { key: "canRegisterMember", label: "Register New Members", desc: "Add new gym members" },
   { key: "canCreateMembership", label: "Create Memberships", desc: "Assign membership plans to members" },
   { key: "canCreateTraining", label: "Create Trainings", desc: "Assign training plans to members" },
@@ -43,7 +42,6 @@ export function StaffAccessPage() {
         canCreateMembership: staffPerms.canCreateMembership,
         canCreateTraining: staffPerms.canCreateTraining,
         canRecordPayment: staffPerms.canRecordPayment,
-        canViewMembers: staffPerms.canViewMembers,
         canViewReports: staffPerms.canViewReports,
       });
     }

@@ -104,6 +104,10 @@ export const protectedRoutes: RouteObject[] = [
             element: <AdminRoute />,
             children: [
               { path: "/dashboard",              element: <DashboardPage /> },
+              { path: "/members",                element: <MembersListPage /> },
+              { path: "/members/recycle-bin",    element: <RecycleBinPage /> },
+              { path: "/memberships",            element: <MembershipsPage /> },
+              { path: "/trainings",              element: <TrainingsPage /> },
               { path: "/plans",                  element: <PlansPage /> },
               { path: "/trainers",               element: <TrainersPage /> },
               { path: "/trainers/:id",           element: <TrainerDetailPage /> },
@@ -122,14 +126,7 @@ export const protectedRoutes: RouteObject[] = [
             ],
           },
 
-          // ── Permission-gated routes (admin always, staff if permission granted) ──
-          {
-            element: <StaffPermissionRoute permission="canViewMembers" />,
-            children: [
-              { path: "/members", element: <MembersListPage /> },
-              { path: "/members/recycle-bin", element: <RecycleBinPage /> },
-            ],
-          },
+          // ── Permission-gated routes (staff if permission granted, admin always) ──
           {
             element: <StaffPermissionRoute permission="canRegisterMember" />,
             children: [
@@ -139,14 +136,12 @@ export const protectedRoutes: RouteObject[] = [
           {
             element: <StaffPermissionRoute permission="canCreateMembership" />,
             children: [
-              { path: "/memberships",        element: <MembershipsPage /> },
               { path: "/memberships/create", element: <CreateMembershipPage /> },
             ],
           },
           {
             element: <StaffPermissionRoute permission="canCreateTraining" />,
             children: [
-              { path: "/trainings",        element: <TrainingsPage /> },
               { path: "/trainings/create", element: <CreateTrainingPage /> },
             ],
           },

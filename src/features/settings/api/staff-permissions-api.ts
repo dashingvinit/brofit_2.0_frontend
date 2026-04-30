@@ -7,7 +7,6 @@ export type StaffPermissions = {
   canCreateMembership: boolean;
   canCreateTraining: boolean;
   canRecordPayment: boolean;
-  canViewMembers: boolean;
   canViewReports: boolean;
 };
 
