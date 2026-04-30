@@ -27,6 +27,7 @@ import { AnalyticsPage } from "@/features/analytics";
 import { AttendancePage } from "@/features/attendance/pages/attendance-page";
 import { StaffAccessPage } from "@/features/settings/pages/staff-access-page";
 import { WhatsAppPage } from "@/features/settings/pages/whatsapp-page";
+import { WhatsAppHubPage } from "@/features/whatsapp/pages/whatsapp-hub-page";
 import { BroadcastPage } from "@/features/settings/pages/broadcast-page";
 import { InboxPage } from "@/features/inbox/pages/inbox-page";
 import { OffersPage, CreateOfferPage, EditOfferPage } from "@/features/offers";
@@ -109,6 +110,7 @@ export const protectedRoutes: RouteObject[] = [
               { path: "/financials",             element: <FinancialsPage /> },
               { path: "/financials/month/:month",element: <MonthlyExpensesPage /> },
               { path: "/analytics",              element: <AnalyticsPage /> },
+              { path: "/whatsapp",            element: <WhatsAppHubPage /> },
               { path: "/settings",            element: <Navigate to="/settings/staff" replace /> },
               { path: "/settings/staff",     element: <StaffAccessPage /> },
               { path: "/settings/whatsapp",  element: <WhatsAppPage /> },

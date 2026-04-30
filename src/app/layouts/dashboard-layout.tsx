@@ -57,6 +57,7 @@ import {
   Inbox,
   Tag,
   MessageCircle,
+  MessageSquare,
   Radio,
   Trash2,
 } from "lucide-react";
@@ -159,6 +160,14 @@ export function DashboardLayout() {
                       <Link to={ROUTES.INBOX}>
                         <Inbox />
                         <span>Inbox</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive(ROUTES.WHATSAPP)} tooltip="WhatsApp">
+                      <Link to={ROUTES.WHATSAPP}>
+                        <MessageSquare />
+                        <span>WhatsApp</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

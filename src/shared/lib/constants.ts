@@ -52,6 +52,7 @@ export const ROUTES = {
   SETTINGS_STAFF: "/settings/staff",
   SETTINGS_WHATSAPP: "/settings/whatsapp",
   SETTINGS_BROADCAST: "/settings/broadcast",
+  WHATSAPP: "/whatsapp",
   INBOX: "/inbox",
   OFFERS: "/offers",
   CREATE_OFFER: "/offers/new",
