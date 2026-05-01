@@ -18,6 +18,7 @@ export function usePlanVariantsByType(planTypeId: string, includeInactive = true
       return response.data;
     },
     enabled: !!planTypeId,
+    staleTime: 10 * 60 * 1000,
   });
 }
 
@@ -32,6 +33,7 @@ export function usePlanVariantById(id: string) {
       return response.data;
     },
     enabled: !!id,
+    staleTime: 10 * 60 * 1000,
   });
 }
 

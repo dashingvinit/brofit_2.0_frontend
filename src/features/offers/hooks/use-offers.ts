@@ -10,6 +10,7 @@ export function useOffers(type?: OfferType, isActive?: boolean) {
       const response = await offersApi.getAllOffers(type, isActive);
       return response.data;
     },
+    staleTime: 10 * 60 * 1000,
   });
 }
 
@@ -21,6 +22,7 @@ export function useOffer(id: string) {
       return response.data;
     },
     enabled: !!id,
+    staleTime: 10 * 60 * 1000,
   });
 }
 

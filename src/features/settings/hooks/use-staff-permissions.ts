@@ -47,6 +47,7 @@ export function useStaffPermissions() {
     //   - admin (needs them for the org defaults UI section)
     //   - staff with no per-user override yet (needs the fallback)
     enabled: isAdmin || (isStaff && perUserPerms === undefined),
+    staleTime: 5 * 60 * 1000,
   });
 
   const resolvedPermissions: PermissionFlags =
@@ -74,6 +75,7 @@ export function useOrgStaffList() {
       const res = await staffPermissionsApi.getStaffMembers();
       return res.data;
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 

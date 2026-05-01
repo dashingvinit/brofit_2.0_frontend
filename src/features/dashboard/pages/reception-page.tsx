@@ -38,13 +38,10 @@ export function ReceptionPage() {
   const fromState = useFromState();
   const { resolvedPermissions: perms } = useStaffPermissions();
 
-  const { data: expiringMembershipsRes } = useExpiringMemberships(7);
-  const { data: expiringTrainingsRes } = useExpiringTrainings(7);
-  const { data: inactiveSubRes } = useInactiveCandidates(1, 10);
-  const { data: duesReportRes, isLoading: isLoadingDues } = useDuesReport(
-    1,
-    10,
-  );
+  const { data: expiringMembershipsRes, isLoading: isLoadingExpiring } = useExpiringMemberships(7);
+  const { data: expiringTrainingsRes, isLoading: isLoadingTrainings } = useExpiringTrainings(7);
+  const { data: inactiveSubRes, isLoading: isLoadingInactive } = useInactiveCandidates(1, 10);
+  const { data: duesReportRes, isLoading: isLoadingDues } = useDuesReport(1, 10);
 
   const expiringMemberships: Membership[] = expiringMembershipsRes?.data ?? [];
   const expiringTrainings: Training[] = expiringTrainingsRes?.data ?? [];
@@ -55,6 +52,8 @@ export function ReceptionPage() {
     totalMembersWithDues: 0,
     grandTotal: 0,
   };
+
+  const isLoadingExpiringItems = isLoadingExpiring || isLoadingTrainings;
 
   const expiringItems = [
     ...expiringMemberships.map((m) => ({
@@ -125,12 +124,18 @@ export function ReceptionPage() {
               <CalendarDays className="h-4 w-4" />
               Expiring in 7 Days
             </CardTitle>
-            {expiringItems.length > 0 && (
+            {!isLoadingExpiringItems && expiringItems.length > 0 && (
               <Badge variant="secondary">{expiringItems.length}</Badge>
             )}
           </CardHeader>
           <CardContent>
-            {expiringItems.length === 0 ? (
+            {isLoadingExpiringItems ? (
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : expiringItems.length === 0 ? (
               <EmptyState message="No memberships or trainings expiring in the next 7 days." />
             ) : (
               <div className="divide-y">
@@ -156,12 +161,18 @@ export function ReceptionPage() {
               <UserX className="h-4 w-4" />
               No Active Membership
             </CardTitle>
-            {inactiveSubMembers.length > 0 && (
+            {!isLoadingInactive && inactiveSubMembers.length > 0 && (
               <Badge variant="secondary">{inactiveSubMembers.length}</Badge>
             )}
           </CardHeader>
           <CardContent>
-            {inactiveSubMembers.length === 0 ? (
+            {isLoadingInactive ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : inactiveSubMembers.length === 0 ? (
               <EmptyState message="All active members have a membership." />
             ) : (
               <div className="divide-y">
@@ -173,8 +184,11 @@ export function ReceptionPage() {
                   return (
                     <div
                       key={member.id}
-                      className="flex items-center justify-between py-3 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors"
+                      role="button"
+                      tabIndex={0}
+                      className="flex items-center justify-between py-3 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => navigate(`/members/${member.id}`)}
+                      onKeyDown={(e) => e.key === "Enter" && navigate(`/members/${member.id}`)}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="rounded-full p-1.5 shrink-0 bg-red-100 dark:bg-red-950/50">
@@ -253,8 +267,10 @@ export function ReceptionPage() {
                       {duesMembers.map((m) => (
                         <tr
                           key={m.memberId}
-                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          tabIndex={0}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                           onClick={() => navigate(`/members/${m.memberId}`)}
+                          onKeyDown={(e) => e.key === "Enter" && navigate(`/members/${m.memberId}`)}
                         >
                           <td className="py-2.5 px-3">
                             <div>
@@ -307,8 +323,11 @@ export function ReceptionPage() {
                 {duesMembers.map((m) => (
                   <div
                     key={m.memberId}
-                    className="rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                    role="button"
+                    tabIndex={0}
+                    className="rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => navigate(`/members/${m.memberId}`)}
+                    onKeyDown={(e) => e.key === "Enter" && navigate(`/members/${m.memberId}`)}
                   >
                     <div className="flex items-center justify-between mb-1.5">
                       <p className="font-medium text-sm">

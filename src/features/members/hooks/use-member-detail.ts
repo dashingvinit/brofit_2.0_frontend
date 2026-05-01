@@ -9,6 +9,7 @@ export function useMemberDues(memberId: string) {
     queryKey: ['reports', 'dues', memberId],
     queryFn: () => reportsApi.getMemberDues(memberId),
     enabled: !!memberId,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -19,6 +20,7 @@ export function useInactiveCandidates(page = 1, limit = 10) {
   return useQuery({
     queryKey: ['reports', 'inactive-candidates', page, limit],
     queryFn: () => reportsApi.getInactiveCandidates(page, limit),
+    staleTime: 60 * 1000,
   });
 }
 
@@ -29,5 +31,6 @@ export function useDuesReport(page = 1, limit = 10) {
   return useQuery({
     queryKey: ['reports', 'dues', 'all', page, limit],
     queryFn: () => reportsApi.getAllDues(page, limit),
+    staleTime: 60 * 1000,
   });
 }

@@ -7,6 +7,7 @@ export function useTrainings(page = 1, limit = 100) {
   return useQuery({
     queryKey: ['trainings', page, limit],
     queryFn: () => trainingApi.getAllTrainings(page, limit),
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -15,6 +16,7 @@ export function useTraining(id: string) {
     queryKey: ['trainings', id],
     queryFn: () => trainingApi.getTrainingById(id),
     enabled: !!id,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -23,6 +25,7 @@ export function useMemberTrainings(memberId: string) {
     queryKey: ['trainings', 'member', memberId],
     queryFn: () => trainingApi.getMemberTrainings(memberId),
     enabled: !!memberId,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -31,6 +34,7 @@ export function useActiveTraining(memberId: string) {
     queryKey: ['trainings', 'member', memberId, 'active'],
     queryFn: () => trainingApi.getActiveTraining(memberId),
     enabled: !!memberId,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -38,6 +42,7 @@ export function useTrainingStats() {
   return useQuery({
     queryKey: ['trainings', 'stats'],
     queryFn: () => trainingApi.getTrainingStats(),
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -182,6 +187,7 @@ export function useTrainingDues(trainingId: string) {
     queryKey: ['trainings', trainingId, 'dues'],
     queryFn: () => trainingApi.getTrainingDues(trainingId),
     enabled: !!trainingId,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -212,5 +218,6 @@ export function useExpiringTrainings(days = 7) {
   return useQuery({
     queryKey: ['trainings', 'expiring', days],
     queryFn: () => trainingApi.getExpiringTrainings(days),
+    staleTime: 60 * 1000,
   });
 }

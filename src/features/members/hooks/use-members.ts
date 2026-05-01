@@ -47,6 +47,7 @@ export function useMembers(
         noMembership,
         isArchived,
       ),
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -58,6 +59,7 @@ export function useSearchMembers(params: SearchMembersParams) {
     queryKey: ["members", "search", params],
     queryFn: () => membersApi.searchMembers(params),
     enabled: !!params.q, // Only run if search query exists
+    staleTime: 30 * 1000,
   });
 }
 
@@ -68,6 +70,7 @@ export function useMemberStats() {
   return useQuery({
     queryKey: ["members", "stats"],
     queryFn: () => membersApi.getMemberStats(),
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -79,6 +82,7 @@ export function useMember(memberId: string) {
     queryKey: ["members", memberId],
     queryFn: () => membersApi.getMemberById(memberId),
     enabled: !!memberId,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -139,7 +143,11 @@ export function useBatchUpdateMembers() {
       membersApi.batchUpdateMembers(ids, data),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
-      toast.success(response.message || "Members updated");
+      if (response.data?.failed > 0) {
+        toast.warning(response.message);
+      } else {
+        toast.success(response.message || "Members updated");
+      }
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Failed to update members");
@@ -157,7 +165,11 @@ export function useBatchDeleteMembers() {
     mutationFn: (ids: string[]) => membersApi.batchDeleteMembers(ids),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
-      toast.success(response.message || "Members deleted");
+      if (response.data?.failed > 0) {
+        toast.warning(response.message);
+      } else {
+        toast.success(response.message || "Members deleted");
+      }
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Failed to delete members");
@@ -253,5 +265,6 @@ export function useDuplicates() {
   return useQuery({
     queryKey: ["members", "duplicates"],
     queryFn: () => reportsApi.getDuplicates(),
+    staleTime: 5 * 60 * 1000,
   });
 }

@@ -14,6 +14,7 @@ export function useExpenses(month?: string) {
   return useQuery({
     queryKey: ['financials', 'expenses', month ?? 'all'],
     queryFn: () => financialsApi.getExpenses(month),
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -66,6 +67,7 @@ export function useInvestments() {
   return useQuery({
     queryKey: ['financials', 'investments'],
     queryFn: () => financialsApi.getInvestments(),
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -118,6 +120,7 @@ export function useMonthlySummary(month?: string) {
   return useQuery({
     queryKey: ['financials', 'summary', month ?? 'current'],
     queryFn: () => financialsApi.getSummary(month),
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -125,6 +128,7 @@ export function useMonthlySummaryWithDelta() {
   return useQuery({
     queryKey: ['financials', 'summary-delta'],
     queryFn: () => financialsApi.getSummaryWithDelta(),
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -132,6 +136,7 @@ export function useRoi() {
   return useQuery({
     queryKey: ['financials', 'roi'],
     queryFn: () => financialsApi.getRoi(),
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -139,5 +144,6 @@ export function useTrends(months = 12) {
   return useQuery({
     queryKey: ['financials', 'trends', months],
     queryFn: () => financialsApi.getTrends(months),
+    staleTime: 5 * 60 * 1000,
   });
 }

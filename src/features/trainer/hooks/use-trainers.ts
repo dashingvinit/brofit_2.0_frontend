@@ -10,6 +10,7 @@ export function useTrainers() {
   return useQuery({
     queryKey: ['trainers'],
     queryFn: () => trainersApi.getAllTrainers(),
+    staleTime: 10 * 60 * 1000,
   });
 }
 
@@ -21,6 +22,7 @@ export function useTrainerWithClients(trainerId: string) {
     queryKey: ['trainers', trainerId, 'clients'],
     queryFn: () => trainersApi.getTrainerWithClients(trainerId),
     enabled: !!trainerId,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

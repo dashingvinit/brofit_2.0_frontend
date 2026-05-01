@@ -18,6 +18,7 @@ export function useMemberships(
     queryKey: ['memberships', page, limit, status, createdFrom, createdTo],
     queryFn: () => membershipsApi.getAllMemberships(page, limit, status, createdFrom, createdTo),
     enabled,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -29,6 +30,7 @@ export function useMembership(id: string) {
     queryKey: ['memberships', id],
     queryFn: () => membershipsApi.getMembershipById(id),
     enabled: !!id,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -40,6 +42,7 @@ export function useMemberMemberships(memberId: string) {
     queryKey: ['memberships', 'member', memberId],
     queryFn: () => membershipsApi.getMemberMemberships(memberId),
     enabled: !!memberId,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -51,6 +54,7 @@ export function useActiveMembership(memberId: string) {
     queryKey: ['memberships', 'member', memberId, 'active'],
     queryFn: () => membershipsApi.getActiveMembership(memberId),
     enabled: !!memberId,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -61,6 +65,7 @@ export function useMembershipStats() {
   return useQuery({
     queryKey: ['memberships', 'stats'],
     queryFn: () => membershipsApi.getMembershipStats(),
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -209,6 +214,7 @@ export function useMembershipDues(membershipId: string) {
     queryKey: ['memberships', membershipId, 'dues'],
     queryFn: () => membershipsApi.getMembershipDues(membershipId),
     enabled: !!membershipId,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -322,5 +328,6 @@ export function useExpiringMemberships(days = 7) {
   return useQuery({
     queryKey: ['memberships', 'expiring', days],
     queryFn: () => membershipsApi.getExpiringMemberships(days),
+    staleTime: 60 * 1000,
   });
 }

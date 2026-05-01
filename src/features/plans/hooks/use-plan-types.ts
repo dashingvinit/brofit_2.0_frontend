@@ -18,6 +18,7 @@ export function usePlanTypes() {
       const response = await planTypesApi.getActivePlanTypes();
       return response.data;
     },
+    staleTime: 10 * 60 * 1000,
   });
 }
 
@@ -31,6 +32,7 @@ export function usePlanTypesByCategory(category: PlanCategory) {
       const response = await planTypesApi.getActivePlanTypes(category);
       return response.data;
     },
+    staleTime: 10 * 60 * 1000,
   });
 }
 
@@ -44,6 +46,7 @@ export function useAllPlanTypes() {
       const response = await planTypesApi.getAllPlanTypes();
       return response.data;
     },
+    staleTime: 10 * 60 * 1000,
   });
 }
 
@@ -58,6 +61,7 @@ export function usePlanTypeById(id: string) {
       return response.data;
     },
     enabled: !!id,
+    staleTime: 10 * 60 * 1000,
   });
 }
 

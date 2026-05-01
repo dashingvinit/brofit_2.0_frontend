@@ -65,6 +65,7 @@ export const protectedRoutes: RouteObject[] = [
           // Blocked for future org:member (gym customers)
           {
             element: <StaffRoute />,
+            errorElement: <RouteErrorBoundary />,
             children: [
               {
                 path: "/reception",
@@ -102,6 +103,7 @@ export const protectedRoutes: RouteObject[] = [
           // ── Admin-only routes (org:admin) ────────────────────────────
           {
             element: <AdminRoute />,
+            errorElement: <RouteErrorBoundary />,
             children: [
               { path: "/dashboard",              element: <DashboardPage /> },
               { path: "/members",                element: <MembersListPage /> },
@@ -129,18 +131,21 @@ export const protectedRoutes: RouteObject[] = [
           // ── Permission-gated routes (staff if permission granted, admin always) ──
           {
             element: <StaffPermissionRoute permission="canRegisterMember" />,
+            errorElement: <RouteErrorBoundary />,
             children: [
               { path: "/members/register", element: <RegisterMemberPage /> },
             ],
           },
           {
             element: <StaffPermissionRoute permission="canCreateMembership" />,
+            errorElement: <RouteErrorBoundary />,
             children: [
               { path: "/memberships/create", element: <CreateMembershipPage /> },
             ],
           },
           {
             element: <StaffPermissionRoute permission="canCreateTraining" />,
+            errorElement: <RouteErrorBoundary />,
             children: [
               { path: "/trainings/create", element: <CreateTrainingPage /> },
             ],
