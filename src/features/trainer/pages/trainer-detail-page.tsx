@@ -12,6 +12,7 @@ import {
   History,
   TrendingUp,
   Clock,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -67,6 +68,16 @@ function formatDate(dateStr: string) {
     day: "numeric",
     month: "short",
     year: "numeric",
+  });
+}
+
+function formatDateCompact(dateStr: string) {
+  const d = new Date(dateStr);
+  const omitYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    ...(omitYear ? {} : { year: "numeric" }),
   });
 }
 
@@ -299,6 +310,103 @@ function ConfirmUnmarkDialog({
   );
 }
 
+// ─── Confirm Bulk Payout Dialog ───────────────────────────────────────────────
+
+function ConfirmBulkPayoutDialog({
+  open,
+  onOpenChange,
+  month,
+  year,
+  items,
+  trainerId,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  month: number;
+  year: number;
+  items: { row: TrainerPayoutRow; slot: TrainerPayoutMonthSlot }[];
+  trainerId: string;
+}) {
+  const [notes, setNotes] = useState("");
+  const recordPayout = useRecordTrainerPayout(trainerId);
+  const total = items.reduce((sum, { slot }) => sum + slot.amount, 0);
+
+  const handleConfirm = async () => {
+    for (const { row, slot } of items) {
+      await recordPayout.mutateAsync({
+        trainingId: row.training.id,
+        month: slot.month,
+        year: slot.year,
+        notes: notes.trim() || undefined,
+      });
+    }
+    setNotes("");
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Record Payout</DialogTitle>
+          <DialogDescription>
+            Mark all {items.length} unpaid clients for{" "}
+            {formatMonthYear(month, year)} as paid.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 py-1">
+          <div className="rounded-lg border bg-muted/40 divide-y text-sm">
+            {items.map(({ row, slot }) => {
+              const name = `${row.training.member.firstName} ${row.training.member.lastName}`;
+              return (
+                <div
+                  key={row.training.id}
+                  className="flex justify-between items-center px-3 py-2"
+                >
+                  <span>{name}</span>
+                  <span
+                    className={`font-medium ${slot.isFixedPayout ? "text-orange-600 dark:text-orange-400" : "text-emerald-600 dark:text-emerald-400"}`}
+                  >
+                    {formatRupees(slot.amount)}
+                  </span>
+                </div>
+              );
+            })}
+            <div className="flex justify-between items-center px-3 py-2 font-semibold">
+              <span>Total</span>
+              <span>{formatRupees(total)}</span>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="bulkPayoutNotes">Notes (optional)</Label>
+            <Textarea
+              id="bulkPayoutNotes"
+              placeholder="e.g. Paid in cash at gym"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              className="resize-none"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleConfirm} disabled={recordPayout.isPending}>
+            {recordPayout.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+            )}
+            Mark All Paid
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Edit Trainer Dialog ──────────────────────────────────────────────────────
 
 function EditTrainerDialog({
@@ -400,6 +508,11 @@ function PayoutMonthsSection({
     row: TrainerPayoutRow;
     slot: TrainerPayoutMonthSlot;
   } | null>(null);
+  const [bulkPayTarget, setBulkPayTarget] = useState<{
+    month: number;
+    year: number;
+    items: { row: TrainerPayoutRow; slot: TrainerPayoutMonthSlot }[];
+  } | null>(null);
   const [expandedMonth, setExpandedMonth] = useState<string | null>(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -456,162 +569,8 @@ function PayoutMonthsSection({
 
   return (
     <div className="space-y-3">
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Monthly Payouts</CardTitle>
-            {summary.outstanding > 0 ? (
-              <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">
-                {formatRupees(summary.outstanding)} outstanding
-              </span>
-            ) : (
-              <span className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 className="h-3.5 w-3.5" /> All settled
-              </span>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {allGroups.map((group, idx) => {
-            const key = `${group.year}-${String(group.month).padStart(2, "0")}`;
-            const isPending = group.items.some((i) => !i.slot.paid);
-            const unpaid = group.items.filter((i) => !i.slot.paid);
-            const paid = group.items.filter((i) => i.slot.paid);
-            const totalDue = unpaid.reduce((sum, i) => sum + i.slot.amount, 0);
-            const totalPaid = paid.reduce((sum, i) => sum + i.slot.amount, 0);
-            const isExpanded = expandedMonth === key;
-            const isFuture =
-              group.year > now.getFullYear() ||
-              (group.year === now.getFullYear() &&
-                group.month > now.getMonth() + 1);
-
-            return (
-              <div key={key} className={idx > 0 ? "border-t" : ""}>
-                <button
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors"
-                  onClick={() => toggleMonth(key)}
-                >
-                  {!isPending ? (
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                  ) : isFuture ? (
-                    <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted-foreground/40 bg-muted" />
-                  ) : (
-                    <div className="h-4 w-4 shrink-0 rounded-full border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/50" />
-                  )}
-                  <span className="font-medium text-sm flex-1">
-                    {formatMonthYear(group.month, group.year)}
-                  </span>
-                  <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">
-                    {group.items.length}{" "}
-                    {group.items.length === 1 ? "client" : "clients"}
-                  </span>
-                  {!isPending ? (
-                    <span className="text-sm text-emerald-600 dark:text-emerald-400 shrink-0">
-                      {formatRupees(totalPaid)} paid
-                    </span>
-                  ) : isFuture ? (
-                    <span className="text-sm text-muted-foreground shrink-0">
-                      {formatRupees(totalDue)} scheduled
-                    </span>
-                  ) : (
-                    <span className="text-sm font-semibold text-amber-600 dark:text-amber-400 shrink-0">
-                      {formatRupees(totalDue)} due
-                    </span>
-                  )}
-                  <ChevronRight
-                    className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
-                  />
-                </button>
-
-                <div
-                  className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
-                >
-                  <div className="overflow-hidden">
-                    <div className="border-t bg-muted/30">
-                      {[...unpaid, ...paid].map(({ row, slot }) => {
-                        const name = `${row.training.member.firstName} ${row.training.member.lastName}`;
-                        return (
-                          <div
-                            key={row.training.id}
-                            className={`flex items-center justify-between pl-11 pr-4 py-2.5 border-b last:border-b-0 ${slot.paid ? "opacity-60" : ""}`}
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <Avatar className="h-7 w-7 shrink-0">
-                                <AvatarFallback
-                                  className={`text-xs font-semibold ${getAvatarColor(name)}`}
-                                >
-                                  {row.training.member.firstName[0].toUpperCase()}
-                                  {row.training.member.lastName[0].toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <p className="text-sm font-medium truncate">
-                                    {name}
-                                  </p>
-                                  {row.training.status === "expired" && (
-                                    <Badge
-                                      variant="secondary"
-                                      className="text-[10px] px-1.5 py-0 shrink-0"
-                                    >
-                                      Expired
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {row.training.planVariant?.planType?.name ??
-                                    "—"}
-                                  {slot.paid && slot.paidAt
-                                    ? ` · paid ${new Date(slot.paidAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
-                                    : slot.isFixedPayout
-                                      ? " · negotiated"
-                                      : ""}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3 shrink-0 ml-2">
-                              <span
-                                className={`font-semibold text-sm ${slot.isFixedPayout && !slot.paid ? "text-orange-600 dark:text-orange-400" : ""}`}
-                              >
-                                {formatRupees(slot.amount)}
-                              </span>
-                              {slot.paid ? (
-                                <button
-                                  onClick={() =>
-                                    setSelectedUnmark({ row, slot })
-                                  }
-                                  title="Click to undo payment"
-                                  className="text-emerald-600 dark:text-emerald-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                                >
-                                  <CheckCircle2 className="h-4 w-4" />
-                                </button>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-xs px-2.5"
-                                  onClick={() =>
-                                    setSelectedPayout({ row, slot })
-                                  }
-                                >
-                                  Pay
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
-
-      {/* Summary stats — at the end */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 pt-1">
+      {/* Summary stats — context before detail */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Revenue Generated"
           shortLabel="Revenue"
@@ -670,6 +629,194 @@ function PayoutMonthsSection({
         />
       </div>
 
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Monthly Payouts</CardTitle>
+            {summary.outstanding > 0 ? (
+              <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                {formatRupees(summary.outstanding)} outstanding
+              </span>
+            ) : (
+              <span className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5" /> All settled
+              </span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {allGroups.map((group, idx) => {
+            const key = `${group.year}-${String(group.month).padStart(2, "0")}`;
+            const unpaid = group.items.filter((i) => !i.slot.paid);
+            const paid = group.items.filter((i) => i.slot.paid);
+            const isPending = unpaid.length > 0;
+            const totalDue = unpaid.reduce((sum, i) => sum + i.slot.amount, 0);
+            const totalPaid = paid.reduce((sum, i) => sum + i.slot.amount, 0);
+            const isExpanded = expandedMonth === key;
+            const isFuture =
+              group.year > now.getFullYear() ||
+              (group.year === now.getFullYear() &&
+                group.month > now.getMonth() + 1);
+
+            return (
+              <div key={key} className={idx > 0 ? "border-t" : ""}>
+                <div
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer select-none"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => toggleMonth(key)}
+                  onKeyDown={(e) => e.key === "Enter" && toggleMonth(key)}
+                >
+                  {!isPending ? (
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                  ) : isFuture ? (
+                    <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted-foreground/40 bg-muted" />
+                  ) : (
+                    <div className="h-4 w-4 shrink-0 rounded-full border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/50" />
+                  )}
+                  <span className="font-medium text-sm flex-1">
+                    {formatMonthYear(group.month, group.year)}
+                  </span>
+                  <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">
+                    {group.items.length}{" "}
+                    {group.items.length === 1 ? "client" : "clients"}
+                  </span>
+                  <span
+                    className={`text-sm tabular-nums w-28 text-right shrink-0 ${
+                      !isPending
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : isFuture
+                          ? "text-muted-foreground"
+                          : "font-semibold text-amber-600 dark:text-amber-400"
+                    }`}
+                  >
+                    {!isPending
+                      ? `${formatRupees(totalPaid)} paid`
+                      : `${formatRupees(totalDue)} due`}
+                  </span>
+                  <ChevronRight
+                    className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                  />
+                </div>
+
+                <div
+                  className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="border-t bg-muted/30">
+                      {unpaid.length > 0 && !isFuture && (
+                        <div className="flex items-center justify-between px-4 py-2.5 border-b">
+                          {paid.length > 0 ? (
+                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
+                              {formatRupees(totalPaid)} paid
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              {unpaid.length} {unpaid.length === 1 ? "client" : "clients"} unpaid
+                            </span>
+                          )}
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs px-2.5"
+                            onClick={() =>
+                              setBulkPayTarget({
+                                month: group.month,
+                                year: group.year,
+                                items: unpaid,
+                              })
+                            }
+                          >
+                            Pay All · {formatRupees(totalDue)}
+                          </Button>
+                        </div>
+                      )}
+                      {[...unpaid, ...paid].map(({ row, slot }) => {
+                        const name = `${row.training.member.firstName} ${row.training.member.lastName}`;
+                        return (
+                          <div
+                            key={row.training.id}
+                            className={`flex items-center justify-between pl-11 pr-4 py-2.5 border-b last:border-b-0 ${slot.paid ? "opacity-60" : ""}`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <Avatar className="h-7 w-7 shrink-0">
+                                <AvatarFallback
+                                  className={`text-xs font-semibold ${getAvatarColor(name)}`}
+                                >
+                                  {row.training.member.firstName[0].toUpperCase()}
+                                  {row.training.member.lastName[0].toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <p className="text-sm font-medium truncate">
+                                    {name}
+                                  </p>
+                                  {row.training.status === "expired" && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-[10px] px-1.5 py-0 shrink-0"
+                                    >
+                                      Expired
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {row.training.planVariant?.planType?.name ?? "—"}
+                                    {slot.paid && slot.paidAt ? (
+                                      <> · paid {new Date(slot.paidAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</>
+                                    ) : slot.isFixedPayout ? (
+                                      <> · <Tag className="inline h-3 w-3 align-[-1px]" /> negotiated</>
+                                    ) : null}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+                                    <CalendarDays className="h-3 w-3" />
+                                    {formatDateCompact(row.training.startDate)} – {formatDateCompact(row.training.endDate)}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0 ml-2">
+                              <span
+                                className={`font-semibold text-sm ${slot.isFixedPayout && !slot.paid ? "text-orange-600 dark:text-orange-400" : ""}`}
+                              >
+                                {formatRupees(slot.amount)}
+                              </span>
+                              {slot.paid ? (
+                                <button
+                                  onClick={() =>
+                                    setSelectedUnmark({ row, slot })
+                                  }
+                                  title="Click to undo payment"
+                                  className="text-emerald-600 dark:text-emerald-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                >
+                                  <CheckCircle2 className="h-4 w-4" />
+                                </button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs px-2.5"
+                                  onClick={() =>
+                                    setSelectedPayout({ row, slot })
+                                  }
+                                >
+                                  Pay
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
       {/* Backfill — admin utility, shown only when relevant */}
       {!backfillDone && rows.some((r) => r.months.some((m) => m.paid)) && (
         <div className="flex justify-end">
@@ -707,6 +854,16 @@ function PayoutMonthsSection({
           onOpenChange={(open) => !open && setSelectedUnmark(null)}
           row={selectedUnmark.row}
           slot={selectedUnmark.slot}
+          trainerId={trainerId}
+        />
+      )}
+      {bulkPayTarget && (
+        <ConfirmBulkPayoutDialog
+          open
+          onOpenChange={(open) => !open && setBulkPayTarget(null)}
+          month={bulkPayTarget.month}
+          year={bulkPayTarget.year}
+          items={bulkPayTarget.items}
           trainerId={trainerId}
         />
       )}
@@ -811,7 +968,7 @@ export function TrainerDetailPage() {
               </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <div className="hidden sm:block">
               <Table>
                 <TableHeader>
@@ -890,7 +1047,7 @@ export function TrainerDetailPage() {
               </Table>
             </div>
 
-            <div className="space-y-3 sm:hidden">
+            <div className="space-y-3 sm:hidden p-4">
               {pastTrainings.map((training) => {
                 const fullName = training.member
                   ? `${training.member.firstName} ${training.member.lastName}`
