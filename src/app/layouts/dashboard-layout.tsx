@@ -291,7 +291,7 @@ export function DashboardLayout() {
                   afterSelectOrganizationUrl={ROUTES.DASHBOARD}
                   appearance={{
                     elements: {
-                      rootBox: "flex items-center",
+                      rootBox: "hidden sm:flex items-center",
                       organizationSwitcherTrigger:
                         "px-2 py-1.5 md:px-3 md:py-2 rounded-md hover:bg-accent text-foreground text-sm",
                     },

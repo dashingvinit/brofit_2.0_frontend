@@ -138,7 +138,7 @@ export function TrainingDetailPage() {
     return (
       <div className="space-y-4">
         <Skeleton className="h-10 w-64" />
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Skeleton className="h-48 lg:col-span-2" />
           <Skeleton className="h-48" />
         </div>
@@ -279,7 +279,7 @@ export function TrainingDetailPage() {
       />
 
       {/* Training Info + Dues Overview */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">

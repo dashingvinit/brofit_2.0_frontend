@@ -64,9 +64,18 @@ export function GlobalSearch() {
   return (
     <>
       <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 sm:hidden"
+        onClick={() => setOpen(true)}
+        title="Search members"
+      >
+        <Search className="h-4 w-4" />
+      </Button>
+      <Button
         variant="outline"
         size="sm"
-        className="h-8 gap-2 text-sm text-muted-foreground font-normal w-44 md:w-56 justify-start"
+        className="h-8 gap-2 text-sm text-muted-foreground font-normal w-56 justify-start hidden sm:inline-flex"
         onClick={() => setOpen(true)}
       >
         <Search className="h-3.5 w-3.5 shrink-0" />
@@ -77,7 +86,10 @@ export function GlobalSearch() {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="p-0 gap-0 max-w-md overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent
+          className="p-0 gap-0 w-[calc(100%-2rem)] max-w-md overflow-hidden top-[8%] sm:top-[50%] translate-y-0 sm:translate-y-[-50%] [&>button]:hidden"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           {/* Search input */}
           <div className="flex items-center gap-2 border-b px-3 py-3">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -135,8 +147,7 @@ export function GlobalSearch() {
             )}
           </div>
 
-          {/* Footer hint */}
-          <div className="border-t px-3 py-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+          <div className="border-t px-3 py-2 hidden sm:flex items-center gap-3 text-[11px] text-muted-foreground">
             <span><kbd className="border rounded px-1 py-0.5">↑↓</kbd> navigate</span>
             <span><kbd className="border rounded px-1 py-0.5">↵</kbd> open</span>
             <span><kbd className="border rounded px-1 py-0.5">Esc</kbd> close</span>

@@ -142,7 +142,7 @@ export function MembershipDetailPage() {
     return (
       <div className="space-y-4">
         <Skeleton className="h-10 w-64" />
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Skeleton className="h-48 lg:col-span-2" />
           <Skeleton className="h-48" />
         </div>
@@ -286,7 +286,7 @@ export function MembershipDetailPage() {
       />
 
       {/* Membership Info + Dues Overview */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Membership Info */}
         <Card className="lg:col-span-2">
           <CardHeader>

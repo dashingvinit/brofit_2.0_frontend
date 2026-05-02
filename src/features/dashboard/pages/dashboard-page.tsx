@@ -436,7 +436,7 @@ export function DashboardPage() {
       </div>
 
       {/* ── Three-column row ── */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 
         {/* Today's Attendance */}
         <Card className="overflow-hidden">

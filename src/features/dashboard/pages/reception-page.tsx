@@ -116,7 +116,7 @@ export function ReceptionPage() {
       )}
 
       {/* Expiring Soon + No Active Membership */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {/* Expiring Soon */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
