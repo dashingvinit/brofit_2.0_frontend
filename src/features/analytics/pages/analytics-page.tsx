@@ -319,6 +319,13 @@ export function AnalyticsPage() {
         <RetentionCard />
       </div>
 
+      {/* Business health */}
+      <SectionLabel>Business Health</SectionLabel>
+      <div className="grid gap-4 md:grid-cols-2">
+        <LifetimeEarningsPieCard />
+        <UnitEconomicsCard />
+      </div>
+
       {/* Revenue */}
       <SectionLabel>Revenue</SectionLabel>
       <div className="grid gap-4 md:grid-cols-2">
@@ -340,13 +347,6 @@ export function AnalyticsPage() {
       {/* Trainers */}
       <SectionLabel>Trainers</SectionLabel>
       <TrainerPerformanceCard />
-
-      {/* Business health */}
-      <SectionLabel>Business Health</SectionLabel>
-      <div className="grid gap-4 md:grid-cols-2">
-        <LifetimeEarningsPieCard />
-        <UnitEconomicsCard />
-      </div>
 
       {/* Forecast — full width, intentionally last */}
       <ForecastBanner />
