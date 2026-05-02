@@ -337,12 +337,21 @@ function DueThisMonthSection({
 
   const { month: curMonth, year: curYear } = getCurrentMonthYear();
 
-  // Only active trainings with an unpaid slot for the current month
+  // For each training, find the earliest unpaid month that has already elapsed
+  // (≤ current month). This enforces sequential payment — Month N must be marked
+  // paid before Month N+1 becomes due.
   const dueItems = useMemo(() => {
     const items: { row: TrainerPayoutRow; slot: TrainerPayoutMonthSlot }[] = [];
     for (const row of rows) {
-      if (row.training.status !== 'active') continue;
-      const slot = row.months.find((m) => m.month === curMonth && m.year === curYear && !m.paid);
+      if (!['active', 'expired'].includes(row.training.status)) continue;
+      const slot = row.months
+        .filter((m) => {
+          if (m.paid) return false;
+          if (m.year > curYear) return false;
+          if (m.year === curYear && m.month > curMonth) return false;
+          return true;
+        })
+        .sort((a, b) => a.year !== b.year ? a.year - b.year : a.month - b.month)[0];
       if (slot) items.push({ row, slot });
     }
     return items;
@@ -359,8 +368,8 @@ function DueThisMonthSection({
               <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <p className="font-medium text-sm">All caught up for {formatMonthYear(curMonth, curYear)}</p>
-              <p className="text-xs text-muted-foreground">No pending payouts this month.</p>
+              <p className="font-medium text-sm">All payouts are up to date</p>
+              <p className="text-xs text-muted-foreground">No pending payouts through {formatMonthYear(curMonth, curYear)}.</p>
             </div>
           </div>
         </CardContent>
@@ -378,8 +387,8 @@ function DueThisMonthSection({
                 <Wallet className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <CardTitle className="text-base">Due This Month</CardTitle>
-                <CardDescription>{formatMonthYear(curMonth, curYear)} — {dueItems.length} active {dueItems.length === 1 ? 'client' : 'clients'} pending</CardDescription>
+                <CardTitle className="text-base">Payouts Due</CardTitle>
+                <CardDescription>{dueItems.length} {dueItems.length === 1 ? 'client' : 'clients'} pending — pay oldest month first</CardDescription>
               </div>
             </div>
             <div className="text-right">
@@ -417,7 +426,10 @@ function DueThisMonthSection({
                       <p className={`font-semibold text-sm ${slot.isFixedPayout ? 'text-orange-600 dark:text-orange-400' : ''}`}>
                         {formatRupees(slot.amount)}
                       </p>
-                      {slot.isFixedPayout && <p className="text-[10px] text-orange-500 dark:text-orange-400">negotiated</p>}
+                      <p className="text-[10px] text-muted-foreground">
+                        {formatMonthYear(slot.month, slot.year)}
+                        {slot.isFixedPayout && ' · negotiated'}
+                      </p>
                     </div>
                     <Button
                       size="sm"

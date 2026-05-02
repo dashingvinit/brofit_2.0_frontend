@@ -37,6 +37,7 @@ import { NavFlat } from "@/shared/components/nav-flat";
 import { PageBreadcrumbs } from "@/shared/components/page-breadcrumbs";
 import { NavMain } from "@/shared/components/nav-main";
 import { ViewSwitcher } from "@/shared/components/view-switcher";
+import { GlobalSearch } from "@/shared/components/global-search";
 import { ROUTES } from "@/shared/lib/constants";
 import { useRole } from "@/shared/hooks/use-role";
 import { useView } from "@/shared/hooks/use-view";
@@ -273,6 +274,7 @@ export function DashboardLayout() {
             <div className="flex flex-1 items-center justify-between gap-2">
               <PageBreadcrumbs />
               <div className="flex items-center gap-2 md:gap-3">
+                {showAdminNav && <GlobalSearch />}
                 <Button
                   variant="ghost"
                   size="icon"

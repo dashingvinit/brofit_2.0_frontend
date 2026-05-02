@@ -100,6 +100,7 @@ export function MemberDetailPage() {
   const { isPrivate } = usePrivacy();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
 
   const { data: memberResponse, isLoading: memberLoading } = useMember(id!);
   const { data: membershipsResponse, isLoading: membershipsLoading } =
@@ -236,13 +237,7 @@ export function MemberDetailPage() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   className="text-amber-600 focus:text-amber-700 focus:bg-amber-50"
-                  onClick={() => {
-                    if (window.confirm("Move this member to the Recycle Bin? They will be deactivated but their data will be preserved.")) {
-                      archiveMember.mutate(member.id, {
-                        onSuccess: () => navigate(ROUTES.MEMBERS)
-                      });
-                    }
-                  }}
+                  onClick={() => setArchiveDialogOpen(true)}
                   disabled={archiveMember.isPending}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
@@ -277,7 +272,7 @@ export function MemberDetailPage() {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-lg">{fullName}</CardTitle>
+                  <CardTitle>{fullName}</CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {calculateAge(member.dateOfBirth)} yrs
                     <span className="mx-1">&middot;</span>
@@ -354,15 +349,21 @@ export function MemberDetailPage() {
                   <p className="text-sm text-muted-foreground">Join Date</p>
                   <p className="font-medium">{formatDate(member.joinDate)}</p>
                 </div>
-                {member.referredBy && (
+              </div>
+
+              {member.referredBy && (
+                <div className="flex items-start gap-3">
+                  <div className="rounded-lg bg-primary/10 p-2 shrink-0">
+                    <User className="h-4 w-4 text-primary" />
+                  </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Referred By</p>
                     <p className="font-medium">
                       {member.referredBy.firstName} {member.referredBy.lastName}
                     </p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             <Separator />
@@ -387,7 +388,7 @@ export function MemberDetailPage() {
         {/* Dues Summary Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Dues Summary</CardTitle>
+            <CardTitle>Dues Summary</CardTitle>
             <CardDescription>
               {duesLoading
                 ? 'Loading...'
@@ -422,10 +423,10 @@ export function MemberDetailPage() {
                   </div>
                   <Separator />
                   <div className="flex justify-between font-semibold text-base">
-                    <span className={hasDues ? 'text-amber-600' : 'text-emerald-600'}>
+                    <span className={hasDues ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}>
                       {hasDues ? 'Total Due' : 'No Dues'}
                     </span>
-                    <span className={hasDues ? 'text-amber-600' : 'text-emerald-600'}>
+                    <span className={hasDues ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}>
                       <IndianRupee className="inline h-3.5 w-3.5" />
                       {totalDue.toLocaleString()}
                     </span>
@@ -449,7 +450,7 @@ export function MemberDetailPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg">Memberships</CardTitle>
+              <CardTitle>Memberships</CardTitle>
               <CardDescription>
                 {membershipsLoading
                   ? 'Loading...'
@@ -602,7 +603,7 @@ export function MemberDetailPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg">Trainings</CardTitle>
+              <CardTitle>Trainings</CardTitle>
               <CardDescription>
                 {trainingsLoading
                   ? 'Loading...'
@@ -760,6 +761,14 @@ export function MemberDetailPage() {
         isLoading={attendanceLoading}
       />
 
+      {/* Timeline */}
+      <MemberTimeline
+        memberships={sortedMemberships}
+        trainings={sortedTrainings}
+        attendanceRecords={attendanceResponse?.data ?? []}
+        isLoading={membershipsLoading || trainingsLoading || attendanceLoading}
+      />
+
       {/* Edit Member Dialog */}
       {editDialogOpen && (
         <EditMemberDialog
@@ -768,6 +777,36 @@ export function MemberDetailPage() {
           onOpenChange={setEditDialogOpen}
         />
       )}
+
+      {/* Archive Confirmation Dialog */}
+      <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move to Recycle Bin?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {fullName} will be deactivated and moved to the Recycle Bin. Their data is preserved and can be restored at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={archiveMember.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                archiveMember.mutate(member.id, {
+                  onSuccess: () => {
+                    setArchiveDialogOpen(false);
+                    navigate(ROUTES.MEMBERS);
+                  },
+                });
+              }}
+              disabled={archiveMember.isPending}
+              className="bg-amber-600 text-white hover:bg-amber-700"
+            >
+              {archiveMember.isPending ? 'Archiving...' : 'Move to Recycle Bin'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -845,7 +884,7 @@ function AttendanceTrendsCard({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               Attendance Trends
             </CardTitle>
@@ -940,6 +979,102 @@ function AttendanceTrendsCard({
             )}
           </>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Member Timeline ────────────────────────────────────────────────────────
+
+type TimelineEvent = {
+  id: string;
+  date: string;
+  type: 'membership_start' | 'membership_end' | 'training_start' | 'training_end' | 'check_in';
+  label: string;
+  sublabel: string;
+};
+
+function MemberTimeline({
+  memberships,
+  trainings,
+  attendanceRecords,
+  isLoading,
+}: {
+  memberships: Membership[];
+  trainings: Training[];
+  attendanceRecords: AttendanceRecord[];
+  isLoading: boolean;
+}) {
+  const events: TimelineEvent[] = [];
+
+  memberships.forEach((m) => {
+    const planName = m.planVariant?.planType?.name ?? 'Membership';
+    events.push({ id: `ms-${m.id}`, date: m.startDate, type: 'membership_start', label: `${planName} started`, sublabel: m.planVariant?.durationLabel ?? '' });
+    if (m.status === 'expired' || m.status === 'cancelled') {
+      events.push({ id: `me-${m.id}`, date: m.endDate, type: 'membership_end', label: `${planName} ${m.status}`, sublabel: '' });
+    }
+  });
+
+  trainings.forEach((t) => {
+    const planName = t.planVariant?.planType?.name ?? 'Training';
+    const trainerLabel = t.trainer?.name ? ` · ${t.trainer.name}` : '';
+    events.push({ id: `ts-${t.id}`, date: t.startDate, type: 'training_start', label: `${planName} training started`, sublabel: trainerLabel });
+    if (t.status === 'expired' || t.status === 'cancelled') {
+      events.push({ id: `te-${t.id}`, date: t.endDate, type: 'training_end', label: `${planName} training ${t.status}`, sublabel: '' });
+    }
+  });
+
+  attendanceRecords.slice(0, 20).forEach((r) => {
+    events.push({ id: `att-${r.id}`, date: r.date, type: 'check_in', label: 'Checked in', sublabel: new Date(r.entryTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) });
+  });
+
+  const sorted = events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const colorMap: Record<TimelineEvent['type'], { dot: string; text: string }> = {
+    membership_start: { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
+    membership_end: { dot: 'bg-red-400', text: 'text-red-600 dark:text-red-400' },
+    training_start: { dot: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400' },
+    training_end: { dot: 'bg-red-400', text: 'text-red-600 dark:text-red-400' },
+    check_in: { dot: 'bg-blue-400', text: 'text-blue-600 dark:text-blue-400' },
+  };
+
+  if (isLoading) return null;
+  if (sorted.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Activity className="h-4 w-4 text-muted-foreground" />
+          Activity Timeline
+        </CardTitle>
+        <CardDescription>{sorted.length} events</CardDescription>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="relative pl-4">
+          <div className="absolute left-[7px] top-0 bottom-0 w-px bg-border" />
+          <div className="space-y-0">
+            {sorted.map((event, i) => {
+              const colors = colorMap[event.type];
+              return (
+                <div key={event.id} className={`relative flex gap-3 ${i < sorted.length - 1 ? 'pb-3' : ''}`}>
+                  <div className={`absolute -left-[1px] top-[7px] h-2.5 w-2.5 rounded-full border-2 border-background ${colors.dot} shrink-0`} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-sm font-medium">{event.label}</span>
+                      {event.sublabel && (
+                        <span className="text-xs text-muted-foreground">{event.sublabel}</span>
+                      )}
+                      <span className="text-xs text-muted-foreground ml-auto shrink-0">
+                        {new Date(event.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

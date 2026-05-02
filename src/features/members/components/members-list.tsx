@@ -75,7 +75,7 @@ export function MembersList({ members, isLoading, isAdmin = true, selectedIds, o
   const { isPrivate } = usePrivacy();
 
   const handleDeleteMember = (member: Member) => {
-    deleteMember.mutate(member);
+    deleteMember.mutate(member.id);
   };
 
   const formatDate = (dateString: string) => {
@@ -343,7 +343,7 @@ export function MembersList({ members, isLoading, isAdmin = true, selectedIds, o
                           className="text-destructive focus:text-destructive"
                           disabled={deleteMember.isPending}
                         >
-                          {deleteMember.isPending && deleteMember.variables?.id === member.id
+                          {deleteMember.isPending && deleteMember.variables === member.id
                             ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                             : <Trash2 className="h-4 w-4 mr-2" />
                           }
@@ -449,7 +449,7 @@ export function MembersList({ members, isLoading, isAdmin = true, selectedIds, o
                             className="text-destructive focus:text-destructive"
                             disabled={deleteMember.isPending}
                           >
-                            {deleteMember.isPending && deleteMember.variables?.id === member.id
+                            {deleteMember.isPending && deleteMember.variables === member.id
                               ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               : <Trash2 className="h-4 w-4 mr-2" />
                             }

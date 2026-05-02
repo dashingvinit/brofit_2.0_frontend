@@ -59,6 +59,7 @@ import { ROUTES } from "@/shared/lib/constants";
 import { getThisMonthDateRange } from "@/shared/lib/utils";
 import { ImportCsvDialog } from "@/shared/components/import-csv-dialog";
 import { ExportDropdown } from "@/shared/components/export-dropdown";
+import { QuickPaymentDialog } from "../components/quick-payment-dialog";
 import { membersApi } from "../api/members-api";
 import { reportsApi } from "../api/reports-api";
 import { useQueryClient } from "@tanstack/react-query";
@@ -182,6 +183,7 @@ export function MembersListPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
   const [duplicateScanOpen, setDuplicateScanOpen] = useState(false);
+  const [quickPayTarget, setQuickPayTarget] = useState<{ memberId: string; memberName: string } | null>(null);
 
   const batchUpdate = useBatchUpdateMembers();
   const batchDelete = useBatchDeleteMembers();
@@ -506,7 +508,7 @@ export function MembersListPage() {
                       <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">
                         Total Due
                       </th>
-                      <th className="w-8 py-2.5 px-3" />
+                      <th className="w-16 py-2.5 px-3" />
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -550,8 +552,13 @@ export function MembersListPage() {
                             {m.totalDue.toLocaleString("en-IN")}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3">
-                          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                        <td className="py-2.5 px-3" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline px-1.5 py-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
+                            onClick={() => setQuickPayTarget({ memberId: m.memberId, memberName: `${m.firstName} ${m.lastName}` })}
+                          >
+                            Pay
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -571,10 +578,18 @@ export function MembersListPage() {
                       <p className="font-medium text-sm">
                         {m.firstName} {m.lastName}
                       </p>
-                      <span className="font-semibold text-amber-600 dark:text-amber-400 inline-flex items-center text-sm">
-                        <IndianRupee className="h-3 w-3" />
-                        {m.totalDue.toLocaleString("en-IN")}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-amber-600 dark:text-amber-400 inline-flex items-center text-sm">
+                          <IndianRupee className="h-3 w-3" />
+                          {m.totalDue.toLocaleString("en-IN")}
+                        </span>
+                        <button
+                          className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline px-1.5 py-0.5 rounded hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
+                          onClick={(e) => { e.stopPropagation(); setQuickPayTarget({ memberId: m.memberId, memberName: `${m.firstName} ${m.lastName}` }); }}
+                        >
+                          Pay
+                        </button>
+                      </div>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>{isPrivate ? "••••••••" : m.phone}</span>
@@ -1006,10 +1021,19 @@ export function MembersListPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <DuplicateScanDialog 
-        open={duplicateScanOpen} 
-        onOpenChange={setDuplicateScanOpen} 
+      <DuplicateScanDialog
+        open={duplicateScanOpen}
+        onOpenChange={setDuplicateScanOpen}
       />
+
+      {quickPayTarget && (
+        <QuickPaymentDialog
+          memberId={quickPayTarget.memberId}
+          memberName={quickPayTarget.memberName}
+          open={!!quickPayTarget}
+          onOpenChange={(v) => { if (!v) setQuickPayTarget(null); }}
+        />
+      )}
     </div>
   );
 }

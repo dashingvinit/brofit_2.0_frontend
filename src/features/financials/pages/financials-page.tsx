@@ -13,8 +13,9 @@ import {
   Clock,
   Loader2,
   ChevronRight,
+  Target,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import {
   Card,
@@ -181,6 +182,8 @@ function RoiCard() {
 
 // ─── Current Month Summary ────────────────────────────────────────────────────
 
+const REVENUE_TARGET_KEY = 'brofit_revenue_target';
+
 function CurrentMonthSummary() {
   const now = new Date();
   const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -189,7 +192,23 @@ function CurrentMonthSummary() {
   const { data: summaryRes, isLoading } = useMonthlySummary(month);
   const summary = summaryRes?.data;
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingTarget, setEditingTarget] = useState(false);
+  const [targetInput, setTargetInput] = useState('');
+  const [revenueTarget, setRevenueTarget] = useState<number | null>(() => {
+    const stored = localStorage.getItem(REVENUE_TARGET_KEY);
+    return stored ? Number(stored) : null;
+  });
+  const inputRef = useRef<HTMLInputElement>(null);
   const { isPrivate } = usePrivacy();
+
+  const saveTarget = () => {
+    const val = parseFloat(targetInput);
+    if (!isNaN(val) && val > 0) {
+      setRevenueTarget(val);
+      localStorage.setItem(REVENUE_TARGET_KEY, String(val));
+    }
+    setEditingTarget(false);
+  };
 
   const monthLabel = now.toLocaleString('default', { month: 'long', year: 'numeric' });
 
@@ -252,6 +271,63 @@ function CurrentMonthSummary() {
                 </p>
               </div>
             </div>
+            {/* Revenue target progress */}
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <Target className="h-3.5 w-3.5" />
+                  Monthly Target
+                </div>
+                {!editingTarget ? (
+                  <button
+                    onClick={() => { setTargetInput(revenueTarget ? String(revenueTarget) : ''); setEditingTarget(true); setTimeout(() => inputRef.current?.focus(), 0); }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    {revenueTarget ? 'Edit' : 'Set target'}
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <div className="relative">
+                      <IndianRupee className="absolute left-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <input
+                        ref={inputRef}
+                        type="number"
+                        value={targetInput}
+                        onChange={(e) => setTargetInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') saveTarget(); if (e.key === 'Escape') setEditingTarget(false); }}
+                        className="h-6 w-24 rounded border bg-background pl-5 pr-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                        placeholder="100000"
+                      />
+                    </div>
+                    <button onClick={saveTarget} className="text-xs font-medium text-primary hover:underline">Save</button>
+                    <button onClick={() => setEditingTarget(false)} className="text-xs text-muted-foreground hover:text-foreground">✕</button>
+                  </div>
+                )}
+              </div>
+              {revenueTarget && summary && !isPrivate ? (
+                <>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${summary.revenue >= revenueTarget ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                      style={{ width: `${Math.min((summary.revenue / revenueTarget) * 100, 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">
+                      <IndianRupee className="inline h-3 w-3" />{formatCurrency(summary.revenue)}
+                      {' '}<span className="text-muted-foreground/60">of</span>{' '}
+                      <IndianRupee className="inline h-3 w-3" />{formatCurrency(revenueTarget)}
+                    </span>
+                    <span className={`font-semibold tabular-nums ${summary.revenue >= revenueTarget ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                      {Math.round((summary.revenue / revenueTarget) * 100)}%
+                    </span>
+                  </div>
+                </>
+              ) : !revenueTarget ? (
+                <p className="text-xs text-muted-foreground">Set a monthly revenue target to track progress.</p>
+              ) : null}
+            </div>
+
             <Link
               to={`/financials/month/${month}`}
               className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors"

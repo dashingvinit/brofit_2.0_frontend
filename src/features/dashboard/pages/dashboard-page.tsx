@@ -20,6 +20,8 @@ import {
   Loader2,
   Snowflake,
   CalendarClock,
+  UserRound,
+  CreditCard as CreditCardIcon,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -46,6 +48,8 @@ import {
 } from "@/features/attendance/hooks/use-attendance";
 import { usePingMember } from "@/features/settings/hooks/use-notification-settings";
 import { useMonthlySummaryWithDelta } from "@/features/financials/hooks/use-financials";
+import { useTrainers } from "@/features/trainer/hooks/use-trainers";
+import { QuickPaymentDialog } from "@/features/members/components/quick-payment-dialog";
 import { ROUTES } from "@/shared/lib/constants";
 import { useFromState } from "@/shared/hooks/use-return-to";
 import { usePrivacy } from "@/shared/hooks/use-privacy";
@@ -214,6 +218,7 @@ export function DashboardPage() {
   // memberId → "sending" | "sent" | "error"
   const [pingState, setPingState] = useState<Record<string, "sending" | "sent" | "error">>({});
   const { mutate: pingMember } = usePingMember();
+  const [quickPayTarget, setQuickPayTarget] = useState<{ memberId: string; memberName: string } | null>(null);
 
   const handlePing = useCallback((memberId: string, type: "dues" | "no-subscription", e: React.MouseEvent) => {
     e.stopPropagation();
@@ -237,6 +242,7 @@ export function DashboardPage() {
   const { data: attendanceStatsRes, isLoading: isLoadingAttendance } = useAttendanceTodayStats();
   const { data: attendanceInsideRes } = useAttendanceInside();
   const { data: summaryDeltaRes, isLoading: isLoadingSummaryDelta } = useMonthlySummaryWithDelta();
+  const { data: trainersRes } = useTrainers();
   // Frozen and upcoming memberships — always need visibility even though they're excluded from "no membership"
   const { data: frozenMembershipsRes } = useMemberships(1, 50, 'frozen');
   const { data: upcomingMembershipsRes } = useMemberships(1, 50, 'upcoming');
@@ -312,6 +318,9 @@ export function DashboardPage() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
+  const activeTrainers = (trainersRes?.data ?? []).filter((t) => t.isActive);
+  const expiringToday = expiringItems.filter((item) => daysUntil(item.endDate) <= 0);
+
   return (
     <div className="space-y-5">
 
@@ -351,6 +360,40 @@ export function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* ── Today's Highlights ── */}
+      {expiringToday.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 px-3 py-2.5">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <AlertTriangle className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+            <span className="text-sm font-semibold text-red-900 dark:text-red-100">
+              {expiringToday.length} expire{expiringToday.length === 1 ? 's' : ''} today
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-x-2 gap-y-1">
+            {expiringToday.slice(0, 4).map((item) => (
+              <button
+                key={`${item.type}-${item.id}`}
+                onClick={() => navigate(item.path, fromState)}
+                className="text-xs font-medium text-red-700 dark:text-red-300 hover:underline underline-offset-2"
+              >
+                {item.name}
+              </button>
+            ))}
+            {expiringToday.length > 4 && (
+              <span className="text-xs text-red-600 dark:text-red-400">
+                +{expiringToday.length - 4} more
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => navigate(`${ROUTES.MEMBERSHIPS}?expiring=true`, fromState)}
+            className="ml-auto text-xs font-medium text-red-700 dark:text-red-300 hover:underline flex items-center gap-0.5 shrink-0"
+          >
+            View all <ArrowRight className="h-3 w-3" />
+          </button>
+        </div>
+      )}
 
       {/* ── Key Stats ── */}
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
@@ -777,7 +820,7 @@ export function DashboardPage() {
                       <th className="text-right py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Membership</th>
                       <th className="text-right py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Training</th>
                       <th className="text-right py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Due</th>
-                      <th className="w-10 py-2.5 px-3" />
+                      <th className="w-20 py-2.5 px-3" />
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -814,25 +857,34 @@ export function DashboardPage() {
                           </span>
                         </td>
                         <td className="py-2.5 px-3" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            className={cn(
-                              "p-1 rounded-md transition-all",
-                              pingState[m.memberId] === "sent"
-                                ? "text-green-600 dark:text-green-400"
-                                : pingState[m.memberId] === "error"
-                                ? "text-destructive"
-                                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                            )}
-                            title={pingState[m.memberId] === "sent" ? "Reminder sent" : pingState[m.memberId] === "error" ? "Failed to send" : "Send dues reminder"}
-                            onClick={(e) => handlePing(m.memberId, "dues", e)}
-                            disabled={pingState[m.memberId] === "sending" || pingState[m.memberId] === "sent"}
-                          >
-                            {pingState[m.memberId] === "sending"
-                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              : pingState[m.memberId] === "sent"
-                              ? <BellRing className="h-3.5 w-3.5" />
-                              : <Bell className="h-3.5 w-3.5" />}
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline px-1.5 py-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
+                              title="Record payment"
+                              onClick={() => setQuickPayTarget({ memberId: m.memberId, memberName: `${m.firstName} ${m.lastName}` })}
+                            >
+                              Pay
+                            </button>
+                            <button
+                              className={cn(
+                                "p-1 rounded-md transition-all",
+                                pingState[m.memberId] === "sent"
+                                  ? "text-green-600 dark:text-green-400"
+                                  : pingState[m.memberId] === "error"
+                                  ? "text-destructive"
+                                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                              )}
+                              title={pingState[m.memberId] === "sent" ? "Reminder sent" : pingState[m.memberId] === "error" ? "Failed to send" : "Send dues reminder"}
+                              onClick={(e) => handlePing(m.memberId, "dues", e)}
+                              disabled={pingState[m.memberId] === "sending" || pingState[m.memberId] === "sent"}
+                            >
+                              {pingState[m.memberId] === "sending"
+                                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                : pingState[m.memberId] === "sent"
+                                ? <BellRing className="h-3.5 w-3.5" />
+                                : <Bell className="h-3.5 w-3.5" />}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -907,6 +959,62 @@ export function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Trainer Utilization ── */}
+      {activeTrainers.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <SectionHeader
+              icon={UserRound}
+              iconClass="text-orange-600 dark:text-orange-400"
+              title="Trainer Utilization"
+              badge={activeTrainers.length}
+              action={{ label: "Manage", onClick: () => navigate(ROUTES.TRAINERS) }}
+            />
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {activeTrainers.map((trainer) => {
+                const clientCount = trainer._count?.trainings ?? 0;
+                const barWidth = Math.min(clientCount * 10, 100);
+                return (
+                  <div
+                    key={trainer.id}
+                    className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate(`/trainers/${trainer.id}`, fromState)}
+                  >
+                    <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-950/50 flex items-center justify-center text-sm font-bold text-orange-700 dark:text-orange-400 shrink-0">
+                      {trainer.name[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm font-medium truncate">{trainer.name}</p>
+                        <span className="text-xs font-semibold text-orange-600 dark:text-orange-400 tabular-nums shrink-0 ml-1">
+                          {clientCount} client{clientCount !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-orange-400 dark:bg-orange-500 transition-all"
+                          style={{ width: `${barWidth}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Quick Payment Dialog ── */}
+      {quickPayTarget && (
+        <QuickPaymentDialog
+          memberId={quickPayTarget.memberId}
+          memberName={quickPayTarget.memberName}
+          open={!!quickPayTarget}
+          onOpenChange={(v) => { if (!v) setQuickPayTarget(null); }}
+        />
+      )}
     </div>
   );
 }

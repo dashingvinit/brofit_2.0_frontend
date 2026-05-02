@@ -18,6 +18,9 @@ import {
   RefreshCw,
   Ban,
   Flame,
+  MessageCircle,
+  Loader2,
+  BellRing,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -57,9 +60,10 @@ import {
 } from '../hooks/use-memberships';
 import { RenewMembershipDialog } from '../components/renew-membership-dialog';
 import { BulkFreezeDialog } from '../components/bulk-freeze-dialog';
+import { usePingMember } from '@/features/settings/hooks/use-notification-settings';
 import { ROUTES } from '@/shared/lib/constants';
 import { useFromState } from '@/shared/hooks/use-return-to';
-import { getThisMonthDateRange } from '@/shared/lib/utils';
+import { getThisMonthDateRange, cn } from '@/shared/lib/utils';
 import type { Membership, MembershipStatus } from '@/shared/types/common.types';
 import { SUBSCRIPTION_STATUS_CONFIG } from '@/shared/lib/constants';
 
@@ -275,6 +279,9 @@ export function MembershipsPage() {
   const [renewMembership, setRenewMembership] = useState<Membership | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkFreezeOpen, setBulkFreezeOpen] = useState(false);
+  const [expiryDays, setExpiryDays] = useState<7 | 14 | 30>(7);
+  const [whatsAppState, setWhatsAppState] = useState<'idle' | 'sending' | 'done'>('idle');
+  const { mutate: pingMember } = usePingMember();
 
   const { data: membershipsResponse, isLoading } = useMemberships(
     1,
@@ -284,7 +291,7 @@ export function MembershipsPage() {
     dateRange?.to ?? null,
     !showExpiring,
   );
-  const { data: expiringResponse, isLoading: isLoadingExpiring } = useExpiringMemberships(7);
+  const { data: expiringResponse, isLoading: isLoadingExpiring } = useExpiringMemberships(expiryDays);
   const { data: statsResponse, isLoading: isLoadingStats } = useMembershipStats();
   const batchCancel = useBatchCancelMemberships();
   const batchUnfreeze = useBatchUnfreezeMemberships();
@@ -354,21 +361,59 @@ export function MembershipsPage() {
     const ids = selectedMemberships
       .filter((m) => m.status === 'frozen')
       .map((m) => m.id);
-    
+
     const extend = window.confirm("Extend end date by frozen days for all selected memberships?");
     batchUnfreeze.mutate({ ids, extendEndDate: extend }, { onSuccess: clearSelection });
+  };
+
+  const handleBulkWhatsApp = async () => {
+    const uniqueMembers = Array.from(
+      new Map(
+        selectedMemberships
+          .filter((m) => m.member?.phone)
+          .map((m) => [m.member!.id, m.member!.id])
+      ).keys()
+    );
+    if (uniqueMembers.length === 0) return;
+    setWhatsAppState('sending');
+    let sent = 0;
+    for (const memberId of uniqueMembers) {
+      await new Promise<void>((resolve) => {
+        pingMember({ memberId, type: 'dues' }, { onSuccess: () => { sent++; resolve(); }, onError: () => resolve() });
+      });
+    }
+    setWhatsAppState('done');
+    setTimeout(() => { setWhatsAppState('idle'); clearSelection(); }, 1500);
   };
 
   return (
     <div className="space-y-4">
       <PageHeader
         title={showExpiring ? "Expiring Soon" : "Memberships"}
-        description={showExpiring ? "Memberships expiring in the next 7 days" : "Manage gym memberships"}
+        description={showExpiring ? `Memberships expiring in the next ${expiryDays} days` : "Manage gym memberships"}
         actions={
           showExpiring ? (
-            <Button variant="outline" onClick={() => navigate(ROUTES.MEMBERSHIPS)}>
-              View all memberships
-            </Button>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center rounded-lg border p-0.5 gap-0.5">
+                {([7, 14, 30] as const).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setExpiryDays(d)}
+                    className={cn(
+                      "px-2.5 py-1 text-xs font-medium rounded-md transition-colors",
+                      expiryDays === d
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                  >
+                    {d}d
+                  </button>
+                ))}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.MEMBERSHIPS)}>
+                View all
+              </Button>
+            </div>
           ) : (
             <Button onClick={() => navigate(ROUTES.CREATE_MEMBERSHIP)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -614,6 +659,25 @@ export function MembershipsPage() {
               Cancel
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="outline"
+            className={cn(
+              "h-7 gap-1.5 text-xs",
+              whatsAppState === 'done' ? "text-green-600 dark:text-green-400" : ""
+            )}
+            onClick={handleBulkWhatsApp}
+            disabled={whatsAppState === 'sending' || whatsAppState === 'done' || batchCancel.isPending || batchUnfreeze.isPending}
+          >
+            {whatsAppState === 'sending' ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : whatsAppState === 'done' ? (
+              <BellRing className="h-3.5 w-3.5" />
+            ) : (
+              <MessageCircle className="h-3.5 w-3.5 text-green-600" />
+            )}
+            {whatsAppState === 'done' ? 'Sent!' : 'WhatsApp'}
+          </Button>
           <Button
             size="sm"
             variant="ghost"
