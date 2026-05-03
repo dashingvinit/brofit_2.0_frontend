@@ -229,6 +229,7 @@ export function useRecordPayment() {
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['memberships'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
+      queryClient.invalidateQueries({ queryKey: ['financials'] });
       if (variables.membershipId) {
         queryClient.invalidateQueries({
           queryKey: ['memberships', variables.membershipId, 'dues'],
@@ -255,6 +256,7 @@ export function useDeletePayment() {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['memberships'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
+      queryClient.invalidateQueries({ queryKey: ['financials'] });
       toast.success(response.message || 'Payment deleted successfully');
     },
     onError: (error: any) => {

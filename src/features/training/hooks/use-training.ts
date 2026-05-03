@@ -172,6 +172,7 @@ export function useDeleteTrainingPayment() {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['trainings'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
+      queryClient.invalidateQueries({ queryKey: ['financials'] });
       toast.success(response.message || 'Payment deleted successfully');
     },
     onError: (error: any) => {
@@ -199,6 +200,7 @@ export function useRecordTrainingPayment() {
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['trainings'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
+      queryClient.invalidateQueries({ queryKey: ['financials'] });
       if (variables.trainingId) {
         queryClient.invalidateQueries({
           queryKey: ['trainings', variables.trainingId, 'dues'],
