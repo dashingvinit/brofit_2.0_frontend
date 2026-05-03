@@ -57,3 +57,23 @@ export function calculateAge(dateOfBirth: string): number {
   }
   return age;
 }
+
+/** Formats an ISO date string as "1 Jan 2025" in Indian locale. */
+export function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+/** Formats an ISO date string as "1 Jan 2025, 02:30 pm" in Indian locale. */
+export function formatDateTime(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}

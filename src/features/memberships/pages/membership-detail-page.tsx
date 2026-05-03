@@ -55,6 +55,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
 import { PageHeader } from '@/shared/components/page-header';
+import { EmptyState } from '@/shared/components/empty-state';
 import {
   useMembership,
   useMembershipDues,
@@ -77,36 +78,11 @@ import type {
   PaymentStatus,
 } from '@/shared/types/common.types';
 
-import { SUBSCRIPTION_STATUS_CONFIG, PAYMENT_STATUS_CONFIG } from '@/shared/lib/constants';
+import { SUBSCRIPTION_STATUS_CONFIG, PAYMENT_STATUS_CONFIG, PAYMENT_METHOD_LABELS } from '@/shared/lib/constants';
+import { formatDate, formatDateTime } from '@/shared/lib/utils';
 
 const statusConfig = SUBSCRIPTION_STATUS_CONFIG;
 const paymentStatusConfig = PAYMENT_STATUS_CONFIG;
-
-const paymentMethodLabels: Record<PaymentMethod, string> = {
-  cash: 'Cash',
-  card: 'Card',
-  upi: 'UPI',
-  bank_transfer: 'Bank Transfer',
-  other: 'Other',
-};
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-function formatDateTime(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 export function MembershipDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -156,14 +132,13 @@ export function MembershipDetailPage() {
       <div className="space-y-4">
         <PageHeader title="Membership Not Found" />
         <Card>
-          <CardContent className="flex flex-col items-center py-12">
-            <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">
-              The membership you're looking for doesn't exist.
-            </p>
-            <Button onClick={() => navigate(returnTo)}>
-              Back
-            </Button>
+          <CardContent className="p-0">
+            <EmptyState
+              icon={<AlertCircle className="h-6 w-6 text-muted-foreground" />}
+              title="Membership not found"
+              description="The membership you're looking for doesn't exist."
+              action={<Button onClick={() => navigate(returnTo)}>Back</Button>}
+            />
           </CardContent>
         </Card>
       </div>
@@ -228,11 +203,6 @@ export function MembershipDetailPage() {
                         Edit Details
                       </DropdownMenuItem>
 
-                      <DropdownMenuItem onClick={() => setRenewDialogOpen(true)}>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Renew Membership
-                      </DropdownMenuItem>
-
                       {canFreeze && (
                         <DropdownMenuItem
                           onClick={() => setFreezeDialogOpen(true)}
@@ -291,7 +261,7 @@ export function MembershipDetailPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Membership Info</CardTitle>
+              <CardTitle className="text-base">Membership Info</CardTitle>
               <Badge variant={status.variant}>{status.label}</Badge>
             </div>
           </CardHeader>
@@ -411,7 +381,7 @@ export function MembershipDetailPage() {
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
-                <CardTitle className="text-lg">Payment Status</CardTitle>
+                <CardTitle className="text-base">Payment Status</CardTitle>
                 <CardDescription>
                   {duesLoading
                     ? 'Loading...'
@@ -515,7 +485,7 @@ export function MembershipDetailPage() {
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
-              <CardTitle className="text-lg">Payment History</CardTitle>
+              <CardTitle className="text-base">Payment History</CardTitle>
               <CardDescription>
                 All payments recorded against this membership
               </CardDescription>
@@ -566,7 +536,7 @@ export function MembershipDetailPage() {
                             {payment.amount.toLocaleString()}
                           </TableCell>
                           <TableCell>
-                            {paymentMethodLabels[payment.method] ||
+                            {PAYMENT_METHOD_LABELS[payment.method] ||
                               payment.method}
                           </TableCell>
                           <TableCell>
@@ -638,7 +608,7 @@ export function MembershipDetailPage() {
                             </div>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
                               <span className="font-medium">
-                                {paymentMethodLabels[payment.method] || payment.method}
+                                {PAYMENT_METHOD_LABELS[payment.method] || payment.method}
                               </span>
                               <span>·</span>
                               <span>

@@ -50,6 +50,7 @@ import { RenewTrainingDialog } from "../components/renew-training-dialog";
 import { EditTrainingDialog } from "../components/edit-training-dialog";
 import { ROUTES } from "@/shared/lib/constants";
 import { useFromState } from "@/shared/hooks/use-return-to";
+import { formatDate } from "@/shared/lib/utils";
 import type { Training, TrainingStatus } from "@/shared/types/common.types";
 import { SUBSCRIPTION_STATUS_CONFIG } from "@/shared/lib/constants";
 
@@ -104,14 +105,6 @@ const statCards = [
     bgClass: "bg-violet-50 dark:bg-violet-950/50",
   },
 ];
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function TrainingRow({
   training,

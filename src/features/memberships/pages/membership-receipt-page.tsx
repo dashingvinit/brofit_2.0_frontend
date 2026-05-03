@@ -21,24 +21,8 @@ import { PageHeader } from '@/shared/components/page-header';
 import { RecordPaymentDialog } from '@/shared/components/record-payment-dialog';
 import { useMembership, useMembershipDues, useRecordPayment } from '../hooks/use-memberships';
 import { useReturnTo } from '@/shared/hooks/use-return-to';
-import { ROUTES, PAYMENT_STATUS_CONFIG, SUBSCRIPTION_STATUS_CONFIG } from '@/shared/lib/constants';
-import type { PaymentMethod } from '@/shared/types/common.types';
-
-const paymentMethodLabels: Record<PaymentMethod, string> = {
-  cash: 'Cash',
-  card: 'Card',
-  upi: 'UPI',
-  bank_transfer: 'Bank Transfer',
-  other: 'Other',
-};
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
+import { ROUTES, PAYMENT_STATUS_CONFIG, SUBSCRIPTION_STATUS_CONFIG, PAYMENT_METHOD_LABELS } from '@/shared/lib/constants';
+import { formatDate } from '@/shared/lib/utils';
 
 export function MembershipReceiptPage() {
   const { id } = useParams<{ id: string }>();
@@ -253,7 +237,7 @@ export function MembershipReceiptPage() {
                             {ps.label}
                           </Badge>
                           <span className="text-muted-foreground">
-                            {paymentMethodLabels[payment.method]}
+                            {PAYMENT_METHOD_LABELS[payment.method]}
                             {payment.paidAt ? ` · ${formatDate(payment.paidAt)}` : ''}
                           </span>
                           {payment.reference && (

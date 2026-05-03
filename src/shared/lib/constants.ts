@@ -26,6 +26,14 @@ export const PAYMENT_STATUS_CONFIG: Record<
   refunded: { label: 'Refunded', variant: 'secondary' },
 };
 
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: 'Cash',
+  card: 'Card',
+  upi: 'UPI',
+  bank_transfer: 'Bank Transfer',
+  other: 'Other',
+};
+
 export const ROUTES = {
   HOME: "/",
   ADMIN_PORTAL: "/admin-portal",

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -47,6 +47,7 @@ import { PageHeader } from "@/shared/components/page-header";
 import { EmptyState } from "@/shared/components/empty-state";
 import { StatCard } from "@/shared/components/stat-card";
 import { ROUTES } from "@/shared/lib/constants";
+import { getAvatarColor } from "@/shared/lib/utils";
 import {
   useTrainerWithClients,
   useTrainerPayoutSchedule,
@@ -90,20 +91,6 @@ function formatMonthYear(month: number, year: number) {
 
 function formatRupees(amount: number) {
   return `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
-
-function getAvatarColor(name: string) {
-  const colors = [
-    "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300",
-    "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300",
-    "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300",
-    "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
-    "bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300",
-    "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300",
-  ];
-  return colors[
-    name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % colors.length
-  ];
 }
 
 interface MonthGroup {
@@ -423,6 +410,13 @@ function EditTrainerDialog({
     String(trainer.splitPercent ?? 60),
   );
   const updateTrainer = useUpdateTrainer(trainer.id);
+
+  useEffect(() => {
+    if (open) {
+      setName(trainer.name);
+      setSplitInput(String(trainer.splitPercent ?? 60));
+    }
+  }, [open, trainer.name, trainer.splitPercent]);
 
   const handleSave = () => {
     const split = parseFloat(splitInput);

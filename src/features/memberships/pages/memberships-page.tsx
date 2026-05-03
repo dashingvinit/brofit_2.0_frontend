@@ -26,6 +26,16 @@ import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/components/ui/alert-dialog';
+import {
   Card,
   CardContent,
   CardHeader,
@@ -63,7 +73,7 @@ import { BulkFreezeDialog } from '../components/bulk-freeze-dialog';
 import { usePingMember } from '@/features/settings/hooks/use-notification-settings';
 import { ROUTES } from '@/shared/lib/constants';
 import { useFromState } from '@/shared/hooks/use-return-to';
-import { getThisMonthDateRange, cn } from '@/shared/lib/utils';
+import { getThisMonthDateRange, cn, formatDate } from '@/shared/lib/utils';
 import type { Membership, MembershipStatus } from '@/shared/types/common.types';
 import { SUBSCRIPTION_STATUS_CONFIG } from '@/shared/lib/constants';
 
@@ -122,14 +132,6 @@ const statCards = [
     filter: 'newThisMonth' as const,
   },
 ];
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
 
 function MembershipRow({
   membership,
@@ -280,6 +282,7 @@ export function MembershipsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkFreezeOpen, setBulkFreezeOpen] = useState(false);
   const [expiryDays, setExpiryDays] = useState<7 | 14 | 30>(7);
+  const [bulkUnfreezeOpen, setBulkUnfreezeOpen] = useState(false);
   const [whatsAppState, setWhatsAppState] = useState<'idle' | 'sending' | 'done'>('idle');
   const { mutate: pingMember } = usePingMember();
 
@@ -352,18 +355,16 @@ export function MembershipsPage() {
 
   const handleBulkCancel = () => {
     const ids = selectedMemberships
-      .filter((m) => m.status === 'active' || m.status === 'expired')
+      .filter((m) => m.status === 'active' || m.status === 'expired' || m.status === 'upcoming')
       .map((m) => m.id);
     batchCancel.mutate(ids, { onSuccess: clearSelection });
   };
 
-  const handleBulkUnfreeze = () => {
+  const handleBulkUnfreeze = (extendEndDate: boolean) => {
     const ids = selectedMemberships
       .filter((m) => m.status === 'frozen')
       .map((m) => m.id);
-
-    const extend = window.confirm("Extend end date by frozen days for all selected memberships?");
-    batchUnfreeze.mutate({ ids, extendEndDate: extend }, { onSuccess: clearSelection });
+    batchUnfreeze.mutate({ ids, extendEndDate }, { onSuccess: clearSelection });
   };
 
   const handleBulkWhatsApp = async () => {
@@ -640,7 +641,7 @@ export function MembershipsPage() {
               size="sm"
               variant="outline"
               className="h-7 gap-1.5 text-xs"
-              onClick={handleBulkUnfreeze}
+              onClick={() => setBulkUnfreezeOpen(true)}
               disabled={batchUnfreeze.isPending || batchCancel.isPending}
             >
               <Flame className="h-3.5 w-3.5 text-orange-500" />
@@ -788,6 +789,34 @@ export function MembershipsPage() {
         ids={selectedMemberships.filter((m) => m.status === 'active').map((m) => m.id)}
         onSuccess={clearSelection}
       />
+
+      {/* Bulk Unfreeze Dialog */}
+      <AlertDialog open={bulkUnfreezeOpen} onOpenChange={setBulkUnfreezeOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unfreeze {selectedMemberships.filter((m) => m.status === 'frozen').length} membership{selectedMemberships.filter((m) => m.status === 'frozen').length !== 1 ? 's' : ''}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Should the end date be extended to compensate for the frozen duration?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button
+              variant="outline"
+              onClick={() => { setBulkUnfreezeOpen(false); handleBulkUnfreeze(false); }}
+              disabled={batchUnfreeze.isPending}
+            >
+              Unfreeze, keep dates
+            </Button>
+            <AlertDialogAction
+              onClick={() => { setBulkUnfreezeOpen(false); handleBulkUnfreeze(true); }}
+              disabled={batchUnfreeze.isPending}
+            >
+              Unfreeze &amp; extend dates
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
